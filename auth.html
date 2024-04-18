@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Genesys Cloud OAuth Implicit Grant - Authentication</title>
+    <title>Authenticating...</title>
     <style>
         /* Styles unchanged */
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Genesys Cloud OAuth Implicit Grant - Authentication</h2>
+        <h3>Please wait!</h3>
         <p>Authenticating...</p>
     </div>
 
@@ -28,14 +28,14 @@
 
         if (!token) {
             console.error('Access token not found!');
-            document.querySelector('.container').innerHTML = '<h2>Error: Access token not found!</h2>';
+            document.querySelector('.container').innerHTML = '<h3>Error: Access token not found!</h3>';
             // Redirect to error page after 5 seconds
             setTimeout(() => {
                 window.location.href = 'error.html';
             }, 5000);
         } else {
-            // Redirect to success page with token as query parameter
-            window.location.href = `success.html?token=${token}`;
+            // Redirect to objects.html with token as query parameter
+            window.location.href = `objects.html?token=${token}`;
         }
     </script>
 </body>
