@@ -10,6 +10,8 @@
             margin: 0;
             padding: 0;
             text-align: center;
+            background-color: #fff;
+            color: #0F3057;
         }
 
         #header {
@@ -88,7 +90,7 @@
         }
 
         #output-container {
-            position: relative; /* Ensure relative positioning for the output container */
+            position: relative;
             width: 80%;
             margin: 20px auto;
             text-align: left;
@@ -107,10 +109,10 @@
         #flipping-logo {
             height: 50px;
             animation: flip 1s infinite;
-            position: absolute; /* Position the flipping logo relative to the output container */
-            top: calc(50% - 25px); /* Center the flipping logo vertically */
-            left: calc(50% - 25px); /* Center the flipping logo horizontally */
-            display: none; /* Initially hide the flipping logo */
+            position: absolute;
+            top: calc(50% - 25px);
+            left: calc(50% - 25px);
+            display: none;
         }
 
         @keyframes flip {
@@ -174,12 +176,12 @@
 
             for (const entity of data) {
                 const name = entity.name || '';
-                const type = 'user'; // Fixed value
+                const type = 'user';
                 const language = entity.resources[0] ? entity.resources[0].language || '' : '';
                 const description = entity.description || '';
-                const ttsString = `"${entity.resources[0] ? entity.resources[0].ttsString || '' : ''}"`; // Enclose in double quotes
+                const ttsString = `"${entity.resources[0] ? entity.resources[0].ttsString || '' : ''}"`;
                 const mediaUri = entity.resources[0] ? entity.resources[0].mediaUri || '' : '';
-                const fileName = mediaUri ? `${name}.wav` : ''; // Empty FileName if MediaUri is empty
+                const fileName = mediaUri ? `${name}.wav` : '';
 
                 csvContent += `"${name}","${type}","${language}","${description}",${ttsString},"${mediaUri}","${fileName}"\n`;
             }
@@ -187,56 +189,52 @@
             return csvContent;
         }
 
-async function downloadMediaFiles() {
-    showFlippingLogo();
-    const token = new URLSearchParams(window.location.search).get('token');
-    const data = await fetchAllPromptData(token, 'https://api.cac1.pure.cloud/api/v2/architect/prompts?pageSize=500');
+        async function downloadMediaFiles() {
+            showFlippingLogo();
+            const token = new URLSearchParams(window.location.search).get('token');
+            const data = await fetchAllPromptData(token, 'https://api.cac1.pure.cloud/api/v2/architect/prompts?pageSize=500');
 
-    const outputTextArea = document.getElementById('output');
-    outputTextArea.value = ''; // Clear existing content
+            const outputTextArea = document.getElementById('output');
+            outputTextArea.value = '';
 
-    for (const entity of data) {
-        const name = entity.name || '';
-        const mediaUri = entity.resources[0] ? entity.resources[0].mediaUri || '' : '';
+            for (const entity of data) {
+                const name = entity.name || '';
+                const mediaUri = entity.resources[0] ? entity.resources[0].mediaUri || '' : '';
 
-        if (mediaUri) {
-            try {
-                const response = await fetch(mediaUri);
+                if (mediaUri) {
+                    try {
+                        const response = await fetch(mediaUri);
 
-                if (response.ok) {
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
+                        if (response.ok) {
+                            const blob = await response.blob();
+                            const url = window.URL.createObjectURL(blob);
 
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = `${name}.wav`; // Set the download attribute to specify file name
-                    link.style.display = 'none'; // Hide the link
-                    document.body.appendChild(link);
-                    link.click(); // Simulate click to trigger download
-                    document.body.removeChild(link);
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.download = `${name}.wav`;
+                            link.style.display = 'none';
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
 
-                    // Update status in text box
-                    outputTextArea.value += `✅ Downloaded ${name}.wav\n`;
-                    outputTextArea.scrollTop = outputTextArea.scrollHeight; // Scroll to bottom
+                            outputTextArea.value += `✅ Downloaded ${name}.wav\n`;
+                            outputTextArea.scrollTop = outputTextArea.scrollHeight;
+                        } else {
+                            outputTextArea.value += `❌ Failed to download ${name}.wav\n`;
+                            outputTextArea.scrollTop = outputTextArea.scrollHeight;
+                        }
+                    } catch (error) {
+                        outputTextArea.value += `❌ Error while downloading ${name}.wav\n`;
+                        outputTextArea.scrollTop = outputTextArea.scrollHeight;
+                    }
                 } else {
-                    // Update status in text box
-                    outputTextArea.value += `❌ Failed to download ${name}.wav\n`;
-                    outputTextArea.scrollTop = outputTextArea.scrollHeight; // Scroll to bottom
+                    outputTextArea.value += `❌ Media URI not found for ${name}\n`;
+                    outputTextArea.scrollTop = outputTextArea.scrollHeight;
                 }
-            } catch (error) {
-                // Update status in text box
-                outputTextArea.value += `❌ Error while downloading ${name}.wav\n`;
-                outputTextArea.scrollTop = outputTextArea.scrollHeight; // Scroll to bottom
             }
-        } else {
-            // Update status in text box for empty mediaUri
-            outputTextArea.value += `❌ Media URI not found for ${name}\n`;
-            outputTextArea.scrollTop = outputTextArea.scrollHeight; // Scroll to bottom
-        }
-    }
 
-    hideFlippingLogo();
-}
+            hideFlippingLogo();
+        }
 
         async function downloadCSV() {
             showFlippingLogo();
@@ -265,12 +263,10 @@ async function downloadMediaFiles() {
             document.getElementById('popupContainer').style.display = 'none';
         }
 
-        // Show flipping logo while waiting for CSV content to display
         function showFlippingLogo() {
             document.getElementById('flipping-logo').style.display = 'block';
         }
 
-        // Hide flipping logo when CSV content is displayed
         function hideFlippingLogo() {
             document.getElementById('flipping-logo').style.display = 'none';
         }
@@ -279,7 +275,6 @@ async function downloadMediaFiles() {
 
 <script>
     function logout() {
-        // Redirect to the index.html page to initiate logout
         window.location.href = 'index.html';
     }
 </script>
