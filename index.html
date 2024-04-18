@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Genesys Cloud OAuth Implicit Grant</title>
+    <style>
+        /* Styles unchanged */
+    </style>
+</head>
+<body>
+    <div class="logo-container">
+        <img class="logo" src="https://media.licdn.com/dms/image/C560BAQEPZHhZ7MYJwA/company-logo_200_200/0/1630652189821/tykans_group_inc_logo?e=2147483647&v=beta&t=gKclfImp9n7_jxYNpAgbgTCV33-QT1_WAEf_g_pinGg" alt="Logo">
+    </div>
+
+    <div class="container">
+        <h2>Genesys Cloud OAuth Implicit Grant</h2>
+        <label for="clientId">Client ID:</label>
+        <input type="text" id="clientId" placeholder="Enter your client ID" value="--- Implicit Grant Client ID ---">
+
+        <label for="redirectUri">Redirect URI:</label>
+        <input type="text" id="redirectUri" placeholder="Enter your redirect URI" value="http://localhost:8085/oauth2/callback">
+
+        <label for="environment">Genesys Cloud Environment:</label>
+        <input type="text" id="environment" placeholder="Enter Genesys Cloud environment" value="cac1.pure.cloud">
+
+        <button onclick="authenticate()">Authenticate</button>
+    </div>
+
+    <script>
+        // After 5 seconds, move logo to top left in a nicer way
+        setTimeout(() => {
+            const logoContainer = document.querySelector('.logo-container');
+            logoContainer.style.transition = 'transform 1s ease-in-out';
+            logoContainer.style.top = '10px';
+            logoContainer.style.left = '10px';
+        }, 5000);
+
+        function authenticate() {
+            const clientId = document.getElementById('clientId').value;
+            const redirectUri = document.getElementById('redirectUri').value;
+            const environment = document.getElementById('environment').value;
+
+            // Check if any field is empty
+            if (!clientId || !redirectUri || !environment) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            const queryStringData = {
+                response_type: "token",
+                client_id: clientId,
+                redirect_uri: redirectUri
+            }
+
+            // Redirect to Genesys Cloud for authentication
+            window.location.replace(`https://login.${environment}/oauth/authorize?` + encodeURI(Object.entries(queryStringData).map(([key, value]) => `${key}=${value}`).join('&')));
+        }
+    </script>
+</body>
+</html>

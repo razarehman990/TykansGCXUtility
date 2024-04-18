@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Genesys Cloud OAuth Implicit Grant - Authentication</title>
+    <style>
+        /* Styles unchanged */
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Genesys Cloud OAuth Implicit Grant - Authentication</h2>
+        <p>Authenticating...</p>
+    </div>
+
+    <script>
+        // Function to extract access token from URL
+        function getParameterByName(name) {
+            name = name.replace(/[\\[]/, "\\[").replace(/[\]]/, "\\]");
+            var regex = new RegExp("[\\#&]" + name + "=([^&#]*)"),
+                results = regex.exec(location.hash);
+            return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+        }
+
+        // Extract access token from URL
+        var token = getParameterByName('access_token');
+
+        if (!token) {
+            console.error('Access token not found!');
+            document.querySelector('.container').innerHTML = '<h2>Error: Access token not found!</h2>';
+            // Redirect to error page after 5 seconds
+            setTimeout(() => {
+                window.location.href = 'error.html';
+            }, 5000);
+        } else {
+            // Redirect to success page with token as query parameter
+            window.location.href = `success.html?token=${token}`;
+        }
+    </script>
+</body>
+</html>
