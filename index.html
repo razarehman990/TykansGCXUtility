@@ -5,12 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tykans GCX Utility</title>
     <style>
-        /* Styles for font */
+        /* Styles for centering content */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             font-size: 16px;
             line-height: 1.6;
             color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            text-align: center;
+            max-width: 400px;
         }
 
         /* Styles for input fields */
@@ -21,15 +31,15 @@
             border: 1px solid #ccc;
             border-radius: 5px;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Apply font to inputs */
         }
 
         /* Styles for error messages */
         .error-message {
             color: red;
-            font-size: 14px;
+            font-size: 12px;
             margin-top: 5px;
-            display: none; /* Initially hide error messages */
+            display: none;
+            text-align: left;
         }
 
         /* Styles for buttons */
@@ -40,7 +50,6 @@
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Apply font to button */
         }
     </style>
 </head>
