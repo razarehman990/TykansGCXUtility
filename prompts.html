@@ -119,6 +119,15 @@
             0% { transform: rotateY(0deg); }
             100% { transform: rotateY(360deg); }
         }
+
+        footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background-color: #003366;
+            color: #fff;
+            padding: 10px 0;
+        }
     </style>
 </head>
 <body>
@@ -139,6 +148,9 @@
             <div class="popup-content"></div>
         </div>
     </div>
+    <footer>
+        <button onclick="logout()" style="float: right; margin-right: 10px;">Logout</button>
+    </footer>
     
     <script>
         async function fetchAllPromptData(token, nextPage) {
@@ -270,10 +282,7 @@
         function hideFlippingLogo() {
             document.getElementById('flipping-logo').style.display = 'none';
         }
-    </script>
-    <button onclick="logout()" style="position: fixed; top: 10px; right: 10px;">Logout</button>
 
-    <script>
         function logout() {
             window.location.href = 'index.html';
         }
