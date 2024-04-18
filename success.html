@@ -108,13 +108,13 @@
         <input type="text" class="search-bar" id="searchInput" placeholder="Search...">
         <!-- Button list -->
         <ul class="button-list">
-            <li><button onclick="window.location.href = 'prompts.html';">Prompts</button></li>
             <li><button>Architect Flows</button></li>
             <li><button>Data Actions</button></li>
             <li><button>Data Tables</button></li>
             <li><button>Flow Milestone</button></li>
             <li><button>Flow Outcome</button></li>
             <li><button>Integrations</button></li>
+            <li><button>Prompts</button></li>
             <li><button>Queues</button></li>
             <li><button>Roles</button></li>
             <li><button>Scripts</button></li>
@@ -134,6 +134,12 @@
                     button.parentNode.style.display = 'none';
                 }
             });
+        });
+
+        // Redirect to prompts.html with token when Prompts button is clicked
+        document.querySelector('.button-list li button:nth-child(7)').addEventListener('click', function() {
+            const token = new URLSearchParams(window.location.search).get('token');
+            window.location.href = `prompts.html?token=${token}`;
         });
     </script>
 </body>
