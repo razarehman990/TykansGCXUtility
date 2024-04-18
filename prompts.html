@@ -15,16 +15,21 @@
         }
 
         #header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 10px;
             background-color: #fff;
-            margin-bottom: 20px;
+            z-index: 1000;
+            height: 80px;
         }
 
         #logo {
-            height: 50px;
+            height: 40px;
             margin-right: 10px;
         }
 
@@ -34,14 +39,37 @@
             color: #003366;
         }
 
-        .button {
-            margin-top: 20px;
-            padding: 10px 20px;
-            background-color: #003366;
-            color: #fff;
-            border: none;
-            border-radius: 5px;
+        .button-list {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            padding: 0;
+            margin: 20px auto; /* Add margin between search bar and button list */
+            max-width: 800px;
+            list-style-type: none; /* Remove bullet points */
+        }
+
+        /* Button styles */
+        .button-list li {
+            margin-right: 10px;
+            margin-bottom: 20px;
+        }
+
+        .button-list li button {
+            padding: 20px 40px; /* Bigger buttons */
+            background-color: #0F3057; /* Dark navy blue background */
+            color: #fff; /* White text color */
+            border: 2px solid transparent; /* Transparent border */
+            border-radius: 25px; /* Rounded corners */
             cursor: pointer;
+            font-size: 18px;
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease; /* Smooth transition */
+        }
+
+        .button-list li button:hover {
+            background-color: #fff; /* White background on hover */
+            color: #0F3057; /* Dark navy blue text color on hover */
+            border-color: #0F3057; /* Dark navy blue border on hover */
         }
 
         .popup-container {
@@ -135,13 +163,14 @@
         <img id="logo" src="https://www.tykans.com/hs-fs/hubfs/Tykans_June2023/Images/Tykans%20-header-logo.png" alt="Tykans Logo">
         <h1 id="title"> Genesys Prompt Export </h1>
     </div>
+    <div class="button-list">
+        <li><button onclick="downloadMediaFiles()">Download Media Files</button></li>
+        <li><button onclick="downloadCSV()">Download CSV File</button></li>
+    </div>
     <div id="output-container">
         <textarea id="output" readonly></textarea>
         <img id="flipping-logo" src="https://media.licdn.com/dms/image/C560BAQEPZHhZ7MYJwA/company-logo_200_200/0/1630652189821/tykans_group_inc_logo?e=1721260800&v=beta&t=Ff_0yDkJGgGcj2pugpZSW3Dci7iLuN9QHzjVkmeCqsY" alt="Flipping Logo">
     </div>
-    <br>
-    <button class="button" onclick="downloadMediaFiles()">Download Media Files</button>
-    <button class="button" onclick="downloadCSV()">Download CSV File</button>
     <div class="popup-container" id="popupContainer">
         <div class="popup" id="popup">
             <span class="close" onclick="closePopup()">&times;</span>
@@ -188,12 +217,12 @@
 
             for (const entity of data) {
                 const name = entity.name || '';
-                const type = 'user';
+                const type = 'user'; // Fixed value
                 const language = entity.resources[0] ? entity.resources[0].language || '' : '';
                 const description = entity.description || '';
-                const ttsString = `"${entity.resources[0] ? entity.resources[0].ttsString || '' : ''}"`;
+                const ttsString = `"${entity.resources[0] ? entity.resources[0].ttsString || '' : ''}"`; // Enclose in double quotes
                 const mediaUri = entity.resources[0] ? entity.resources[0].mediaUri || '' : '';
-                const fileName = mediaUri ? `${name}.wav` : '';
+                const fileName = mediaUri ? `${name}.wav` : ''; // Empty FileName if MediaUri is empty
 
                 csvContent += `"${name}","${type}","${language}","${description}",${ttsString},"${mediaUri}","${fileName}"\n`;
             }
@@ -207,7 +236,7 @@
             const data = await fetchAllPromptData(token, 'https://api.cac1.pure.cloud/api/v2/architect/prompts?pageSize=500');
 
             const outputTextArea = document.getElementById('output');
-            outputTextArea.value = '';
+            outputTextArea.value = ''; // Clear existing content
 
             for (const entity of data) {
                 const name = entity.name || '';
@@ -223,25 +252,29 @@
 
                             const link = document.createElement('a');
                             link.href = url;
-                            link.download = `${name}.wav`;
-                            link.style.display = 'none';
+                            link.download = `${name}.wav`; // Set the download attribute to specify file name
+                            link.style.display = 'none'; // Hide the link
                             document.body.appendChild(link);
-                            link.click();
+                            link.click(); // Simulate click to trigger download
                             document.body.removeChild(link);
 
+                            // Update status in text box
                             outputTextArea.value += `✅ Downloaded ${name}.wav\n`;
-                            outputTextArea.scrollTop = outputTextArea.scrollHeight;
+                            outputTextArea.scrollTop = outputTextArea.scrollHeight; // Scroll to bottom
                         } else {
+                            // Update status in text box
                             outputTextArea.value += `❌ Failed to download ${name}.wav\n`;
-                            outputTextArea.scrollTop = outputTextArea.scrollHeight;
+                            outputTextArea.scrollTop = outputTextArea.scrollHeight; // Scroll to bottom
                         }
                     } catch (error) {
+                        // Update status in text box
                         outputTextArea.value += `❌ Error while downloading ${name}.wav\n`;
-                        outputTextArea.scrollTop = outputTextArea.scrollHeight;
+                        outputTextArea.scrollTop = outputTextArea.scrollHeight; // Scroll to bottom
                     }
                 } else {
+                    // Update status in text box for empty mediaUri
                     outputTextArea.value += `❌ Media URI not found for ${name}\n`;
-                    outputTextArea.scrollTop = outputTextArea.scrollHeight;
+                    outputTextArea.scrollTop = outputTextArea.scrollHeight; // Scroll to bottom
                 }
             }
 
@@ -275,15 +308,18 @@
             document.getElementById('popupContainer').style.display = 'none';
         }
 
+        // Show flipping logo while waiting for CSV content to display
         function showFlippingLogo() {
             document.getElementById('flipping-logo').style.display = 'block';
         }
 
+        // Hide flipping logo when CSV content is displayed
         function hideFlippingLogo() {
             document.getElementById('flipping-logo').style.display = 'none';
         }
 
         function logout() {
+            // Redirect to the index.html page to initiate logout
             window.location.href = 'index.html';
         }
     </script>
