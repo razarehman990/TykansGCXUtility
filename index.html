@@ -3,43 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tykans GCX Utility</title> <!-- Update title -->
+    <title>Tykans GCX Utility</title>
     <style>
         /* Styles unchanged */
+        .logo-container {
+            position: relative;
+            width: 200px; /* Adjust width as needed */
+            margin: 0 auto; /* Center the logo container */
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .container {
+            max-width: 400px; /* Adjust maximum width as needed */
+            margin: 0 auto; /* Center the container */
+            text-align: center;
+        }
+
+        .container input {
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        .container button {
+            padding: 10px 20px;
+            background-color: #003366;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
     <div class="logo-container">
-        <img class="logo" src="https://media.licdn.com/dms/image/C560BAQEPZHhZ7MYJwA/company-logo_200_200/0/1630652189821/tykans_group_inc_logo?e=2147483647&v=beta&t=gKclfImp9n7_jxYNpAgbgTCV33-QT1_WAEf_g_pinGg" alt="Logo">
+        <img class="logo" src="https://media.licdn.com/dms/image/C560BAQEPZHhZ7MYJwA/company-logo_200_200/0/1630652189821/tykans_group_inc_logo?e=2147483647&v=beta&t=gKclfImp9n7_jxYNpAgbgTCV33-QT1_WAEf_g_pinGg" alt="Tykans Group Inc. Logo">
     </div>
 
     <div class="container">
-        <h2>Tykans Genesys Cloud Configuration Utility</h2> <!-- Update heading -->
-        <label for="clientId">Client ID:</label>
-        <input type="text" id="clientId" placeholder="Enter your client ID" value="--- Implicit Grant Client ID ---">
+        <h2>Tykans Genesys Cloud Configuration Utility</h2>
+        <form id="authForm">
+            <label for="clientId">Client ID:</label>
+            <input type="text" id="clientId" placeholder="Enter your client ID">
 
-        <label for="redirectUri">Redirect URI:</label>
-        <input type="text" id="redirectUri" placeholder="Enter your redirect URI" value="http://localhost:8085/oauth2/callback">
+            <label for="redirectUri">Redirect URI:</label>
+            <input type="text" id="redirectUri" placeholder="Enter your redirect URI">
 
-        <label for="environment">Genesys Cloud Environment:</label>
-        <input type="text" id="environment" placeholder="Enter Genesys Cloud environment" value="cac1.pure.cloud">
+            <label for="environment">Genesys Cloud Environment:</label>
+            <input type="text" id="environment" placeholder="Enter Genesys Cloud environment">
 
-        <button onclick="authenticate()">Authenticate</button>
+            <button type="submit">Authenticate</button>
+        </form>
     </div>
 
     <script>
-        // After 5 seconds, move logo to top left in a nicer way
-        setTimeout(() => {
-            const logoContainer = document.querySelector('.logo-container');
-            logoContainer.style.transition = 'transform 1s ease-in-out';
-            logoContainer.style.top = '10px';
-            logoContainer.style.left = '10px';
-        }, 5000);
-
-        function authenticate() {
-            const clientId = document.getElementById('clientId').value;
-            const redirectUri = document.getElementById('redirectUri').value;
-            const environment = document.getElementById('environment').value;
+        document.getElementById('authForm').addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent default form submission
+            
+            const clientId = document.getElementById('clientId').value.trim();
+            const redirectUri = document.getElementById('redirectUri').value.trim();
+            const environment = document.getElementById('environment').value.trim();
 
             // Check if any field is empty
             if (!clientId || !redirectUri || !environment) {
@@ -54,8 +86,8 @@
             }
 
             // Redirect to Genesys Cloud for authentication
-            window.location.replace(`https://login.${environment}/oauth/authorize?` + encodeURI(Object.entries(queryStringData).map(([key, value]) => `${key}=${value}`).join('&')));
-        }
+            window.location.replace(`https://login.${environment}/oauth/authorize?` + new URLSearchParams(queryStringData));
+        });
     </script>
 </body>
 </html>
