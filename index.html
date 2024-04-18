@@ -5,26 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tykans GCX Utility</title>
     <style>
-        /* Styles unchanged */
-        .logo-container {
-            position: relative;
-            width: 200px; /* Adjust width as needed */
-            margin: 0 auto; /* Center the logo container */
-            margin-bottom: 20px;
+        /* Styles for font */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 16px;
+            line-height: 1.6;
+            color: #333;
         }
 
-        .logo {
-            display: block;
-            width: 100%;
-            height: auto;
-        }
-
-        .container {
-            max-width: 400px; /* Adjust maximum width as needed */
-            margin: 0 auto; /* Center the container */
-            text-align: center;
-        }
-
+        /* Styles for input fields */
         .container input {
             width: 100%;
             margin-bottom: 10px;
@@ -32,8 +21,18 @@
             border: 1px solid #ccc;
             border-radius: 5px;
             box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Apply font to inputs */
         }
 
+        /* Styles for error messages */
+        .error-message {
+            color: red;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none; /* Initially hide error messages */
+        }
+
+        /* Styles for buttons */
         .container button {
             padding: 10px 20px;
             background-color: #003366;
@@ -41,6 +40,7 @@
             border: none;
             border-radius: 5px;
             cursor: pointer;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Apply font to button */
         }
     </style>
 </head>
@@ -53,13 +53,19 @@
         <h2>Tykans Genesys Cloud Configuration Utility</h2>
         <form id="authForm">
             <label for="clientId">Client ID:</label>
-            <input type="text" id="clientId" placeholder="Enter your client ID">
+            <input type="text" id="clientId" placeholder="Enter your client ID" value="">
+
+            <div class="error-message" id="clientIdError">Please enter a valid Client ID.</div>
 
             <label for="redirectUri">Redirect URI:</label>
-            <input type="text" id="redirectUri" placeholder="Enter your redirect URI">
+            <input type="text" id="redirectUri" placeholder="Enter your redirect URI" value="https://razarehman990.github.io/TykansGCXUtility/auth.html">
+
+            <div class="error-message" id="redirectUriError">Please enter a valid Redirect URI.</div>
 
             <label for="environment">Genesys Cloud Environment:</label>
-            <input type="text" id="environment" placeholder="Enter Genesys Cloud environment">
+            <input type="text" id="environment" placeholder="Enter Genesys Cloud environment" value="cac1.pure.cloud">
+
+            <div class="error-message" id="environmentError">Please enter a valid Genesys Cloud Environment.</div>
 
             <button type="submit">Authenticate</button>
         </form>
@@ -68,25 +74,46 @@
     <script>
         document.getElementById('authForm').addEventListener('submit', function(event) {
             event.preventDefault(); // Prevent default form submission
-            
+
+            // Get input values
             const clientId = document.getElementById('clientId').value.trim();
             const redirectUri = document.getElementById('redirectUri').value.trim();
             const environment = document.getElementById('environment').value.trim();
 
-            // Check if any field is empty
-            if (!clientId || !redirectUri || !environment) {
-                alert('Please fill in all fields');
-                return;
+            // Validate inputs
+            let isValid = true;
+            if (!clientId) {
+                isValid = false;
+                document.getElementById('clientIdError').style.display = 'block';
+            } else {
+                document.getElementById('clientIdError').style.display = 'none';
             }
 
-            const queryStringData = {
-                response_type: "token",
-                client_id: clientId,
-                redirect_uri: redirectUri
+            if (!redirectUri) {
+                isValid = false;
+                document.getElementById('redirectUriError').style.display = 'block';
+            } else {
+                document.getElementById('redirectUriError').style.display = 'none';
             }
 
-            // Redirect to Genesys Cloud for authentication
-            window.location.replace(`https://login.${environment}/oauth/authorize?` + new URLSearchParams(queryStringData));
+            if (!environment) {
+                isValid = false;
+                document.getElementById('environmentError').style.display = 'block';
+            } else {
+                document.getElementById('environmentError').style.display = 'none';
+            }
+
+            // Proceed if all inputs are valid
+            if (isValid) {
+                const queryStringData = {
+                    response_type: "token",
+                    client_id: clientId,
+                    redirect_uri: redirectUri
+                }
+
+                // Redirect to Genesys Cloud for authentication
+                window.location.replace(`https://login.${environment}/oauth/authorize?` + new URLSearchParams(queryStringData));
+            }
         });
     </script>
 </body>
