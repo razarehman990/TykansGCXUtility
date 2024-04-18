@@ -3,31 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Objects</title>
+    <title>Tykans GCX Config Utility</title>
     <style>
-        /* Styles for centering content */
+        /* Base styles */
         body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
+            background-color: #0F3057; /* Dark navy background */
+            color: #fff;
             text-align: center; /* Center align the content */
         }
 
+        /* Container styles */
         .container {
             margin-top: 50px; /* Add space from the top for better visibility */
         }
 
-        /* Style for search bar */
-        .search-bar {
-            width: 80%;
-            max-width: 400px;
-            margin: 20px auto;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
+        /* Logo styles */
+        .logo {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 100px;
+            height: auto;
         }
 
-        /* Style for button list */
+        /* Search bar styles */
+        .search-bar {
+            width: 90%;
+            max-width: 600px; /* Longer search bar */
+            margin: 20px auto;
+            padding: 15px;
+            border: none;
+            border-radius: 25px; /* Rounded corners */
+            font-size: 16px;
+            background-color: #1A936F; /* Green background */
+            color: #fff;
+            outline: none;
+        }
+
+        /* Button list styles */
         .button-list {
             list-style-type: none;
             padding: 0;
@@ -35,23 +51,31 @@
             max-width: 400px;
         }
 
-        /* Style for individual buttons */
+        /* Button styles */
         .button-list li {
-            margin-bottom: 10px;
+            margin-bottom: 20px;
         }
 
         .button-list li button {
-            padding: 10px 20px;
-            background-color: #003366;
-            color: #fff;
+            padding: 20px 40px; /* Bigger buttons */
+            background-color: #FFD166; /* Yellow background */
+            color: #000;
             border: none;
-            border-radius: 5px;
+            border-radius: 25px; /* Rounded corners */
             cursor: pointer;
-            width: 100%;
+            font-size: 18px;
+            transition: background-color 0.3s ease;
+        }
+
+        .button-list li button:hover {
+            background-color: #FF6B6B; /* Dark red background on hover */
         }
     </style>
 </head>
 <body>
+    <!-- Tykans logo -->
+    <img class="logo" src="https://www.tykans.com/hs-fs/hubfs/Tykans_June2023/Images/Tykans%20-header-logo.png" alt="Tykans Logo">
+
     <div class="container">
         <h2>What would you like to do today?</h2>
         <!-- Search bar -->
