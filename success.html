@@ -137,7 +137,7 @@
         });
 
         // Redirect to prompts.html with token when Prompts button is clicked
-        document.querySelector('.button-list li button:nth-child(7)').addEventListener('click', function() {
+        document.querySelector('.button-list li button:nth-of-type(6)').addEventListener('click', function() {
             const token = new URLSearchParams(window.location.search).get('token');
             window.location.href = `prompts.html?token=${token}`;
         });
