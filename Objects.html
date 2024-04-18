@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Objects</title>
+    <style>
+        /* Styles for centering content */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            text-align: center; /* Center align the content */
+        }
+
+        .container {
+            margin-top: 50px; /* Add space from the top for better visibility */
+        }
+
+        /* Style for search bar */
+        .search-bar {
+            width: 80%;
+            max-width: 400px;
+            margin: 20px auto;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        /* Style for button list */
+        .button-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0 auto;
+            max-width: 400px;
+        }
+
+        /* Style for individual buttons */
+        .button-list li {
+            margin-bottom: 10px;
+        }
+
+        .button-list li button {
+            padding: 10px 20px;
+            background-color: #003366;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>What would you like to do today?</h2>
+        <!-- Search bar -->
+        <input type="text" class="search-bar" id="searchInput" placeholder="Search...">
+        <!-- Button list -->
+        <ul class="button-list">
+            <li><button>Architect Flows</button></li>
+            <li><button>Data Actions</button></li>
+            <li><button>Data Tables</button></li>
+            <li><button>Flow Milestone</button></li>
+            <li><button>Flow Outcome</button></li>
+            <li><button>Integrations</button></li>
+            <li><button>Prompts</button></li>
+            <li><button>Queues</button></li>
+            <li><button>Roles</button></li>
+            <li><button>Scripts</button></li>
+        </ul>
+    </div>
+
+    <script>
+        // Real-time search functionality
+        document.getElementById('searchInput').addEventListener('input', function(event) {
+            const searchTerm = event.target.value.toLowerCase();
+            const buttons = document.querySelectorAll('.button-list li button');
+            buttons.forEach(function(button) {
+                const buttonText = button.textContent.toLowerCase();
+                if (buttonText.includes(searchTerm)) {
+                    button.parentNode.style.display = 'block';
+                } else {
+                    button.parentNode.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
