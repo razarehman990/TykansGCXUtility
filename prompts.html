@@ -131,10 +131,17 @@
     <br>
     <button class="button" onclick="downloadMediaFiles()">Download Media Files</button>
     <button class="button" onclick="downloadCSV()">Download CSV File</button>
+    <button class="button" onclick="openImportPopup()">Import</button>
     <div class="popup-container" id="popupContainer">
         <div class="popup" id="popup">
             <span class="close" onclick="closePopup()">&times;</span>
-            <div class="popup-content"></div>
+            <div class="popup-content">
+                <h2>Import Settings</h2>
+                <input type="text" id="clientId" placeholder="Client ID"><br><br>
+                <input type="text" id="redirectUri" placeholder="Redirect URI"><br><br>
+                <input type="text" id="genesysUrl" placeholder="Genesys URL"><br><br>
+                <button onclick="authenticate()">Authenticate</button>
+            </div>
         </div>
     </div>
     
@@ -185,6 +192,26 @@
             }
 
             return csvContent;
+        }
+
+        async function authenticate() {
+            const clientId = document.getElementById('clientId').value;
+            const redirectUri = document.getElementById('redirectUri').value;
+            const genesysUrl = document.getElementById('genesysUrl').value;
+
+            // Implement authentication logic here
+            // Upon successful authentication, proceed to the next step
+            console.log("Authenticated with client ID:", clientId);
+            console.log("Redirect URI:", redirectUri);
+            console.log("Genesys URL:", genesysUrl);
+        }
+
+        async function openImportPopup() {
+            document.getElementById('popupContainer').style.display = 'block';
+        }
+
+        function closePopup() {
+            document.getElementById('popupContainer').style.display = 'none';
         }
 
         async function downloadMediaFiles() {
@@ -275,13 +302,5 @@
             document.getElementById('flipping-logo').style.display = 'none';
         }
     </script>
-<button onclick="logout()" style="position: fixed; top: 10px; right: 10px;">Logout</button>
-
-<script>
-    function logout() {
-        // Redirect to the index.html page to initiate logout
-        window.location.href = 'index.html';
-    }
-</script>
 </body>
 </html>
