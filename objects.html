@@ -17,7 +17,7 @@
 
         /* Container styles */
         .container {
-            margin-top: 50px; /* Add space from the top for better visibility */
+            margin-top: 150px; /* Add space from the top for better visibility */
         }
 
         /* Logo styles */
@@ -25,14 +25,15 @@
             position: absolute;
             top: 20px;
             left: 20px;
-            width: 200px; /* Bigger logo */
-            height: auto;
+            width: auto; /* Allow the height to adjust according to the logo's aspect ratio */
+            height: 80px; /* Set logo height to 80px */
+            z-index: 1000; /* Ensure the logo appears above the grey bar */
         }
 
         /* Top bar styles */
         .top-bar {
             width: 100%;
-            height: 60px; /* Adjusted height to cover logo */
+            height: 100px; /* Adjusted height to cover logo */
             background-color: #f3f3f3; /* Light grey background */
             position: fixed;
             top: 0;
@@ -43,7 +44,7 @@
         /* Main heading styles */
         h2 {
             font-size: 40px; /* Increased font size */
-            margin-top: 80px; /* Adjusted margin to accommodate top bar and logo */
+            margin-top: 150px; /* Adjusted margin to accommodate top bar and logo */
         }
 
         /* Search bar styles */
@@ -65,7 +66,7 @@
             flex-wrap: wrap;
             justify-content: center;
             padding: 0;
-            margin: 0 auto;
+            margin: 20px auto; /* Add margin between search bar and button list */
             max-width: 800px;
             list-style-type: none; /* Remove bullet points */
         }
