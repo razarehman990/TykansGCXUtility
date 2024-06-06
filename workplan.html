@@ -152,6 +152,7 @@
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
+            console.log('DONE');
         }
 
         async function fetchWithRetry(url, token, retries = 3, delay = 2000) {
