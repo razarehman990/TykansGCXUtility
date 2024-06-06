@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workplan Operations</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #fff;
+            color: #0F3057;
+            text-align: center;
+        }
+
+        .container {
+            margin-top: 150px;
+        }
+
+        .button {
+            margin: 20px;
+            padding: 15px 30px;
+            background-color: #0F3057;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        .button:hover {
+            background-color: #fff;
+            color: #0F3057;
+            border: 2px solid #0F3057;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button class="button" id="exportBtn">Export</button>
+        <button class="button" id="bulkUpdatesBtn">Bulk Updates</button>
+    </div>
+
+    <script>
+        document.getElementById('exportBtn').addEventListener('click', exportData);
+
+        async function exportData() {
+            const token = new URLSearchParams(window.location.search).get('token');
+            const url = 'https://api.cac1.pure.cloud/api/v2/workforcemanagement/managementunits';
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    const csvData = convertToCSV(data.entities);
+                    downloadCSV(csvData);
+                } else {
+                    console.error('Error fetching data:', response.statusText);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        function convertToCSV(entities) {
+            const header = 'name,id\n';
+            const rows = entities.map(entity => `${entity.name},${entity.id}`).join('\n');
+            return header + rows;
+        }
+
+        function downloadCSV(csvData) {
+            const blob = new Blob([csvData], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('hidden', '');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'workplan_data.csv');
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    </script>
+</body>
+</html>
