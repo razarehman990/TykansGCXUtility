@@ -103,7 +103,7 @@
         }
 
         async function getWorkplansForAllUnits(entities, token, baseUrl, outputTextArea) {
-            let csvContent = 'Management Unit,Management Unit Id,Workplan Name,Workplan Id,Enabled\n';
+            let csvContent = 'Management Unit,Management Unit Id,Workplan Name,Workplan Id,Enabled,constrainWeeklyPaidTime,flexibleWeeklyPaidTime,weeklyExactPaidMinutes,weeklyMinimumPaidMinutes,weeklyMaximumPaidMinutes,constrainPaidTimeGranularity,constrainMinimumTimeBetweenShifts,minimumTimeBetweenShiftsMinutes,minimumConsecutiveNonWorkingMinutesPerWeek,constrainMaximumConsecutiveWorkingWeekends,maximumConsecutiveWorkingWeekends,constrainMaximumConsecutiveWorkingDays,maximumConsecutiveWorkingDays,minimumShiftStartDistanceMinutes,minimumDaysOffPerPlanningPeriod,maximumDaysOffPerPlanningPeriod,minimumPaidMinutesPerPlanningPeriod,maximumPaidMinutesPerPlanningPeriod,shiftStartVarianceType,agentCount,version,shiftStartVariances,minimumWorkingDaysPerWeek,maximumDays\n';
             for (const entity of entities) {
                 const managementUnitId = entity.id;
                 try {
@@ -120,7 +120,25 @@
                         outputTextArea.value += `✅ Successfully fetched workplans for management unit ${managementUnitId}.\n`;
                         console.log(`Workplans Data for Management Unit ${managementUnitId}:`, workplansData);
                         for (const workplan of workplansData.entities) {
-                            csvContent += `${entity.name},${managementUnitId},${workplan.name},${workplan.id},${workplan.enabled}\n`;
+                            const workplanDetailsResponse = await fetch(`${baseUrl}/${managementUnitId}/workplans/${workplan.id}`, {
+                                method: 'GET',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                }
+                            });
+
+                            if (workplanDetailsResponse.ok) {
+                                const workplanDetails = await workplanDetailsResponse.json();
+                                outputTextArea.value += `✅ Successfully fetched details for workplan ${workplan.id}.\n`;
+                                console.log(`Workplan Details for ${workplan.id}:`, workplanDetails);
+
+                                csvContent += `${entity.name},${managementUnitId},${workplan.name},${workplan.id},${workplan.enabled},${workplanDetails.constrainWeeklyPaidTime},${workplanDetails.flexibleWeeklyPaidTime},${workplanDetails.weeklyExactPaidMinutes},${workplanDetails.weeklyMinimumPaidMinutes},${workplanDetails.weeklyMaximumPaidMinutes},${workplanDetails.constrainPaidTimeGranularity},${workplanDetails.constrainMinimumTimeBetweenShifts},${workplanDetails.minimumTimeBetweenShiftsMinutes},${workplanDetails.minimumConsecutiveNonWorkingMinutesPerWeek},${workplanDetails.constrainMaximumConsecutiveWorkingWeekends},${workplanDetails.maximumConsecutiveWorkingWeekends},${workplanDetails.constrainMaximumConsecutiveWorkingDays},${workplanDetails.maximumConsecutiveWorkingDays},${workplanDetails.minimumShiftStartDistanceMinutes},${workplanDetails.minimumDaysOffPerPlanningPeriod},${workplanDetails.maximumDaysOffPerPlanningPeriod},${workplanDetails.minimumPaidMinutesPerPlanningPeriod},${workplanDetails.maximumPaidMinutesPerPlanningPeriod},${workplanDetails.shiftStartVarianceType},${workplanDetails.agentCount},${workplanDetails.metadata.version},${JSON.stringify(workplanDetails.shiftStartVariances)},${workplanDetails.minimumWorkingDaysPerWeek},${workplanDetails.maximumDays}\n`;
+                            } else {
+                                const errorMessage = `Error fetching details for workplan ${workplan.id}: ${workplanDetailsResponse.statusText}`;
+                                outputTextArea.value += `❌ ${errorMessage}\n`;
+                                console.error(errorMessage);
+                            }
                         }
                     } else {
                         const errorMessage = `Error fetching workplans for management unit ${managementUnitId}: ${workplansResponse.statusText}`;
