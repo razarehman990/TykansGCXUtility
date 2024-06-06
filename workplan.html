@@ -51,6 +51,15 @@
             border-radius: 5px;
             padding: 10px;
         }
+
+        #fileInput {
+            display: none;
+            margin: 20px auto;
+        }
+
+        #importBtn {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -63,11 +72,23 @@
             <textarea id="output" readonly></textarea>
         </div>
         <button class="button" id="exportBtn">Export</button>
-        <button class="button" id="bulkUpdatesBtn">Bulk Updates</button>
+        <button class="button" id="uploadBtn">Upload</button>
+        <input type="file" id="fileInput" accept=".csv">
+        <button class="button" id="importBtn">Import</button>
     </div>
 
     <script>
         document.getElementById('exportBtn').addEventListener('click', exportData);
+        document.getElementById('uploadBtn').addEventListener('click', () => {
+            document.getElementById('fileInput').click();
+        });
+
+        document.getElementById('fileInput').addEventListener('change', () => {
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput.files.length > 0) {
+                document.getElementById('importBtn').style.display = 'inline-block';
+            }
+        });
 
         async function exportData() {
             const token = new URLSearchParams(window.location.search).get('token');
