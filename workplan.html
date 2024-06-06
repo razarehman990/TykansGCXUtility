@@ -71,12 +71,12 @@
 
         async function exportData() {
             const token = new URLSearchParams(window.location.search).get('token');
-            const url = 'https://api.cac1.pure.cloud/api/v2/workforcemanagement/managementunits';
+            const baseUrl = 'https://api.cac1.pure.cloud/api/v2/workforcemanagement/managementunits';
             const outputTextArea = document.getElementById('output');
             outputTextArea.value = ''; // Clear existing content
 
             try {
-                const response = await fetch(url, {
+                const response = await fetch(baseUrl, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -86,11 +86,11 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    outputTextArea.value += `✅ Successfully fetched data.\n`;
-                    const csvData = convertToCSV(data.entities);
+                    outputTextArea.value += `✅ Successfully fetched management units data.\n`;
+                    const csvData = await getWorkplansForAllUnits(data.entities, token, baseUrl);
                     downloadCSV(csvData);
                 } else {
-                    const errorMessage = `Error fetching data: ${response.statusText}`;
+                    const errorMessage = `Error fetching management units data: ${response.statusText}`;
                     outputTextArea.value += `❌ ${errorMessage}\n`;
                     console.error(errorMessage);
                 }
@@ -101,10 +101,30 @@
             }
         }
 
-        function convertToCSV(entities) {
-            const header = 'Management Unit,Management Unit Id\n';
-            const rows = entities.map(entity => `${entity.name},${entity.id}`).join('\n');
-            return header + rows;
+        async function getWorkplansForAllUnits(entities, token, baseUrl) {
+            let csvContent = 'Management Unit,Management Unit Id,Workplan Name,Workplan Id,Enabled\n';
+            for (const entity of entities) {
+                const managementUnitId = entity.id;
+                csvContent += `${entity.name},${managementUnitId},,\n`;
+                const workplansResponse = await fetch(`${baseUrl}/${managementUnitId}/workplans`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                if (workplansResponse.ok) {
+                    const workplansData = await workplansResponse.json();
+                    for (const workplan of workplansData.entities) {
+                        csvContent += `,,${workplan.name},${workplan.id},${workplan.enabled}\n`;
+                    }
+                } else {
+                    const errorMessage = `Error fetching workplans for management unit ${managementUnitId}: ${workplansResponse.statusText}`;
+                    document.getElementById('output').value += `❌ ${errorMessage}\n`;
+                    console.error(errorMessage);
+                }
+            }
+            return csvContent;
         }
 
         function downloadCSV(csvData) {
