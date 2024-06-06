@@ -107,33 +107,21 @@
             for (const entity of entities) {
                 const managementUnitId = entity.id;
                 try {
-                    const workplansResponse = await fetch(`${baseUrl}/${managementUnitId}/workplans`, {
-                        method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        }
-                    });
+                    const workplansResponse = await fetchWithRetry(`${baseUrl}/${managementUnitId}/workplans`, token);
 
                     if (workplansResponse.ok) {
                         const workplansData = await workplansResponse.json();
                         outputTextArea.value += `✅ Successfully fetched workplans for management unit ${managementUnitId}.\n`;
                         console.log(`Workplans Data for Management Unit ${managementUnitId}:`, workplansData);
                         for (const workplan of workplansData.entities) {
-                            const workplanDetailsResponse = await fetch(`${baseUrl}/${managementUnitId}/workplans/${workplan.id}`, {
-                                method: 'GET',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${token}`
-                                }
-                            });
+                            const workplanDetailsResponse = await fetchWithRetry(`${baseUrl}/${managementUnitId}/workplans/${workplan.id}`, token);
 
                             if (workplanDetailsResponse.ok) {
                                 const workplanDetails = await workplanDetailsResponse.json();
                                 outputTextArea.value += `✅ Successfully fetched details for workplan ${workplan.id}.\n`;
                                 console.log(`Workplan Details for ${workplan.id}:`, workplanDetails);
 
-                                csvContent += `${entity.name},${managementUnitId},${workplan.name},${workplan.id},${workplan.enabled},${workplanDetails.constrainWeeklyPaidTime},${workplanDetails.flexibleWeeklyPaidTime},${workplanDetails.weeklyExactPaidMinutes},${workplanDetails.weeklyMinimumPaidMinutes},${workplanDetails.weeklyMaximumPaidMinutes},${workplanDetails.constrainPaidTimeGranularity},${workplanDetails.constrainMinimumTimeBetweenShifts},${workplanDetails.minimumTimeBetweenShiftsMinutes},${workplanDetails.minimumConsecutiveNonWorkingMinutesPerWeek},${workplanDetails.constrainMaximumConsecutiveWorkingWeekends},${workplanDetails.maximumConsecutiveWorkingWeekends},${workplanDetails.constrainMaximumConsecutiveWorkingDays},${workplanDetails.maximumConsecutiveWorkingDays},${workplanDetails.minimumShiftStartDistanceMinutes},${workplanDetails.minimumDaysOffPerPlanningPeriod},${workplanDetails.maximumDaysOffPerPlanningPeriod},${workplanDetails.minimumPaidMinutesPerPlanningPeriod},${workplanDetails.maximumPaidMinutesPerPlanningPeriod},${workplanDetails.shiftStartVarianceType},${workplanDetails.agentCount},${workplanDetails.metadata.version},${JSON.stringify(workplanDetails.shiftStartVariances)},${workplanDetails.minimumWorkingDaysPerWeek},${workplanDetails.maximumDays},NO CHANGE\n`;
+                                csvContent += `${entity.name},${managementUnitId},${workplan.name},${workplan.id},${workplan.enabled},${workplanDetails.constrainWeeklyPaidTime},${workplanDetails.flexibleWeeklyPaidTime},${workplanDetails.weeklyExactPaidMinutes},${workplanDetails.weeklyMinimumPaidMinutes},${workplanDetails.weeklyMaximumPaidMinutes},${workplanDetails.constrainPaidTimeGranularity},${workplanDetails.constrainMinimumTimeBetweenShifts},${workplanDetails.minimumTimeBetweenShiftsMinutes},${workplanDetails.minimumConsecutiveNonWorkingMinutesPerWeek},${workplanDetails.constrainMaximumConsecutiveWorkingWeekends},${workplanDetails.maximumConsecutiveWorkingWeekends},${workplanDetails.constrainMaximumConsecutiveWorkingDays},${workplanDetails.maximumConsecutiveWorkingDays},${workplanDetails.minimumShiftStartDistanceMinutes},${workplanDetails.minimumDaysOffPerPlanningPeriod},${workplanDetails.maximumDaysOffPerPlanningPeriod},${workplanDetails.minimumPaidMinutesPerPlanningPeriod},${workplanDetails.maximumPaidMinutesPerPlanningPeriod},${workplanDetails.shiftStartVarianceType},${workplanDetails.agentCount},${workplanDetails.metadata.version},${JSON.stringify(workplanDetails.shiftStartVariances)},${workplanDetails.minimumWorkingDaysPerWeek},${workplanDetails.maximumDays},FALSE\n`;
                             } else {
                                 const errorMessage = `Error fetching details for workplan ${workplan.id}: ${workplanDetailsResponse.statusText}`;
                                 outputTextArea.value += `❌ ${errorMessage}\n`;
@@ -164,6 +152,35 @@
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
+        }
+
+        async function fetchWithRetry(url, token, retries = 3, delay = 2000) {
+            for (let i = 0; i < retries; i++) {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    return response;
+                }
+
+                if (response.status === 429) {
+                    const retryAfter = response.headers.get('Retry-After');
+                    const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : delay;
+                    console.warn(`Too many requests. Retrying after ${waitTime / 1000} seconds...`);
+                    await new Promise(resolve => setTimeout(resolve, waitTime));
+                } else {
+                    const errorMessage = `Request failed with status ${response.status}: ${response.statusText}`;
+                    console.error(errorMessage);
+                    if (i === retries - 1) {
+                        throw new Error(errorMessage);
+                    }
+                }
+            }
         }
     </script>
 </body>
