@@ -108,6 +108,13 @@
                 const rows = text.split('\n').slice(1); // Skip the header row
                 const csvData = rows.map(row => {
                     const values = row.split(',');
+                    let shiftStartVariances;
+                    try {
+                        shiftStartVariances = JSON.parse(values[26]);
+                    } catch (e) {
+                        console.error(`Error parsing shiftStartVariances for row: ${row}`, e);
+                        shiftStartVariances = null;
+                    }
                     return {
                         managementUnitId: values[1],
                         workPlanId: values[3],
@@ -138,7 +145,7 @@
                             metadata: {
                                 version: parseInt(values[25])
                             },
-                            shiftStartVariances: JSON.parse(values[26]),
+                            shiftStartVariances: shiftStartVariances,
                             minimumWorkingDaysPerWeek: parseInt(values[27]),
                             maximumDays: parseInt(values[28])
                         }
