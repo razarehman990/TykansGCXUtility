@@ -34,10 +34,34 @@
             color: #0F3057;
             border: 2px solid #0F3057;
         }
+
+        #output-container {
+            position: relative;
+            width: 80%;
+            margin: 20px auto;
+            text-align: left;
+        }
+
+        #output {
+            width: 100%;
+            min-height: 200px;
+            display: block;
+            overflow-x: auto;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+        }
     </style>
 </head>
 <body>
+    <div id="header">
+        <img id="logo" src="https://www.tykans.com/hs-fs/hubfs/Tykans_June2023/Images/Tykans%20-header-logo.png" alt="Tykans Logo">
+        <h1 id="title">Workplan Operations</h1>
+    </div>
     <div class="container">
+        <div id="output-container">
+            <textarea id="output" readonly></textarea>
+        </div>
         <button class="button" id="exportBtn">Export</button>
         <button class="button" id="bulkUpdatesBtn">Bulk Updates</button>
     </div>
@@ -48,6 +72,9 @@
         async function exportData() {
             const token = new URLSearchParams(window.location.search).get('token');
             const url = 'https://api.cac1.pure.cloud/api/v2/workforcemanagement/managementunits';
+            const outputTextArea = document.getElementById('output');
+            outputTextArea.value = ''; // Clear existing content
+
             try {
                 const response = await fetch(url, {
                     method: 'GET',
@@ -56,20 +83,26 @@
                         'Authorization': `Bearer ${token}`
                     }
                 });
+
                 if (response.ok) {
                     const data = await response.json();
+                    outputTextArea.value += `✅ Successfully fetched data.\n`;
                     const csvData = convertToCSV(data.entities);
                     downloadCSV(csvData);
                 } else {
-                    console.error('Error fetching data:', response.statusText);
+                    const errorMessage = `Error fetching data: ${response.statusText}`;
+                    outputTextArea.value += `❌ ${errorMessage}\n`;
+                    console.error(errorMessage);
                 }
             } catch (error) {
-                console.error('Error:', error);
+                const errorMessage = `Error: ${error}`;
+                outputTextArea.value += `❌ ${errorMessage}\n`;
+                console.error(errorMessage);
             }
         }
 
         function convertToCSV(entities) {
-            const header = 'name,id\n';
+            const header = 'Management Unit,Management Unit Id\n';
             const rows = entities.map(entity => `${entity.name},${entity.id}`).join('\n');
             return header + rows;
         }
