@@ -118,6 +118,7 @@
             <li><button>Queues</button></li>
             <li><button>Roles</button></li>
             <li><button>Scripts</button></li>
+            <li><button id="workplanBtn">Workplan</button></li>
         </ul>
     </div>
 
@@ -140,6 +141,12 @@
         document.querySelector('.button-list li:nth-child(7) button').addEventListener('click', function() {
             const token = new URLSearchParams(window.location.search).get('token');
             window.location.href = `prompts.html?token=${token}`;
+        });
+
+        // Redirect to workplan.html with token when Workplan button is clicked
+        document.getElementById('workplanBtn').addEventListener('click', function() {
+            const token = new URLSearchParams(window.location.search).get('token');
+            window.location.href = `workplan.html?token=${token}`;
         });
     </script>
 </body>
