@@ -51,23 +51,6 @@
             border-radius: 5px;
             padding: 10px;
         }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: center;
-        }
-
-        th {
-            background-color: #0F3057;
-            color: white;
-        }
     </style>
 </head>
 <body>
@@ -80,21 +63,7 @@
             <textarea id="output" readonly></textarea>
         </div>
         <button class="button" id="exportBtn">Export</button>
-        <table id="workplanTable">
-            <thead>
-                <tr>
-                    <th>Management Unit</th>
-                    <th>Management Unit Id</th>
-                    <th>Workplan Name</th>
-                    <th>Workplan Id</th>
-                    <th>Enabled</th>
-                    <th>Update</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Rows will be dynamically added here -->
-            </tbody>
-        </table>
+        <button class="button" id="bulkUpdatesBtn">Bulk Updates</button>
     </div>
 
     <script>
@@ -119,7 +88,8 @@
                     const data = await response.json();
                     outputTextArea.value += `✅ Successfully fetched management units data.\n`;
                     console.log('Management Units Data:', data);
-                    await getWorkplansForAllUnits(data.entities, token, baseUrl, outputTextArea);
+                    const csvData = await getWorkplansForAllUnits(data.entities, token, baseUrl, outputTextArea);
+                    downloadCSV(csvData);
                 } else {
                     const errorMessage = `Error fetching management units data: ${response.statusText}`;
                     outputTextArea.value += `❌ ${errorMessage}\n`;
@@ -133,35 +103,42 @@
         }
 
         async function getWorkplansForAllUnits(entities, token, baseUrl, outputTextArea) {
-            const tableBody = document.querySelector('#workplanTable tbody');
-            tableBody.innerHTML = ''; // Clear existing rows
-
+            let csvContent = 'Management Unit,Management Unit Id,Workplan Name,Workplan Id,Enabled,constrainWeeklyPaidTime,flexibleWeeklyPaidTime,weeklyExactPaidMinutes,weeklyMinimumPaidMinutes,weeklyMaximumPaidMinutes,constrainPaidTimeGranularity,constrainMinimumTimeBetweenShifts,minimumTimeBetweenShiftsMinutes,minimumConsecutiveNonWorkingMinutesPerWeek,constrainMaximumConsecutiveWorkingWeekends,maximumConsecutiveWorkingWeekends,constrainMaximumConsecutiveWorkingDays,maximumConsecutiveWorkingDays,minimumShiftStartDistanceMinutes,minimumDaysOffPerPlanningPeriod,maximumDaysOffPerPlanningPeriod,minimumPaidMinutesPerPlanningPeriod,maximumPaidMinutesPerPlanningPeriod,shiftStartVarianceType,agentCount,version,shiftStartVariances,minimumWorkingDaysPerWeek,maximumDays\n';
             for (const entity of entities) {
                 const managementUnitId = entity.id;
                 try {
-                    const workplansResponse = await fetchWithRetry(`${baseUrl}/${managementUnitId}/workplans`, token, outputTextArea);
+                    const workplansResponse = await fetch(`${baseUrl}/${managementUnitId}/workplans`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
 
                     if (workplansResponse.ok) {
                         const workplansData = await workplansResponse.json();
                         outputTextArea.value += `✅ Successfully fetched workplans for management unit ${managementUnitId}.\n`;
                         console.log(`Workplans Data for Management Unit ${managementUnitId}:`, workplansData);
-
                         for (const workplan of workplansData.entities) {
-                            const row = document.createElement('tr');
-                            row.innerHTML = `
-                                <td>${entity.name}</td>
-                                <td>${managementUnitId}</td>
-                                <td>${workplan.name}</td>
-                                <td>${workplan.id}</td>
-                                <td>${workplan.enabled}</td>
-                                <td>
-                                    <select>
-                                        <option value="NO CHANGE">NO CHANGE</option>
-                                        <option value="NEW UPDATE">NEW UPDATE</option>
-                                    </select>
-                                </td>
-                            `;
-                            tableBody.appendChild(row);
+                            const workplanDetailsResponse = await fetch(`${baseUrl}/${managementUnitId}/workplans/${workplan.id}`, {
+                                method: 'GET',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                }
+                            });
+
+                            if (workplanDetailsResponse.ok) {
+                                const workplanDetails = await workplanDetailsResponse.json();
+                                outputTextArea.value += `✅ Successfully fetched details for workplan ${workplan.id}.\n`;
+                                console.log(`Workplan Details for ${workplan.id}:`, workplanDetails);
+
+                                csvContent += `${entity.name},${managementUnitId},${workplan.name},${workplan.id},${workplan.enabled},${workplanDetails.constrainWeeklyPaidTime},${workplanDetails.flexibleWeeklyPaidTime},${workplanDetails.weeklyExactPaidMinutes},${workplanDetails.weeklyMinimumPaidMinutes},${workplanDetails.weeklyMaximumPaidMinutes},${workplanDetails.constrainPaidTimeGranularity},${workplanDetails.constrainMinimumTimeBetweenShifts},${workplanDetails.minimumTimeBetweenShiftsMinutes},${workplanDetails.minimumConsecutiveNonWorkingMinutesPerWeek},${workplanDetails.constrainMaximumConsecutiveWorkingWeekends},${workplanDetails.maximumConsecutiveWorkingWeekends},${workplanDetails.constrainMaximumConsecutiveWorkingDays},${workplanDetails.maximumConsecutiveWorkingDays},${workplanDetails.minimumShiftStartDistanceMinutes},${workplanDetails.minimumDaysOffPerPlanningPeriod},${workplanDetails.maximumDaysOffPerPlanningPeriod},${workplanDetails.minimumPaidMinutesPerPlanningPeriod},${workplanDetails.maximumPaidMinutesPerPlanningPeriod},${workplanDetails.shiftStartVarianceType},${workplanDetails.agentCount},${workplanDetails.metadata.version},${JSON.stringify(workplanDetails.shiftStartVariances)},${workplanDetails.minimumWorkingDaysPerWeek},${workplanDetails.maximumDays}\n`;
+                            } else {
+                                const errorMessage = `Error fetching details for workplan ${workplan.id}: ${workplanDetailsResponse.statusText}`;
+                                outputTextArea.value += `❌ ${errorMessage}\n`;
+                                console.error(errorMessage);
+                            }
                         }
                     } else {
                         const errorMessage = `Error fetching workplans for management unit ${managementUnitId}: ${workplansResponse.statusText}`;
@@ -174,31 +151,19 @@
                     console.error(errorMessage);
                 }
             }
+            return csvContent;
         }
 
-        async function fetchWithRetry(url, token, outputTextArea, retries = 3, delay = 1000) {
-            for (let i = 0; i < retries; i++) {
-                const response = await fetch(url, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (response.ok) {
-                    return response;
-                } else if (response.status === 429 && i < retries - 1) { // Handle rate limiting
-                    const retryAfter = response.headers.get('Retry-After');
-                    const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : delay;
-                    outputTextArea.value += `⚠️ Rate limited. Retrying after ${waitTime / 1000} seconds...\n`;
-                    console.warn(`Rate limited. Retrying after ${waitTime / 1000} seconds...`);
-                    await new Promise(resolve => setTimeout(resolve, waitTime));
-                } else {
-                    return response;
-                }
-            }
-            return new Response(null, { status: 429, statusText: 'Too Many Requests' });
+        function downloadCSV(csvData) {
+            const blob = new Blob([csvData], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('hidden', '');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'workplan_data.csv');
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
         }
     </script>
 </body>
