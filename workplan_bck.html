@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workplan Operations</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #fff;
+            color: #0F3057;
+            text-align: center;
+        }
+
+        .container {
+            margin-top: 150px;
+        }
+
+        .button {
+            margin: 20px;
+            padding: 15px 30px;
+            background-color: #0F3057;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        .button:hover {
+            background-color: #fff;
+            color: #0F3057;
+            border: 2px solid #0F3057;
+        }
+
+        #output-container {
+            position: relative;
+            width: 80%;
+            margin: 20px auto;
+            text-align: left;
+        }
+
+        #output {
+            width: 100%;
+            min-height: 200px;
+            display: block;
+            overflow-x: auto;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <img id="logo" src="https://www.tykans.com/hs-fs/hubfs/Tykans_June2023/Images/Tykans%20-header-logo.png" alt="Tykans Logo">
+        <h1 id="title">Workplan Operations</h1>
+    </div>
+    <div class="container">
+        <div id="output-container">
+            <textarea id="output" readonly></textarea>
+        </div>
+        <button class="button" id="exportBtn">Export</button>
+        <button class="button" id="bulkUpdatesBtn">Bulk Updates</button>
+    </div>
+
+    <script>
+        document.getElementById('exportBtn').addEventListener('click', exportData);
+
+        async function exportData() {
+            const token = new URLSearchParams(window.location.search).get('token');
+            const baseUrl = 'https://api.cac1.pure.cloud/api/v2/workforcemanagement/managementunits';
+            const outputTextArea = document.getElementById('output');
+            outputTextArea.value = ''; // Clear existing content
+
+            try {
+                const response = await fetch(baseUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    outputTextArea.value += `✅ Successfully fetched management units data.\n`;
+                    console.log('Management Units Data:', data);
+                    const csvData = await getWorkplansForAllUnits(data.entities, token, baseUrl, outputTextArea);
+                    downloadCSV(csvData);
+                } else {
+                    const errorMessage = `Error fetching management units data: ${response.statusText}`;
+                    outputTextArea.value += `❌ ${errorMessage}\n`;
+                    console.error(errorMessage);
+                }
+            } catch (error) {
+                const errorMessage = `Error: ${error}`;
+                outputTextArea.value += `❌ ${errorMessage}\n`;
+                console.error(errorMessage);
+            }
+        }
+
+        async function getWorkplansForAllUnits(entities, token, baseUrl, outputTextArea) {
+            let csvContent = 'Management Unit,Management Unit Id,Workplan Name,Workplan Id,Enabled,constrainWeeklyPaidTime,flexibleWeeklyPaidTime,weeklyExactPaidMinutes,weeklyMinimumPaidMinutes,weeklyMaximumPaidMinutes,constrainPaidTimeGranularity,constrainMinimumTimeBetweenShifts,minimumTimeBetweenShiftsMinutes,minimumConsecutiveNonWorkingMinutesPerWeek,constrainMaximumConsecutiveWorkingWeekends,maximumConsecutiveWorkingWeekends,constrainMaximumConsecutiveWorkingDays,maximumConsecutiveWorkingDays,minimumShiftStartDistanceMinutes,minimumDaysOffPerPlanningPeriod,maximumDaysOffPerPlanningPeriod,minimumPaidMinutesPerPlanningPeriod,maximumPaidMinutesPerPlanningPeriod,shiftStartVarianceType,agentCount,version,shiftStartVariances,minimumWorkingDaysPerWeek,maximumDays\n';
+            for (const entity of entities) {
+                const managementUnitId = entity.id;
+                try {
+                    const workplansResponse = await fetch(`${baseUrl}/${managementUnitId}/workplans`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (workplansResponse.ok) {
+                        const workplansData = await workplansResponse.json();
+                        outputTextArea.value += `✅ Successfully fetched workplans for management unit ${managementUnitId}.\n`;
+                        console.log(`Workplans Data for Management Unit ${managementUnitId}:`, workplansData);
+                        for (const workplan of workplansData.entities) {
+                            const workplanDetailsResponse = await fetch(`${baseUrl}/${managementUnitId}/workplans/${workplan.id}`, {
+                                method: 'GET',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                }
+                            });
+
+                            if (workplanDetailsResponse.ok) {
+                                const workplanDetails = await workplanDetailsResponse.json();
+                                outputTextArea.value += `✅ Successfully fetched details for workplan ${workplan.id}.\n`;
+                                console.log(`Workplan Details for ${workplan.id}:`, workplanDetails);
+
+                                csvContent += `${entity.name},${managementUnitId},${workplan.name},${workplan.id},${workplan.enabled},${workplanDetails.constrainWeeklyPaidTime},${workplanDetails.flexibleWeeklyPaidTime},${workplanDetails.weeklyExactPaidMinutes},${workplanDetails.weeklyMinimumPaidMinutes},${workplanDetails.weeklyMaximumPaidMinutes},${workplanDetails.constrainPaidTimeGranularity},${workplanDetails.constrainMinimumTimeBetweenShifts},${workplanDetails.minimumTimeBetweenShiftsMinutes},${workplanDetails.minimumConsecutiveNonWorkingMinutesPerWeek},${workplanDetails.constrainMaximumConsecutiveWorkingWeekends},${workplanDetails.maximumConsecutiveWorkingWeekends},${workplanDetails.constrainMaximumConsecutiveWorkingDays},${workplanDetails.maximumConsecutiveWorkingDays},${workplanDetails.minimumShiftStartDistanceMinutes},${workplanDetails.minimumDaysOffPerPlanningPeriod},${workplanDetails.maximumDaysOffPerPlanningPeriod},${workplanDetails.minimumPaidMinutesPerPlanningPeriod},${workplanDetails.maximumPaidMinutesPerPlanningPeriod},${workplanDetails.shiftStartVarianceType},${workplanDetails.agentCount},${workplanDetails.metadata.version},${JSON.stringify(workplanDetails.shiftStartVariances)},${workplanDetails.minimumWorkingDaysPerWeek},${workplanDetails.maximumDays}\n`;
+                            } else {
+                                const errorMessage = `Error fetching details for workplan ${workplan.id}: ${workplanDetailsResponse.statusText}`;
+                                outputTextArea.value += `❌ ${errorMessage}\n`;
+                                console.error(errorMessage);
+                            }
+                        }
+                    } else {
+                        const errorMessage = `Error fetching workplans for management unit ${managementUnitId}: ${workplansResponse.statusText}`;
+                        outputTextArea.value += `❌ ${errorMessage}\n`;
+                        console.error(errorMessage);
+                    }
+                } catch (error) {
+                    const errorMessage = `Error: ${error}`;
+                    outputTextArea.value += `❌ ${errorMessage}\n`;
+                    console.error(errorMessage);
+                }
+            }
+            return csvContent;
+        }
+
+        function downloadCSV(csvData) {
+            const blob = new Blob([csvData], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('hidden', '');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'workplan_data.csv');
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    </script>
+</body>
+</html>
