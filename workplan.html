@@ -100,7 +100,7 @@
             }
         });
 
-        function parseCSV(file) {
+function parseCSV(file) {
     console.log(`Parsing CSV file: ${file.name}`);
     const reader = new FileReader();
     reader.onload = function(e) {
@@ -110,7 +110,7 @@
             const values = row.split(',');
             let shiftStartVariances;
             try {
-                if (values[26] !== undefined) {
+                if (values[26] !== undefined && values[26] !== null) {
                     shiftStartVariances = JSON.parse(values[26].replace(/""/g, '').trim()); // Handle escaped quotes
                 } else {
                     shiftStartVariances = { values: [] }; // Default to an empty array if undefined
@@ -120,40 +120,40 @@
                 shiftStartVariances = { values: [] }; // Default to an empty array if parsing fails
             }
             return {
-                managementUnitId: values[1],
-                workPlanId: values[3],
-                updates: values[values.length - 2].trim().toUpperCase() === 'TRUE', // Adjusted index for updates
-                valid: values[values.length - 1].trim().toUpperCase() === 'TRUE', // New field for valid
+                managementUnitId: values[1] ? values[1].trim() : '',
+                workPlanId: values[3] ? values[3].trim() : '',
+                updates: values[values.length - 2] ? values[values.length - 2].trim().toUpperCase() === 'TRUE' : false, // Adjusted index for updates
+                valid: values[values.length - 1] ? values[values.length - 1].trim().toUpperCase() === 'TRUE' : false, // New field for valid
                 data: {
-                    name: values[2],
-                    enabled: values[4] === 'TRUE',
-                    constrainWeeklyPaidTime: values[5] === 'TRUE',
-                    flexibleWeeklyPaidTime: values[6] === 'TRUE',
-                    weeklyExactPaidMinutes: parseInt(values[7]),
-                    weeklyMinimumPaidMinutes: parseInt(values[8]),
-                    weeklyMaximumPaidMinutes: parseInt(values[9]),
-                    constrainPaidTimeGranularity: values[10] === 'TRUE',
-                    constrainMinimumTimeBetweenShifts: values[11] === 'TRUE',
-                    minimumTimeBetweenShiftsMinutes: parseInt(values[12]),
-                    minimumConsecutiveNonWorkingMinutesPerWeek: parseInt(values[13]),
-                    constrainMaximumConsecutiveWorkingWeekends: values[14] === 'TRUE',
-                    maximumConsecutiveWorkingWeekends: parseInt(values[15]),
-                    constrainMaximumConsecutiveWorkingDays: values[16] === 'TRUE',
-                    maximumConsecutiveWorkingDays: parseInt(values[17]),
-                    minimumShiftStartDistanceMinutes: parseInt(values[18]),
-                    minimumDaysOffPerPlanningPeriod: parseInt(values[19]),
-                    maximumDaysOffPerPlanningPeriod: parseInt(values[20]),
-                    minimumPaidMinutesPerPlanningPeriod: parseInt(values[21]),
-                    maximumPaidMinutesPerPlanningPeriod: parseInt(values[22]),
-                    shiftStartVarianceType: values[23],
-                    agentCount: parseInt(values[24]),
+                    name: values[2] ? values[2].trim() : '',
+                    enabled: values[4] ? values[4].trim() === 'TRUE' : false,
+                    constrainWeeklyPaidTime: values[5] ? values[5].trim() === 'TRUE' : false,
+                    flexibleWeeklyPaidTime: values[6] ? values[6].trim() === 'TRUE' : false,
+                    weeklyExactPaidMinutes: parseInt(values[7] ? values[7].trim() : '0'),
+                    weeklyMinimumPaidMinutes: parseInt(values[8] ? values[8].trim() : '0'),
+                    weeklyMaximumPaidMinutes: parseInt(values[9] ? values[9].trim() : '0'),
+                    constrainPaidTimeGranularity: values[10] ? values[10].trim() === 'TRUE' : false,
+                    constrainMinimumTimeBetweenShifts: values[11] ? values[11].trim() === 'TRUE' : false,
+                    minimumTimeBetweenShiftsMinutes: parseInt(values[12] ? values[12].trim() : '0'),
+                    minimumConsecutiveNonWorkingMinutesPerWeek: parseInt(values[13] ? values[13].trim() : '0'),
+                    constrainMaximumConsecutiveWorkingWeekends: values[14] ? values[14].trim() === 'TRUE' : false,
+                    maximumConsecutiveWorkingWeekends: parseInt(values[15] ? values[15].trim() : '0'),
+                    constrainMaximumConsecutiveWorkingDays: values[16] ? values[16].trim() === 'TRUE' : false,
+                    maximumConsecutiveWorkingDays: parseInt(values[17] ? values[17].trim() : '0'),
+                    minimumShiftStartDistanceMinutes: parseInt(values[18] ? values[18].trim() : '0'),
+                    minimumDaysOffPerPlanningPeriod: parseInt(values[19] ? values[19].trim() : '0'),
+                    maximumDaysOffPerPlanningPeriod: parseInt(values[20] ? values[20].trim() : '0'),
+                    minimumPaidMinutesPerPlanningPeriod: parseInt(values[21] ? values[21].trim() : '0'),
+                    maximumPaidMinutesPerPlanningPeriod: parseInt(values[22] ? values[22].trim() : '0'),
+                    shiftStartVarianceType: values[23] ? values[23].trim() : '',
+                    agentCount: parseInt(values[24] ? values[24].trim() : '0'),
                     metadata: {
-                        version: parseInt(values[25])
+                        version: parseInt(values[25] ? values[25].trim() : '0')
                     },
                     shiftStartVariances: shiftStartVariances,
-                    minimumWorkingDaysPerWeek: parseInt(values[27]),
-                    maximumDays: parseInt(values[28]),
-                    valid: values[values.length - 1].trim().toUpperCase() === 'TRUE' // Include valid field in data
+                    minimumWorkingDaysPerWeek: parseInt(values[27] ? values[27].trim() : '0'),
+                    maximumDays: parseInt(values[28] ? values[28].trim() : '0'),
+                    valid: values[values.length - 1] ? values[values.length - 1].trim().toUpperCase() === 'TRUE' : false // Include valid field in data
                 }
             };
         });
