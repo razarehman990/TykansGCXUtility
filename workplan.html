@@ -162,66 +162,66 @@ function parseCSV(file) {
     };
     reader.readAsText(file);
 }
-        
-        async function executeUpdates(csvData) {
-            const token = new URLSearchParams(window.location.search).get('token');
-            const outputTextArea = document.getElementById('output');
 
-            for (const row of csvData) {
-                if (row.updates) {
-                    console.log(`Updating workplan ${row.workPlanId} for management unit ${row.managementUnitId}`);
-                    try {
-                        const response = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/managementunits/${row.managementUnitId}/workplans/${row.workPlanId}`, token, row.data);
-                        if (response.ok) {
-                            const successMessage = `✅ Successfully updated workplan ${row.workPlanId} for management unit ${row.managementUnitId}.`;
-                            console.log(successMessage);
-                            outputTextArea.value += `${successMessage}\n`;
-                        } else {
-                            const errorMessage = `Error updating workplan ${row.workPlanId} for management unit ${row.managementUnitId}: ${response.statusText}`;
-                            console.error(errorMessage);
-                            outputTextArea.value += `❌ ${errorMessage}\n`;
-                        }
-                    } catch (error) {
-                        const errorMessage = `Error: ${error}`;
-                        console.error(errorMessage);
-                        outputTextArea.value += `❌ ${errorMessage}\n`;
-                    }
-                } else {
-                    console.log(`Skipping workplan ${row.workPlanId} for management unit ${row.managementUnitId} (UPDATES is FALSE)`);
-                }
-            }
-        }
+async function executeUpdates(csvData) {
+    const token = new URLSearchParams(window.location.search).get('token');
+    const outputTextArea = document.getElementById('output');
 
-        async function fetchWithRetry(url, token, data, retries = 3, delay = 2000) {
-            for (let i = 0; i < retries; i++) {
-                const response = await fetch(url, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(data)
-                });
-
+    for (const row of csvData) {
+        if (row.updates) {
+            console.log(`Updating workplan ${row.workPlanId} for management unit ${row.managementUnitId}`);
+            try {
+                const response = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/managementunits/${row.managementUnitId}/workplans/${row.workPlanId}`, token, row.data);
                 if (response.ok) {
-                    return response;
-                }
-
-                if (response.status === 429) {
-                    const retryAfter = response.headers.get('Retry-After');
-                    const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : delay;
-                    console.warn(`Too many requests. Retrying after ${waitTime / 1000} seconds...`);
-                    await new Promise(resolve => setTimeout(resolve, waitTime));
+                    const successMessage = `✅ Successfully updated workplan ${row.workPlanId} for management unit ${row.managementUnitId}.`;
+                    console.log(successMessage);
+                    outputTextArea.value += `${successMessage}\n`;
                 } else {
-                    const errorMessage = `Request failed with status ${response.status}: ${response.statusText}`;
+                    const errorMessage = `Error updating workplan ${row.workPlanId} for management unit ${row.managementUnitId}: ${response.statusText}`;
                     console.error(errorMessage);
-                    if (i === retries - 1) {
-                        throw new Error(errorMessage);
-                    }
+                    outputTextArea.value += `❌ ${errorMessage}\n`;
                 }
+            } catch (error) {
+                const errorMessage = `Error: ${error}`;
+                console.error(errorMessage);
+                outputTextArea.value += `❌ ${errorMessage}\n`;
             }
+        } else {
+            console.log(`Skipping workplan ${row.workPlanId} for management unit ${row.managementUnitId} (UPDATES is FALSE)`);
+        }
+    }
+}
+
+async function fetchWithRetry(url, token, data, retries = 3, delay = 2000) {
+    for (let i = 0; i < retries; i++) {
+        const response = await fetch(url, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            return response;
         }
 
+        if (response.status === 429) {
+            const retryAfter = response.headers.get('Retry-After');
+            const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : delay;
+            console.warn(`Too many requests. Retrying after ${waitTime / 1000} seconds...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+        } else {
+            const errorMessage = `Request failed with status ${response.status}: ${response.statusText}`;
+            console.error(errorMessage);
+            if (i === retries - 1) {
+                throw new Error(errorMessage);
+            }
+        }
+    }
+}
+        
         async function exportData() {
             const token = new URLSearchParams(window.location.search).get('token');
             const baseUrl = 'https://api.cac1.pure.cloud/api/v2/workforcemanagement/managementunits';
