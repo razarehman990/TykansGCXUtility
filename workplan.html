@@ -111,7 +111,7 @@ function parseCSV(file) {
             let shiftStartVariances;
             try {
                 if (values[26] !== undefined && values[26] !== null) {
-                    shiftStartVariances = JSON.parse(values[26].replace(/""/g, '').trim()); // Handle escaped quotes
+                    shiftStartVariances = JSON.parse(values[26].replace(/""/g, '"').trim()); // Handle escaped quotes
                 } else {
                     shiftStartVariances = { values: [] }; // Default to an empty array if undefined
                 }
@@ -200,7 +200,7 @@ async function fetchWithRetry(url, token, data, retries = 3, delay = 2000) {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify(data)
+            body: JSON.stringify(data, (key, value) => key === "shiftStartVariances" ? value : value)
         });
 
         if (response.ok) {
