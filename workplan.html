@@ -118,7 +118,8 @@
                     return {
                         managementUnitId: values[1],
                         workPlanId: values[3],
-                        updates: values[values.length - 1].trim().toUpperCase() === 'TRUE',
+                        updates: values[values.length - 2].trim().toUpperCase() === 'TRUE', // Adjusted index for updates
+                        valid: values[values.length - 1].trim().toUpperCase() === 'TRUE', // New field for valid
                         data: {
                             name: values[2],
                             enabled: values[4] === 'true',
@@ -147,7 +148,8 @@
                             },
                             shiftStartVariances: shiftStartVariances,
                             minimumWorkingDaysPerWeek: parseInt(values[27]),
-                            maximumDays: parseInt(values[28])
+                            maximumDays: parseInt(values[28]),
+                            valid: values[values.length - 1].trim().toUpperCase() === 'TRUE' // Include valid field in data
                         }
                     };
                 });
@@ -251,7 +253,7 @@
         }
 
         async function getWorkplansForAllUnits(entities, token, baseUrl, outputTextArea) {
-            let csvContent = 'Management Unit,Management Unit Id,Workplan Name,Workplan Id,Enabled,constrainWeeklyPaidTime,flexibleWeeklyPaidTime,weeklyExactPaidMinutes,weeklyMinimumPaidMinutes,weeklyMaximumPaidMinutes,constrainPaidTimeGranularity,constrainMinimumTimeBetweenShifts,minimumTimeBetweenShiftsMinutes,minimumConsecutiveNonWorkingMinutesPerWeek,constrainMaximumConsecutiveWorkingWeekends,maximumConsecutiveWorkingWeekends,constrainMaximumConsecutiveWorkingDays,maximumConsecutiveWorkingDays,minimumShiftStartDistanceMinutes,minimumDaysOffPerPlanningPeriod,maximumDaysOffPerPlanningPeriod,minimumPaidMinutesPerPlanningPeriod,maximumPaidMinutesPerPlanningPeriod,shiftStartVarianceType,agentCount,version,shiftStartVariances,minimumWorkingDaysPerWeek,maximumDays,UPDATES\n';
+            let csvContent = 'Management Unit,Management Unit Id,Workplan Name,Workplan Id,Enabled,constrainWeeklyPaidTime,flexibleWeeklyPaidTime,weeklyExactPaidMinutes,weeklyMinimumPaidMinutes,weeklyMaximumPaidMinutes,constrainPaidTimeGranularity,constrainMinimumTimeBetweenShifts,minimumTimeBetweenShiftsMinutes,minimumConsecutiveNonWorkingMinutesPerWeek,constrainMaximumConsecutiveWorkingWeekends,maximumConsecutiveWorkingWeekends,constrainMaximumConsecutiveWorkingDays,maximumConsecutiveWorkingDays,minimumShiftStartDistanceMinutes,minimumDaysOffPerPlanningPeriod,maximumDaysOffPerPlanningPeriod,minimumPaidMinutesPerPlanningPeriod,maximumPaidMinutesPerPlanningPeriod,shiftStartVarianceType,agentCount,version,shiftStartVariances,minimumWorkingDaysPerWeek,maximumDays,UPDATES,VALID\n';
             for (const entity of entities) {
                 const managementUnitId = entity.id;
                 console.log(`Fetching workplans for management unit ${managementUnitId}...`);
@@ -271,7 +273,7 @@
                                 console.log(`Details for workplan ${workplan.id} fetched:`, workplanDetails);
                                 outputTextArea.value += `✅ Successfully fetched details for workplan ${workplan.id}.\n`;
 
-                                csvContent += `${entity.name},${managementUnitId},${workplan.name},${workplan.id},${workplan.enabled},${workplanDetails.constrainWeeklyPaidTime},${workplanDetails.flexibleWeeklyPaidTime},${workplanDetails.weeklyExactPaidMinutes},${workplanDetails.weeklyMinimumPaidMinutes},${workplanDetails.weeklyMaximumPaidMinutes},${workplanDetails.constrainPaidTimeGranularity},${workplanDetails.constrainMinimumTimeBetweenShifts},${workplanDetails.minimumTimeBetweenShiftsMinutes},${workplanDetails.minimumConsecutiveNonWorkingMinutesPerWeek},${workplanDetails.constrainMaximumConsecutiveWorkingWeekends},${workplanDetails.maximumConsecutiveWorkingWeekends},${workplanDetails.constrainMaximumConsecutiveWorkingDays},${workplanDetails.maximumConsecutiveWorkingDays},${workplanDetails.minimumShiftStartDistanceMinutes},${workplanDetails.minimumDaysOffPerPlanningPeriod},${workplanDetails.maximumDaysOffPerPlanningPeriod},${workplanDetails.minimumPaidMinutesPerPlanningPeriod},${workplanDetails.maximumPaidMinutesPerPlanningPeriod},${workplanDetails.shiftStartVarianceType},${workplanDetails.agentCount},${workplanDetails.metadata.version},${JSON.stringify(workplanDetails.shiftStartVariances)},${workplanDetails.minimumWorkingDaysPerWeek},${workplanDetails.maximumDays},FALSE\n`;
+                                csvContent += `${entity.name},${managementUnitId},${workplan.name},${workplan.id},${workplan.enabled},${workplanDetails.constrainWeeklyPaidTime},${workplanDetails.flexibleWeeklyPaidTime},${workplanDetails.weeklyExactPaidMinutes},${workplanDetails.weeklyMinimumPaidMinutes},${workplanDetails.weeklyMaximumPaidMinutes},${workplanDetails.constrainPaidTimeGranularity},${workplanDetails.constrainMinimumTimeBetweenShifts},${workplanDetails.minimumTimeBetweenShiftsMinutes},${workplanDetails.minimumConsecutiveNonWorkingMinutesPerWeek},${workplanDetails.constrainMaximumConsecutiveWorkingWeekends},${workplanDetails.maximumConsecutiveWorkingWeekends},${workplanDetails.constrainMaximumConsecutiveWorkingDays},${workplanDetails.maximumConsecutiveWorkingDays},${workplanDetails.minimumShiftStartDistanceMinutes},${workplanDetails.minimumDaysOffPerPlanningPeriod},${workplanDetails.maximumDaysOffPerPlanningPeriod},${workplanDetails.minimumPaidMinutesPerPlanningPeriod},${workplanDetails.maximumPaidMinutesPerPlanningPeriod},${workplanDetails.shiftStartVarianceType},${workplanDetails.agentCount},${workplanDetails.metadata.version},${JSON.stringify(workplanDetails.shiftStartVariances)},${workplanDetails.minimumWorkingDaysPerWeek},${workplanDetails.maximumDays},FALSE,TRUE\n`;
                             } else {
                                 const errorMessage = `Error fetching details for workplan ${workplan.id}: ${workplanDetailsResponse.statusText}`;
                                 console.error(errorMessage);
