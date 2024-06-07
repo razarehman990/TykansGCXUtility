@@ -101,64 +101,68 @@
         });
 
         function parseCSV(file) {
-            console.log(`Parsing CSV file: ${file.name}`);
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const text = e.target.result;
-                const rows = text.split('\n').slice(1); // Skip the header row
-                const csvData = rows.map(row => {
-                    const values = row.split(',');
-                    let shiftStartVariances;
-                    try {
-                        shiftStartVariances = JSON.parse(values[26].replace(/""/g, '').trim()); // Handle escaped quotes
-                    } catch (e) {
-                        console.error(`Error parsing shiftStartVariances for row: ${row}`, e);
-                        shiftStartVariances = { values: [] }; // Default to an empty array if parsing fails
-                    }
-                    return {
-                        managementUnitId: values[1],
-                        workPlanId: values[3],
-                        updates: values[values.length - 2].trim().toUpperCase() === 'TRUE', // Adjusted index for updates
-                        valid: values[values.length - 1].trim().toUpperCase() === 'TRUE', // New field for valid
-                        data: {
-                            name: values[2],
-                            enabled: values[4] === 'TRUE',
-                            constrainWeeklyPaidTime: values[5] === 'TRUE',
-                            flexibleWeeklyPaidTime: values[6] === 'TRUE',
-                            weeklyExactPaidMinutes: parseInt(values[7]),
-                            weeklyMinimumPaidMinutes: parseInt(values[8]),
-                            weeklyMaximumPaidMinutes: parseInt(values[9]),
-                            constrainPaidTimeGranularity: values[10] === 'TRUE',
-                            constrainMinimumTimeBetweenShifts: values[11] === 'TRUE',
-                            minimumTimeBetweenShiftsMinutes: parseInt(values[12]),
-                            minimumConsecutiveNonWorkingMinutesPerWeek: parseInt(values[13]),
-                            constrainMaximumConsecutiveWorkingWeekends: values[14] === 'TRUE',
-                            maximumConsecutiveWorkingWeekends: parseInt(values[15]),
-                            constrainMaximumConsecutiveWorkingDays: values[16] === 'TRUE',
-                            maximumConsecutiveWorkingDays: parseInt(values[17]),
-                            minimumShiftStartDistanceMinutes: parseInt(values[18]),
-                            minimumDaysOffPerPlanningPeriod: parseInt(values[19]),
-                            maximumDaysOffPerPlanningPeriod: parseInt(values[20]),
-                            minimumPaidMinutesPerPlanningPeriod: parseInt(values[21]),
-                            maximumPaidMinutesPerPlanningPeriod: parseInt(values[22]),
-                            shiftStartVarianceType: values[23],
-                            agentCount: parseInt(values[24]),
-                            metadata: {
-                                version: parseInt(values[25])
-                            },
-                            shiftStartVariances: shiftStartVariances,
-                            minimumWorkingDaysPerWeek: parseInt(values[27]),
-                            maximumDays: parseInt(values[28]),
-                            valid: values[values.length - 1].trim().toUpperCase() === 'TRUE' // Include valid field in data
-                        }
-                    };
-                });
-                console.log('CSV data parsed:', csvData);
-                executeUpdates(csvData);
+    console.log(`Parsing CSV file: ${file.name}`);
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const text = e.target.result;
+        const rows = text.split('\n').slice(1); // Skip the header row
+        const csvData = rows.map(row => {
+            const values = row.split(',');
+            let shiftStartVariances;
+            try {
+                if (values[26] !== undefined) {
+                    shiftStartVariances = JSON.parse(values[26].replace(/""/g, '').trim()); // Handle escaped quotes
+                } else {
+                    shiftStartVariances = { values: [] }; // Default to an empty array if undefined
+                }
+            } catch (e) {
+                console.error(`Error parsing shiftStartVariances for row: ${row}`, e);
+                shiftStartVariances = { values: [] }; // Default to an empty array if parsing fails
+            }
+            return {
+                managementUnitId: values[1],
+                workPlanId: values[3],
+                updates: values[values.length - 2].trim().toUpperCase() === 'TRUE', // Adjusted index for updates
+                valid: values[values.length - 1].trim().toUpperCase() === 'TRUE', // New field for valid
+                data: {
+                    name: values[2],
+                    enabled: values[4] === 'TRUE',
+                    constrainWeeklyPaidTime: values[5] === 'TRUE',
+                    flexibleWeeklyPaidTime: values[6] === 'TRUE',
+                    weeklyExactPaidMinutes: parseInt(values[7]),
+                    weeklyMinimumPaidMinutes: parseInt(values[8]),
+                    weeklyMaximumPaidMinutes: parseInt(values[9]),
+                    constrainPaidTimeGranularity: values[10] === 'TRUE',
+                    constrainMinimumTimeBetweenShifts: values[11] === 'TRUE',
+                    minimumTimeBetweenShiftsMinutes: parseInt(values[12]),
+                    minimumConsecutiveNonWorkingMinutesPerWeek: parseInt(values[13]),
+                    constrainMaximumConsecutiveWorkingWeekends: values[14] === 'TRUE',
+                    maximumConsecutiveWorkingWeekends: parseInt(values[15]),
+                    constrainMaximumConsecutiveWorkingDays: values[16] === 'TRUE',
+                    maximumConsecutiveWorkingDays: parseInt(values[17]),
+                    minimumShiftStartDistanceMinutes: parseInt(values[18]),
+                    minimumDaysOffPerPlanningPeriod: parseInt(values[19]),
+                    maximumDaysOffPerPlanningPeriod: parseInt(values[20]),
+                    minimumPaidMinutesPerPlanningPeriod: parseInt(values[21]),
+                    maximumPaidMinutesPerPlanningPeriod: parseInt(values[22]),
+                    shiftStartVarianceType: values[23],
+                    agentCount: parseInt(values[24]),
+                    metadata: {
+                        version: parseInt(values[25])
+                    },
+                    shiftStartVariances: shiftStartVariances,
+                    minimumWorkingDaysPerWeek: parseInt(values[27]),
+                    maximumDays: parseInt(values[28]),
+                    valid: values[values.length - 1].trim().toUpperCase() === 'TRUE' // Include valid field in data
+                }
             };
-            reader.readAsText(file);
-        }
-
+        });
+        console.log('CSV data parsed:', csvData);
+        executeUpdates(csvData);
+    };
+    reader.readAsText(file);
+}
+        
         async function executeUpdates(csvData) {
             const token = new URLSearchParams(window.location.search).get('token');
             const outputTextArea = document.getElementById('output');
