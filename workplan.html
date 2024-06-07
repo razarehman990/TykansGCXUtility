@@ -110,7 +110,7 @@
                     const values = row.split(',');
                     let shiftStartVariances;
                     try {
-                        shiftStartVariances = JSON.parse(values[26].trim().replace(/""/g, '"')); // Handle escaped quotes
+                        shiftStartVariances = JSON.parse(values[26].trim());
                     } catch (e) {
                         console.error(`Error parsing shiftStartVariances for row: ${row}`, e);
                         shiftStartVariances = { values: [] }; // Default to an empty array if parsing fails
