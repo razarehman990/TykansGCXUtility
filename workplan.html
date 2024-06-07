@@ -110,10 +110,10 @@
                     const values = row.split(',');
                     let shiftStartVariances;
                     try {
-                        shiftStartVariances = JSON.parse(values[26]);
+                        shiftStartVariances = JSON.parse(values[26].trim().replace(/""/g, '"')); // Handle escaped quotes
                     } catch (e) {
                         console.error(`Error parsing shiftStartVariances for row: ${row}`, e);
-                        shiftStartVariances = null;
+                        shiftStartVariances = { values: [] }; // Default to an empty array if parsing fails
                     }
                     return {
                         managementUnitId: values[1],
@@ -122,19 +122,19 @@
                         valid: values[values.length - 1].trim().toUpperCase() === 'TRUE', // New field for valid
                         data: {
                             name: values[2],
-                            enabled: values[4] === 'true',
-                            constrainWeeklyPaidTime: values[5] === 'true',
-                            flexibleWeeklyPaidTime: values[6] === 'true',
+                            enabled: values[4] === 'TRUE',
+                            constrainWeeklyPaidTime: values[5] === 'TRUE',
+                            flexibleWeeklyPaidTime: values[6] === 'TRUE',
                             weeklyExactPaidMinutes: parseInt(values[7]),
                             weeklyMinimumPaidMinutes: parseInt(values[8]),
                             weeklyMaximumPaidMinutes: parseInt(values[9]),
-                            constrainPaidTimeGranularity: values[10] === 'true',
-                            constrainMinimumTimeBetweenShifts: values[11] === 'true',
+                            constrainPaidTimeGranularity: values[10] === 'TRUE',
+                            constrainMinimumTimeBetweenShifts: values[11] === 'TRUE',
                             minimumTimeBetweenShiftsMinutes: parseInt(values[12]),
                             minimumConsecutiveNonWorkingMinutesPerWeek: parseInt(values[13]),
-                            constrainMaximumConsecutiveWorkingWeekends: values[14] === 'true',
+                            constrainMaximumConsecutiveWorkingWeekends: values[14] === 'TRUE',
                             maximumConsecutiveWorkingWeekends: parseInt(values[15]),
-                            constrainMaximumConsecutiveWorkingDays: values[16] === 'true',
+                            constrainMaximumConsecutiveWorkingDays: values[16] === 'TRUE',
                             maximumConsecutiveWorkingDays: parseInt(values[17]),
                             minimumShiftStartDistanceMinutes: parseInt(values[18]),
                             minimumDaysOffPerPlanningPeriod: parseInt(values[19]),
