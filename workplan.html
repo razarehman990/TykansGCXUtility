@@ -222,9 +222,7 @@
             const token = new URLSearchParams(window.location.search).get('token');
             const baseUrl = 'https://api.cac1.pure.cloud/api/v2/workforcemanagement/managementunits';
             const outputTextArea = document.getElementById('output');
-            outputTextArea.value = ''; // Clear existing content
 
-            console.log('Fetching management units data...');
             try {
                 const response = await fetch(baseUrl, {
                     method: 'GET',
