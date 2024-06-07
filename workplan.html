@@ -110,7 +110,8 @@
                     const values = row.split(',');
                     let shiftStartVariances;
                     try {
-                        shiftStartVariances = JSON.parse(values[26].replace(/""/g, '"').trim()); // Handle escaped quotes
+                        const shiftStartVariancesStr = values[26].replace(/""/g, '"').trim();
+                        shiftStartVariances = JSON.parse(shiftStartVariancesStr);
                     } catch (e) {
                         console.error(`Error parsing shiftStartVariances for row: ${row}`, e);
                         shiftStartVariances = { values: [] }; // Default to an empty array if parsing fails
@@ -271,7 +272,7 @@
                                 console.log(`Details for workplan ${workplan.id} fetched:`, workplanDetails);
                                 outputTextArea.value += `✅ Successfully fetched details for workplan ${workplan.id}.\n`;
 
-                                csvContent += `${entity.name},${managementUnitId},${workplan.name},${workplan.id},${workplan.enabled},${workplanDetails.constrainWeeklyPaidTime},${workplanDetails.flexibleWeeklyPaidTime},${workplanDetails.weeklyExactPaidMinutes},${workplanDetails.weeklyMinimumPaidMinutes},${workplanDetails.weeklyMaximumPaidMinutes},${workplanDetails.constrainPaidTimeGranularity},${workplanDetails.constrainMinimumTimeBetweenShifts},${workplanDetails.minimumTimeBetweenShiftsMinutes},${workplanDetails.minimumConsecutiveNonWorkingMinutesPerWeek},${workplanDetails.constrainMaximumConsecutiveWorkingWeekends},${workplanDetails.maximumConsecutiveWorkingWeekends},${workplanDetails.constrainMaximumConsecutiveWorkingDays},${workplanDetails.maximumConsecutiveWorkingDays},${workplanDetails.minimumShiftStartDistanceMinutes},${workplanDetails.minimumDaysOffPerPlanningPeriod},${workplanDetails.maximumDaysOffPerPlanningPeriod},${workplanDetails.minimumPaidMinutesPerPlanningPeriod},${workplanDetails.maximumPaidMinutesPerPlanningPeriod},${workplanDetails.shiftStartVarianceType},${workplanDetails.agentCount},${workplanDetails.metadata.version},"${JSON.stringify(workplanDetails.shiftStartVariances).replace(/"/g, '""')}",${workplanDetails.minimumWorkingDaysPerWeek},${workplanDetails.maximumDays},FALSE,TRUE\n`;
+                                csvContent += `${entity.name},${managementUnitId},${workplan.name},${workplan.id},${workplan.enabled},${workplanDetails.constrainWeeklyPaidTime},${workplanDetails.flexibleWeeklyPaidTime},${workplanDetails.weeklyExactPaidMinutes},${workplanDetails.weeklyMinimumPaidMinutes},${workplanDetails.weeklyMaximumPaidMinutes},${workplanDetails.constrainPaidTimeGranularity},${workplanDetails.constrainMinimumTimeBetweenShifts},${workplanDetails.minimumTimeBetweenShiftsMinutes},${workplanDetails.minimumConsecutiveNonWorkingMinutesPerWeek},${workplanDetails.constrainMaximumConsecutiveWorkingWeekends},${workplanDetails.maximumConsecutiveWorkingWeekends},${workplanDetails.constrainMaximumConsecutiveWorkingDays},${workplanDetails.maximumConsecutiveWorkingDays},${workplanDetails.minimumShiftStartDistanceMinutes},${workplanDetails.minimumDaysOffPerPlanningPeriod},${workplanDetails.maximumDaysOffPerPlanningPeriod},${workplanDetails.minimumPaidMinutesPerPlanningPeriod},${workplanDetails.maximumPaidMinutesPerPlanningPeriod},${workplanDetails.shiftStartVarianceType},${workplanDetails.agentCount},${workplanDetails.metadata.version},${JSON.stringify(workplanDetails.shiftStartVariances)},${workplanDetails.minimumWorkingDaysPerWeek},${workplanDetails.maximumDays},FALSE,TRUE\n`;
                             } else {
                                 const errorMessage = `Error fetching details for workplan ${workplan.id}: ${workplanDetailsResponse.statusText}`;
                                 console.error(errorMessage);
@@ -303,36 +304,6 @@
             a.click();
             document.body.removeChild(a);
             console.log('CSV download completed.');
-        }
-
-        async function fetchWithRetry(url, token, data = null, retries = 3, delay = 2000) {
-            for (let i = 0; i < retries; i++) {
-                const response = await fetch(url, {
-                    method: data ? 'PATCH' : 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: data ? JSON.stringify(data) : null
-                });
-
-                if (response.ok) {
-                    return response;
-                }
-
-                if (response.status === 429) {
-                    const retryAfter = response.headers.get('Retry-After');
-                    const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : delay;
-                    console.warn(`Too many requests. Retrying after ${waitTime / 1000} seconds...`);
-                    await new Promise(resolve => setTimeout(resolve, waitTime));
-                } else {
-                    const errorMessage = `Request failed with status ${response.status}: ${response.statusText}`;
-                    console.error(errorMessage);
-                    if (i === retries - 1) {
-                        throw new Error(errorMessage);
-                    }
-                }
-            }
         }
     </script>
 </body>
