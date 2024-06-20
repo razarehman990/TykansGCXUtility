@@ -35,6 +35,34 @@
             border: 2px solid #0F3057;
         }
 
+        .spinner {
+            display: none;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .button.loading .spinner {
+            display: block;
+        }
+
+        .button.loading span {
+            visibility: hidden;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        
         #output-container {
             position: relative;
             width: 80%;
@@ -71,7 +99,10 @@
         <div id="output-container">
             <textarea id="output" readonly></textarea>
         </div>
-        <button class="button" id="exportBtn">Export</button>
+        <button class="button" id="exportBtn">
+            <div class="spinner"></div>
+            <span>Export</span>
+        </button>
         <button class="button" id="uploadBtn">Upload</button>
         <input type="file" id="fileInput" accept=".csv">
         <button class="button" id="importBtn">Import</button>
@@ -235,37 +266,42 @@ async function fetchWithRetry(url, token, data = null, retries = 3, delay = 2000
     }
 }
         
-        async function exportData() {
-            const token = new URLSearchParams(window.location.search).get('token');
-            const baseUrl = 'https://api.cac1.pure.cloud/api/v2/workforcemanagement/managementunits';
-            const outputTextArea = document.getElementById('output');
+    async function exportData() {
+    const exportBtn = document.getElementById('exportBtn');
+    exportBtn.classList.add('loading');
 
-            try {
-                const response = await fetch(baseUrl, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
+    const token = new URLSearchParams(window.location.search).get('token');
+    const baseUrl = 'https://api.cac1.pure.cloud/api/v2/workforcemanagement/managementunits';
+    const outputTextArea = document.getElementById('output');
 
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log('Management units data fetched:', data);
-                    outputTextArea.value += `✅ Successfully fetched management units data.\n`;
-                    const csvData = await getWorkplansForAllUnits(data.entities, token, baseUrl, outputTextArea);
-                    downloadCSV(csvData);
-                } else {
-                    const errorMessage = `Error fetching management units data: ${response.statusText}`;
-                    console.error(errorMessage);
-                    outputTextArea.value += `❌ ${errorMessage}\n`;
-                }
-            } catch (error) {
-                const errorMessage = `Error: ${error}`;
-                console.error(errorMessage);
-                outputTextArea.value += `❌ ${errorMessage}\n`;
+    try {
+        const response = await fetch(baseUrl, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
             }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            console.log('Management units data fetched:', data);
+            outputTextArea.value += `✅ Successfully fetched management units data.\n`;
+            const csvData = await getWorkplansForAllUnits(data.entities, token, baseUrl, outputTextArea);
+            downloadCSV(csvData);
+        } else {
+            const errorMessage = `Error fetching management units data: ${response.statusText}`;
+            console.error(errorMessage);
+            outputTextArea.value += `❌ ${errorMessage}\n`;
         }
+    } catch (error) {
+        const errorMessage = `Error: ${error}`;
+        console.error(errorMessage);
+        outputTextArea.value += `❌ ${errorMessage}\n`;
+    } finally {
+        exportBtn.classList.remove('loading');
+    }
+}
 
   async function getWorkplansForAllUnits(entities, token, baseUrl, outputTextArea) {
     let csvContent = 'Management Unit,Management Unit Id,Workplan Name,Workplan Id,Enabled,constrainWeeklyPaidTime,flexibleWeeklyPaidTime,weeklyExactPaidMinutes,weeklyMinimumPaidMinutes,weeklyMaximumPaidMinutes,constrainPaidTimeGranularity,constrainMinimumTimeBetweenShifts,minimumTimeBetweenShiftsMinutes,minimumConsecutiveNonWorkingMinutesPerWeek,constrainMaximumConsecutiveWorkingWeekends,maximumConsecutiveWorkingWeekends,constrainMaximumConsecutiveWorkingDays,maximumConsecutiveWorkingDays,minimumShiftStartDistanceMinutes,minimumDaysOffPerPlanningPeriod,maximumDaysOffPerPlanningPeriod,minimumPaidMinutesPerPlanningPeriod,maximumPaidMinutesPerPlanningPeriod,shiftStartVarianceType,agentCount,version,shiftStartVariances,minimumWorkingDaysPerWeek,maximumDays,paidTimeGranularityMinutes,optionalDays,shifts,UPDATES,VALID\n';
