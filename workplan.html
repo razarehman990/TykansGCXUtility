@@ -115,39 +115,6 @@
 
 function parseRow(row) {
     const values = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); // Split CSV by commas outside of quoted strings
-    let shiftStartVariances;
-    let optionalDays;
-    let shifts;
-    try {
-        if (values[26]) {
-            shiftStartVariances = JSON.parse(values[26].replace(/""/g, '"').trim());
-        } else {
-            shiftStartVariances = { values: [] };
-        }
-    } catch (e) {
-        console.error(`Error parsing shiftStartVariances for row: ${row}`, e);
-        shiftStartVariances = { values: [] };
-    }
-    try {
-        if (values[30]) {
-            optionalDays = JSON.parse(values[30].replace(/""/g, '"').trim());
-        } else {
-            optionalDays = [];
-        }
-    } catch (e) {
-        console.error(`Error parsing optionalDays for row: ${row}`, e);
-        optionalDays = [];
-    }
-    try {
-        if (values[31]) {
-            shifts = JSON.parse(values[31].replace(/""/g, '"').trim());
-        } else {
-            shifts = [];
-        }
-    } catch (e) {
-        console.error(`Error parsing shifts for row: ${row}`, e);
-        shifts = [];
-    }
     return {
         managementUnitId: values[1]?.trim() || '',
         workPlanId: values[3]?.trim() || '',
@@ -179,13 +146,13 @@ function parseRow(row) {
             metadata: {
                 version: parseInt(values[25]?.trim() || '0')
             },
-            shiftStartVariances: shiftStartVariances,
+            shiftStartVariances: values[26]?.trim() || '{"values":[]}',
             minimumWorkingDaysPerWeek: parseInt(values[27]?.trim() || '0'),
             maximumDays: parseInt(values[28]?.trim() || '0'),
-            valid: values[values.length - 1]?.trim().toUpperCase() === 'TRUE',
             paidTimeGranularityMinutes: parseInt(values[29]?.trim() || '0'),
-            optionalDays: optionalDays,
-            shifts: shifts
+            optionalDays: values[30]?.trim() || '[]',
+            shifts: values[31]?.trim() || '[]',
+            valid: values[values.length - 1]?.trim().toUpperCase() === 'TRUE'
         }
     };
 }
@@ -281,7 +248,7 @@ function parseRow(row) {
             }
         }
 
-        async function getWorkplansForAllUnits(entities, token, baseUrl, outputTextArea) {
+  async function getWorkplansForAllUnits(entities, token, baseUrl, outputTextArea) {
     let csvContent = 'Management Unit,Management Unit Id,Workplan Name,Workplan Id,Enabled,constrainWeeklyPaidTime,flexibleWeeklyPaidTime,weeklyExactPaidMinutes,weeklyMinimumPaidMinutes,weeklyMaximumPaidMinutes,constrainPaidTimeGranularity,constrainMinimumTimeBetweenShifts,minimumTimeBetweenShiftsMinutes,minimumConsecutiveNonWorkingMinutesPerWeek,constrainMaximumConsecutiveWorkingWeekends,maximumConsecutiveWorkingWeekends,constrainMaximumConsecutiveWorkingDays,maximumConsecutiveWorkingDays,minimumShiftStartDistanceMinutes,minimumDaysOffPerPlanningPeriod,maximumDaysOffPerPlanningPeriod,minimumPaidMinutesPerPlanningPeriod,maximumPaidMinutesPerPlanningPeriod,shiftStartVarianceType,agentCount,version,shiftStartVariances,minimumWorkingDaysPerWeek,maximumDays,paidTimeGranularityMinutes,optionalDays,shifts,UPDATES,VALID\n';
     for (const entity of entities) {
         const managementUnitId = entity.id;
