@@ -116,6 +116,8 @@
         function parseRow(row) {
             const values = row.split(',');
             let shiftStartVariances;
+            let optionalDays;
+            let shifts;
             try {
                 if (values[26]) {
                     shiftStartVariances = JSON.parse(values[26].replace(/""/g, '"').trim());
@@ -125,6 +127,26 @@
             } catch (e) {
                 console.error(`Error parsing shiftStartVariances for row: ${row}`, e);
                 shiftStartVariances = { values: [] };
+            }
+            try {
+                if (values[30]) {
+                    optionalDays = JSON.parse(values[30].replace(/""/g, '"').trim());
+                } else {
+                    optionalDays = [];
+                }
+            } catch (e) {
+                console.error(`Error parsing optionalDays for row: ${row}`, e);
+                optionalDays = [];
+            }
+            try {
+                if (values[31]) {
+                    shifts = JSON.parse(values[31].replace(/""/g, '"').trim());
+                } else {
+                    shifts = [];
+                }
+            } catch (e) {
+                console.error(`Error parsing shifts for row: ${row}`, e);
+                shifts = [];
             }
             return {
                 managementUnitId: values[1]?.trim() || '',
@@ -162,8 +184,8 @@
                     maximumDays: parseInt(values[28]?.trim() || '0'),
                     valid: values[values.length - 1]?.trim().toUpperCase() === 'TRUE',
                     paidTimeGranularityMinutes: parseInt(values[29]?.trim() || '0'),
-                    optionalDays: values[30] ? JSON.parse(values[30].replace(/""/g, '"').trim()) : [],
-                    shifts: values[31] ? JSON.parse(values[31].replace(/""/g, '"').trim()) : []
+                    optionalDays: optionalDays,
+                    shifts: shifts
                 }
             };
         }
