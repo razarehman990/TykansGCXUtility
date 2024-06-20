@@ -36,32 +36,32 @@
         }
 
         .spinner {
-            display: none;
-            width: 24px;
-            height: 24px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: #fff;
-            animation: spin 1s ease-in-out infinite;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
+    display: none;
+    width: 24px;
+    height: 24px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #ffffff; /* Spinner color set to white */
+    animation: spin 1s ease-in-out infinite;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
 
-        .button.loading .spinner {
-            display: block;
-        }
+.button.loading .spinner {
+    display: block;
+}
 
-        .button.loading span {
-            visibility: hidden;
-        }
+.button.loading span {
+    visibility: hidden;
+}
 
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
         
         #output-container {
             position: relative;
