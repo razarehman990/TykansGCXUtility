@@ -35,26 +35,36 @@
             border: 2px solid #0F3057;
         }
 
+        #output-container {
+    position: relative;
+    width: 80%;
+    margin: 20px auto;
+    text-align: left;
+}
+
+#output {
+    width: 100%;
+    min-height: 200px;
+    display: block;
+    overflow-x: auto;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 10px;
+}
+
         .spinner {
     display: none;
-    width: 24px;
-    height: 24px;
-    border: 3px solid rgba(255, 255, 255, 0.3);
+    width: 50px;
+    height: 50px;
+    border: 6px solid rgba(255, 255, 255, 0.3);
     border-radius: 50%;
-    border-top-color: #ffffff; /* Spinner color set to white */
+    border-top-color: #0F3057; /* Spinner color */
     animation: spin 1s ease-in-out infinite;
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-}
-
-.button.loading .spinner {
-    display: block;
-}
-
-.button.loading span {
-    visibility: hidden;
+    z-index: 1;
 }
 
 @keyframes spin {
@@ -63,23 +73,6 @@
     }
 }
         
-        #output-container {
-            position: relative;
-            width: 80%;
-            margin: 20px auto;
-            text-align: left;
-        }
-
-        #output {
-            width: 100%;
-            min-height: 200px;
-            display: block;
-            overflow-x: auto;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            padding: 10px;
-        }
-
         #fileInput {
             display: none;
             margin: 20px auto;
@@ -97,12 +90,10 @@
     </div>
     <div class="container">
         <div id="output-container">
+            <div class="spinner" id="spinner"></div>
             <textarea id="output" readonly></textarea>
         </div>
-        <button class="button" id="exportBtn">
-            <div class="spinner"></div>
-            <span>Export</span>
-        </button>
+        <button class="button" id="exportBtn">Export</button>
         <button class="button" id="uploadBtn">Upload</button>
         <input type="file" id="fileInput" accept=".csv">
         <button class="button" id="importBtn">Import</button>
@@ -266,9 +257,10 @@ async function fetchWithRetry(url, token, data = null, retries = 3, delay = 2000
     }
 }
         
-    async function exportData() {
+        async function exportData() {
     const exportBtn = document.getElementById('exportBtn');
-    exportBtn.classList.add('loading');
+    const spinner = document.getElementById('spinner');
+    spinner.style.display = 'block'; // Show spinner
 
     const token = new URLSearchParams(window.location.search).get('token');
     const baseUrl = 'https://api.cac1.pure.cloud/api/v2/workforcemanagement/managementunits';
@@ -299,7 +291,7 @@ async function fetchWithRetry(url, token, data = null, retries = 3, delay = 2000
         console.error(errorMessage);
         outputTextArea.value += `❌ ${errorMessage}\n`;
     } finally {
-        exportBtn.classList.remove('loading');
+        spinner.style.display = 'none'; // Hide spinner
     }
 }
 
