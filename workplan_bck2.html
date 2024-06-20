@@ -1,1 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workplan Operations</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #fff;
+            color: #0F3057;
+            text-align: center;
+        }
 
+        .container {
+            margin-top: 150px;
+        }
+
+        .button {
+            margin: 20px;
+            padding: 15px 30px;
+            background-color: #0F3057;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        .button:hover {
+            background-color: #fff;
+            color: #0F3057;
+            border: 2px solid #0F3057;
+        }
+
+        #output-container {
+            position: relative;
+            width: 80%;
+            margin: 20px auto;
+            text-align: left;
+        }
+
+        #output {
+            width: 100%;
+            min-height: 200px;
+            display: block;
+            overflow-x: auto;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+        }
+
+        #fileInput {
+            display: none;
+            margin: 20px auto;
+        }
+
+        #importBtn {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <img id="logo" src="https://www.tykans.com/hs-fs/hubfs/Tykans_June2023/Images/Tykans%20-header-logo.png" alt="Tykans Logo">
+        <h1 id="title">Workplan Operations</h1>
+    </div>
+    <div class="container">
+        <div id="output-container">
+            <textarea id="output" readonly></textarea>
+        </div>
+        <button class="button" id="exportBtn">Export</button>
+        <button class="button" id="uploadBtn">Upload</button>
+        <input type="file" id="fileInput" accept=".csv">
+        <button class="button" id="importBtn">Import</button>
+    </div>
+
+    <script>
+        document.getElementById('exportBtn').addEventListener('click', exportData);
+        document.getElementById('uploadBtn').addEventListener('click', () => {
+            document.getElementById('fileInput').click();
+        });
+
+        document.getElementById('fileInput').addEventListener('change', () => {
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                console.log(`File uploaded: ${file.name} (${file.size} bytes, ${file.type})`);
+                document.getElementById('importBtn').style.display = 'inline-block';
+            }
+        });
+
+        document.getElementById('importBtn').addEventListener('click', () => {
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                parseCSV(file);
+            }
+        });
+
+function parseCSV(file) {
+    console.log(`Parsing CSV file: ${file.name}`);
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const text = e.target.result;
+        const rows = text.split('\n').slice(1); // Skip the header row
+        const csvData = rows.map(row => {
+            const values = row.split(',');
+            let shiftStartVariances;
+            try {
+                if (values[26] !== undefined && values[26] !== null) {
+                    shiftStartVariances = JSON.parse(values[26].replace(/""/g, '"').trim()); // Handle escaped quotes
+                } else {
+                    shiftStartVariances = { values: [] }; // Default to an empty array if undefined
+                }
+            } catch (e) {
+                console.error(`Error parsing shiftStartVariances for row: ${row}`, e);
+                shiftStartVariances = { values: [] }; // Default to an empty array if parsing fails
+            }
+            return {
+                managementUnitId: values[1] ? values[1].trim() : '',
+                workPlanId: values[3] ? values[3].trim() : '',
+                updates: values[values.length - 2] ? values[values.length - 2].trim().toUpperCase() === 'TRUE' : false, // Adjusted index for updates
+                valid: values[values.length - 1] ? values[values.length - 1].trim().toUpperCase() === 'TRUE' : false, // New field for valid
+                data: {
+                    name: values[2] ? values[2].trim() : '',
+                    enabled: values[4] ? values[4].trim() === 'TRUE' : false,
+                    constrainWeeklyPaidTime: values[5] ? values[5].trim() === 'TRUE' : false,
+                    flexibleWeeklyPaidTime: values[6] ? values[6].trim() === 'TRUE' : false,
+                    weeklyExactPaidMinutes: parseInt(values[7] ? values[7].trim() : '0'),
+                    weeklyMinimumPaidMinutes: parseInt(values[8] ? values[8].trim() : '0'),
+                    weeklyMaximumPaidMinutes: parseInt(values[9] ? values[9].trim() : '0'),
+                    constrainPaidTimeGranularity: values[10] ? values[10].trim() === 'TRUE' : false,
+                    constrainMinimumTimeBetweenShifts: values[11] ? values[11].trim() === 'TRUE' : false,
+                    minimumTimeBetweenShiftsMinutes: parseInt(values[12] ? values[12].trim() : '0'),
+                    minimumConsecutiveNonWorkingMinutesPerWeek: parseInt(values[13] ? values[13].trim() : '0'),
+                    constrainMaximumConsecutiveWorkingWeekends: values[14] ? values[14].trim() === 'TRUE' : false,
+                    maximumConsecutiveWorkingWeekends: parseInt(values[15] ? values[15].trim() : '0'),
+                    constrainMaximumConsecutiveWorkingDays: values[16] ? values[16].trim() === 'TRUE' : false,
+                    maximumConsecutiveWorkingDays: parseInt(values[17] ? values[17].trim() : '0'),
+                    minimumShiftStartDistanceMinutes: parseInt(values[18] ? values[18].trim() : '0'),
+                    minimumDaysOffPerPlanningPeriod: parseInt(values[19] ? values[19].trim() : '0'),
+                    maximumDaysOffPerPlanningPeriod: parseInt(values[20] ? values[20].trim() : '0'),
+                    minimumPaidMinutesPerPlanningPeriod: parseInt(values[21] ? values[21].trim() : '0'),
+                    maximumPaidMinutesPerPlanningPeriod: parseInt(values[22] ? values[22].trim() : '0'),
+                    shiftStartVarianceType: values[23] ? values[23].trim() : '',
+                    agentCount: parseInt(values[24] ? values[24].trim() : '0'),
+                    metadata: {
+                        version: parseInt(values[25] ? values[25].trim() : '0')
+                    },
+                    shiftStartVariances: shiftStartVariances,
+                    minimumWorkingDaysPerWeek: parseInt(values[27] ? values[27].trim() : '0'),
+                    maximumDays: parseInt(values[28] ? values[28].trim() : '0'),
+                    valid: values[values.length - 1] ? values[values.length - 1].trim().toUpperCase() === 'TRUE' : false // Include valid field in data
+                }
+            };
+        });
+        console.log('CSV data parsed:', csvData);
+        executeUpdates(csvData);
+    };
+    reader.readAsText(file);
+}
+
+async function executeUpdates(csvData) {
+    const token = new URLSearchParams(window.location.search).get('token');
+    const outputTextArea = document.getElementById('output');
+
+    for (const row of csvData) {
+        if (row.updates) {
+            console.log(`Updating workplan ${row.workPlanId} for management unit ${row.managementUnitId}`);
+            try {
+                const response = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/managementunits/${row.managementUnitId}/workplans/${row.workPlanId}`, token, row.data);
+                if (response.ok) {
+                    const successMessage = `✅ Successfully updated workplan ${row.workPlanId} for management unit ${row.managementUnitId}.`;
+                    console.log(successMessage);
+                    outputTextArea.value += `${successMessage}\n`;
+                } else {
+                    const errorMessage = `Error updating workplan ${row.workPlanId} for management unit ${row.managementUnitId}: ${response.statusText}`;
+                    console.error(errorMessage);
+                    outputTextArea.value += `❌ ${errorMessage}\n`;
+                }
+            } catch (error) {
+                const errorMessage = `Error: ${error}`;
+                console.error(errorMessage);
+                outputTextArea.value += `❌ ${errorMessage}\n`;
+            }
+        } else {
+            console.log(`Skipping workplan ${row.workPlanId} for management unit ${row.managementUnitId} (UPDATES is FALSE)`);
+        }
+    }
+}
+
+async function fetchWithRetry(url, token, data, retries = 3, delay = 2000) {
+    for (let i = 0; i < retries; i++) {
+        const response = await fetch(url, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(data, (key, value) => key === "shiftStartVariances" ? value : value)
+        });
+
+        if (response.ok) {
+            return response;
+        }
+
+        if (response.status === 429) {
+            const retryAfter = response.headers.get('Retry-After');
+            const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : delay;
+            console.warn(`Too many requests. Retrying after ${waitTime / 1000} seconds...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+        } else {
+            const errorMessage = `Request failed with status ${response.status}: ${response.statusText}`;
+            console.error(errorMessage);
+            if (i === retries - 1) {
+                throw new Error(errorMessage);
+            }
+        }
+    }
+}
+        
+        async function exportData() {
+            const token = new URLSearchParams(window.location.search).get('token');
+            const baseUrl = 'https://api.cac1.pure.cloud/api/v2/workforcemanagement/managementunits';
+            const outputTextArea = document.getElementById('output');
+
+            try {
+                const response = await fetch(baseUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Management units data fetched:', data);
+                    outputTextArea.value += `✅ Successfully fetched management units data.\n`;
+                    const csvData = await getWorkplansForAllUnits(data.entities, token, baseUrl, outputTextArea);
+                    downloadCSV(csvData);
+                } else {
+                    const errorMessage = `Error fetching management units data: ${response.statusText}`;
+                    console.error(errorMessage);
+                    outputTextArea.value += `❌ ${errorMessage}\n`;
+                }
+            } catch (error) {
+                const errorMessage = `Error: ${error}`;
+                console.error(errorMessage);
+                outputTextArea.value += `❌ ${errorMessage}\n`;
+            }
+        }
+
+        async function getWorkplansForAllUnits(entities, token, baseUrl, outputTextArea) {
+            let csvContent = 'Management Unit,Management Unit Id,Workplan Name,Workplan Id,Enabled,constrainWeeklyPaidTime,flexibleWeeklyPaidTime,weeklyExactPaidMinutes,weeklyMinimumPaidMinutes,weeklyMaximumPaidMinutes,constrainPaidTimeGranularity,constrainMinimumTimeBetweenShifts,minimumTimeBetweenShiftsMinutes,minimumConsecutiveNonWorkingMinutesPerWeek,constrainMaximumConsecutiveWorkingWeekends,maximumConsecutiveWorkingWeekends,constrainMaximumConsecutiveWorkingDays,maximumConsecutiveWorkingDays,minimumShiftStartDistanceMinutes,minimumDaysOffPerPlanningPeriod,maximumDaysOffPerPlanningPeriod,minimumPaidMinutesPerPlanningPeriod,maximumPaidMinutesPerPlanningPeriod,shiftStartVarianceType,agentCount,version,shiftStartVariances,minimumWorkingDaysPerWeek,maximumDays,UPDATES,VALID\n';
+            for (const entity of entities) {
+                const managementUnitId = entity.id;
+                console.log(`Fetching workplans for management unit ${managementUnitId}...`);
+                try {
+                    const workplansResponse = await fetchWithRetry(`${baseUrl}/${managementUnitId}/workplans`, token);
+
+                    if (workplansResponse.ok) {
+                        const workplansData = await workplansResponse.json();
+                        console.log(`Workplans for management unit ${managementUnitId} fetched:`, workplansData);
+                        outputTextArea.value += `✅ Successfully fetched workplans for management unit ${managementUnitId}.\n`;
+                        for (const workplan of workplansData.entities) {
+                            console.log(`Fetching details for workplan ${workplan.id}...`);
+                            const workplanDetailsResponse = await fetchWithRetry(`${baseUrl}/${managementUnitId}/workplans/${workplan.id}`, token);
+
+                            if (workplanDetailsResponse.ok) {
+                                const workplanDetails = await workplanDetailsResponse.json();
+                                console.log(`Details for workplan ${workplan.id} fetched:`, workplanDetails);
+                                outputTextArea.value += `✅ Successfully fetched details for workplan ${workplan.id}.\n`;
+
+                                csvContent += `${entity.name},${managementUnitId},${workplan.name},${workplan.id},${workplan.enabled},${workplanDetails.constrainWeeklyPaidTime},${workplanDetails.flexibleWeeklyPaidTime},${workplanDetails.weeklyExactPaidMinutes},${workplanDetails.weeklyMinimumPaidMinutes},${workplanDetails.weeklyMaximumPaidMinutes},${workplanDetails.constrainPaidTimeGranularity},${workplanDetails.constrainMinimumTimeBetweenShifts},${workplanDetails.minimumTimeBetweenShiftsMinutes},${workplanDetails.minimumConsecutiveNonWorkingMinutesPerWeek},${workplanDetails.constrainMaximumConsecutiveWorkingWeekends},${workplanDetails.maximumConsecutiveWorkingWeekends},${workplanDetails.constrainMaximumConsecutiveWorkingDays},${workplanDetails.maximumConsecutiveWorkingDays},${workplanDetails.minimumShiftStartDistanceMinutes},${workplanDetails.minimumDaysOffPerPlanningPeriod},${workplanDetails.maximumDaysOffPerPlanningPeriod},${workplanDetails.minimumPaidMinutesPerPlanningPeriod},${workplanDetails.maximumPaidMinutesPerPlanningPeriod},${workplanDetails.shiftStartVarianceType},${workplanDetails.agentCount},${workplanDetails.metadata.version},"${JSON.stringify(workplanDetails.shiftStartVariances).replace(/"/g, '""')}",${workplanDetails.minimumWorkingDaysPerWeek},${workplanDetails.maximumDays},FALSE,TRUE\n`;
+                            } else {
+                                const errorMessage = `Error fetching details for workplan ${workplan.id}: ${workplanDetailsResponse.statusText}`;
+                                console.error(errorMessage);
+                                outputTextArea.value += `❌ ${errorMessage}\n`;
+                            }
+                        }
+                    } else {
+                        const errorMessage = `Error fetching workplans for management unit ${managementUnitId}: ${workplansResponse.statusText}`;
+                        console.error(errorMessage);
+                        outputTextArea.value += `❌ ${errorMessage}\n`;
+                    }
+                } catch (error) {
+                    const errorMessage = `Error: ${error}`;
+                    console.error(errorMessage);
+                    outputTextArea.value += `❌ ${errorMessage}\n`;
+                }
+            }
+            return csvContent;
+        }
+
+        function downloadCSV(csvData) {
+            const blob = new Blob([csvData], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('hidden', '');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'workplan_data.csv');
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            console.log('CSV download completed.');
+        }
+
+        async function fetchWithRetry(url, token, data = null, retries = 3, delay = 2000) {
+            for (let i = 0; i < retries; i++) {
+                const response = await fetch(url, {
+                    method: data ? 'PATCH' : 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: data ? JSON.stringify(data) : null
+                });
+
+                if (response.ok) {
+                    return response;
+                }
+
+                if (response.status === 429) {
+                    const retryAfter = response.headers.get('Retry-After');
+                    const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : delay;
+                    console.warn(`Too many requests. Retrying after ${waitTime / 1000} seconds...`);
+                    await new Promise(resolve => setTimeout(resolve, waitTime));
+                } else {
+                    const errorMessage = `Request failed with status ${response.status}: ${response.statusText}`;
+                    console.error(errorMessage);
+                    if (i === retries - 1) {
+                        throw new Error(errorMessage);
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
