@@ -115,28 +115,24 @@
 
 function parseRow(row) {
     const values = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); // Split CSV by commas outside of quoted strings
-    let shiftStartVariances, optionalDays, shifts;
-
-    try {
-        shiftStartVariances = JSON.parse(values[26]?.trim() || '{"values":[]}');
-    } catch (e) {
-        console.error(`Error parsing shiftStartVariances for row: ${row}`, e);
-        shiftStartVariances = { values: [] };
+    
+    function parseJsonField(field, defaultValue) {
+        try {
+            const trimmedField = field.trim();
+            if (trimmedField.startsWith('"') && trimmedField.endsWith('"')) {
+                return JSON.parse(trimmedField.slice(1, -1).replace(/""/g, '"'));
+            } else {
+                return JSON.parse(trimmedField);
+            }
+        } catch (e) {
+            console.error(`Error parsing JSON field: ${field}`, e);
+            return defaultValue;
+        }
     }
 
-    try {
-        optionalDays = JSON.parse(values[30]?.trim() || '[]');
-    } catch (e) {
-        console.error(`Error parsing optionalDays for row: ${row}`, e);
-        optionalDays = [];
-    }
-
-    try {
-        shifts = JSON.parse(values[31]?.trim() || '[]');
-    } catch (e) {
-        console.error(`Error parsing shifts for row: ${row}`, e);
-        shifts = [];
-    }
+    let shiftStartVariances = parseJsonField(values[26] || '{"values": []}', { values: [] });
+    let optionalDays = parseJsonField(values[30] || '[]', []);
+    let shifts = parseJsonField(values[31] || '[]', []);
 
     return {
         managementUnitId: values[1]?.trim() || '',
