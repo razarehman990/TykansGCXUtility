@@ -60,9 +60,9 @@
             border-radius: 50%;
             border-top-color: #0F3057;
             animation: spin 1s ease-in-out infinite;
-            position: absolute;
+            position: relative;
             margin-left: 10px;
-            z-index: 1;
+            vertical-align: middle;
         }
 
         @keyframes spin {
@@ -92,7 +92,7 @@
         </div>
         <div>
             <button class="button" id="exportBtn">Export</button>
-            <div class="spinner" id="spinner" style="display: inline-block;"></div>
+            <div class="spinner" id="spinner"></div>
         </div>
         <button class="button" id="importBtn" style="display:none;">Import</button>
         <input type="file" id="fileInput" accept=".xlsx">
@@ -122,7 +122,7 @@
         async function exportData() {
             const exportBtn = document.getElementById('exportBtn');
             const spinner = document.getElementById('spinner');
-            spinner.style.display = 'block'; // Show spinner
+            spinner.style.display = 'inline-block'; // Show spinner
             const outputTextArea = document.getElementById('output');
             outputTextArea.value = ''; // Clear output
 
@@ -163,6 +163,28 @@
                     const ws = XLSX.utils.json_to_sheet(users, { header: ["AgentName", "AgentId", "AgentEmail", "ManagementUnit", "BusinessUnit", "ActivityCodeName", "Date", "Duration"] });
                     XLSX.utils.book_append_sheet(wb, ws, 'Time-off Request');
 
+                    const buSet = new Set(users.map(user => user.BusinessUnit));
+
+                    for (const buId of buSet) {
+                        try {
+                            const acResponse = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits/${buId}/activitycodes`, token);
+                            if (acResponse.ok) {
+                                const acData = await acResponse.json();
+                                acData.entities.forEach(ac => {
+                                    activityCodes.add({ ActivityCodeName: ac.name || ac.category, ActivityCodeId: ac.id });
+                                });
+                            } else {
+                                const errorMessage = `Error fetching activity codes for business unit ${buId}: ${acResponse.statusText}`;
+                                console.error(errorMessage);
+                                outputTextArea.value += `❌ ${errorMessage}\n`;
+                            }
+                        } catch (error) {
+                            const errorMessage = `Error: ${error}`;
+                            console.error(errorMessage);
+                            outputTextArea.value += `❌ ${errorMessage}\n`;
+                        }
+                    }
+
                     for (const user of users) {
                         try {
                             const muResponse = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/agents/${user.AgentId}/managementunit`, token);
@@ -172,27 +194,18 @@
                                 user.ManagementUnit = muData.managementUnit.id;
                                 user.BusinessUnit = muData.businessUnit.id;
 
-                                const acResponse = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits/${user.BusinessUnit}/activitycodes`, token);
-
-                                if (acResponse.ok) {
-                                    const acData = await acResponse.json();
-                                    acData.entities.forEach(ac => {
-                                        activityCodes.add({ ActivityCodeName: ac.name || ac.category, ActivityCodeId: ac.id });
-                                    });
-                                    user.ActivityCodeName = acData.entities.map(ac => ac.name || ac.category).join(", ");
-                                }
                                 outputTextArea.value += `✅ Successfully processed user ${user.AgentName}.\n`;
                             } else if (muResponse.status === 404) {
-                                const warnMessage = `Management unit not found for agent ${user.AgentId}`;
+                                const warnMessage = `Management unit not found for agent ${user.AgentName} (${user.AgentId})`;
                                 console.warn(warnMessage);
                                 outputTextArea.value += `⚠️ ${warnMessage}\n`;
                             } else {
-                                const errorMessage = `Error fetching management unit for agent ${user.AgentId}: ${muResponse.statusText}`;
+                                const errorMessage = `Error fetching management unit for agent ${user.AgentName} (${user.AgentId}): ${muResponse.statusText}`;
                                 console.error(errorMessage);
                                 outputTextArea.value += `❌ ${errorMessage}\n`;
                             }
                         } catch (error) {
-                            const errorMessage = `Error: ${error}`;
+                            const errorMessage = `Error processing user ${user.AgentName} (${user.AgentId}): ${error}`;
                             console.error(errorMessage);
                             outputTextArea.value += `❌ ${errorMessage}\n`;
                         }
