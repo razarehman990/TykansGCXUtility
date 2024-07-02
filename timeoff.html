@@ -131,7 +131,7 @@
                 let pageNumber = 1;
                 let hasMorePages = true;
                 let users = [];
-                let activityCodes = new Set();
+                let activityCodes = new Map();
 
                 // Fetch business units
                 const businessUnitsResponse = await fetchWithRetry('https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits', token);
@@ -148,7 +148,7 @@
                         if (acResponse.ok) {
                             const acData = await acResponse.json();
                             acData.entities.forEach(ac => {
-                                activityCodes.add({ ActivityCodeName: ac.name || ac.category, ActivityCodeId: ac.id });
+                                activityCodes.set(ac.name || ac.category, ac.id);
                             });
                         } else {
                             const errorMessage = `Error fetching activity codes for business unit ${businessUnit.id}: ${acResponse.statusText}`;
@@ -219,7 +219,7 @@
                         }
                     }
 
-                    const acSheetData = Array.from(activityCodes);
+                    const acSheetData = Array.from(activityCodes.entries()).map(([ActivityCodeName, ActivityCodeId]) => ({ ActivityCodeName, ActivityCodeId }));
                     if (acSheetData.length > 0) {
                         const wsAc = XLSX.utils.json_to_sheet(acSheetData);
                         XLSX.utils.book_append_sheet(wb, wsAc, 'Activity Codes');
