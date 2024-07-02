@@ -133,6 +133,36 @@
                 let users = [];
                 let activityCodes = new Set();
 
+                // Fetch business units
+                const businessUnitsResponse = await fetchWithRetry('https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits', token);
+                if (!businessUnitsResponse.ok) {
+                    throw new Error(`Error fetching business units: ${businessUnitsResponse.statusText}`);
+                }
+                const businessUnitsData = await businessUnitsResponse.json();
+                const businessUnits = businessUnitsData.entities;
+
+                // Fetch activity codes for each business unit
+                for (const businessUnit of businessUnits) {
+                    try {
+                        const acResponse = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits/${businessUnit.id}/activitycodes`, token);
+                        if (acResponse.ok) {
+                            const acData = await acResponse.json();
+                            acData.entities.forEach(ac => {
+                                activityCodes.add({ ActivityCodeName: ac.name || ac.category, ActivityCodeId: ac.id });
+                            });
+                        } else {
+                            const errorMessage = `Error fetching activity codes for business unit ${businessUnit.id}: ${acResponse.statusText}`;
+                            console.error(errorMessage);
+                            outputTextArea.value += `❌ ${errorMessage}\n`;
+                        }
+                    } catch (error) {
+                        const errorMessage = `Error: ${error}`;
+                        console.error(errorMessage);
+                        outputTextArea.value += `❌ ${errorMessage}\n`;
+                    }
+                }
+
+                // Fetch users
                 while (hasMorePages) {
                     const response = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/users?pageSize=100&pageNumber=${pageNumber}`, token);
                     if (response.ok) {
@@ -162,28 +192,6 @@
                     const wb = XLSX.utils.book_new();
                     const ws = XLSX.utils.json_to_sheet(users, { header: ["AgentName", "AgentId", "AgentEmail", "ManagementUnit", "BusinessUnit", "ActivityCodeName", "Date", "Duration"] });
                     XLSX.utils.book_append_sheet(wb, ws, 'Time-off Request');
-
-                    const buSet = new Set(users.map(user => user.BusinessUnit));
-
-                    for (const buId of buSet) {
-                        try {
-                            const acResponse = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits/${buId}/activitycodes`, token);
-                            if (acResponse.ok) {
-                                const acData = await acResponse.json();
-                                acData.entities.forEach(ac => {
-                                    activityCodes.add({ ActivityCodeName: ac.name || ac.category, ActivityCodeId: ac.id });
-                                });
-                            } else {
-                                const errorMessage = `Error fetching activity codes for business unit ${buId}: ${acResponse.statusText}`;
-                                console.error(errorMessage);
-                                outputTextArea.value += `❌ ${errorMessage}\n`;
-                            }
-                        } catch (error) {
-                            const errorMessage = `Error: ${error}`;
-                            console.error(errorMessage);
-                            outputTextArea.value += `❌ ${errorMessage}\n`;
-                        }
-                    }
 
                     for (const user of users) {
                         try {
