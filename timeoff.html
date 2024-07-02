@@ -1,1 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workplan Operations</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #fff;
+            color: #0F3057;
+            text-align: center;
+        }
 
+        .container {
+            margin-top: 150px;
+        }
+
+        .button {
+            margin: 20px;
+            padding: 15px 30px;
+            background-color: #0F3057;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        .button:hover {
+            background-color: #fff;
+            color: #0F3057;
+            border: 2px solid #0F3057;
+        }
+
+        #output-container {
+            position: relative;
+            width: 80%;
+            margin: 20px auto;
+            text-align: left;
+        }
+
+        #output {
+            width: 100%;
+            min-height: 200px;
+            display: block;
+            overflow-x: auto;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+        }
+
+        .spinner {
+            display: none;
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(15, 48, 87, 0.3);
+            border-radius: 50%;
+            border-top-color: #0F3057;
+            animation: spin 1s ease-in-out infinite;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        #fileInput {
+            display: none;
+            margin: 20px auto;
+        }
+
+        #importBtn {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <img id="logo" src="https://www.tykans.com/hs-fs/hubfs/Tykans_June2023/Images/Tykans%20-header-logo.png" alt="Tykans Logo">
+        <h1 id="title">Workplan Operations</h1>
+    </div>
+    <div class="container">
+        <div id="output-container">
+            <div class="spinner" id="spinner"></div>
+            <textarea id="output" readonly></textarea>
+        </div>
+        <button class="button" id="exportBtn">Export</button>
+        <button class="button" id="uploadBtn">Upload</button>
+        <input type="file" id="fileInput" accept=".xlsx">
+        <button class="button" id="importBtn">Import</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+    <script>
+        document.getElementById('exportBtn').addEventListener('click', exportData);
+        document.getElementById('uploadBtn').addEventListener('click', () => {
+            document.getElementById('fileInput').click();
+        });
+
+        document.getElementById('fileInput').addEventListener('change', () => {
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                console.log(`File uploaded: ${file.name} (${file.size} bytes, ${file.type})`);
+                document.getElementById('importBtn').style.display = 'inline-block';
+            }
+        });
+
+        document.getElementById('importBtn').addEventListener('click', () => {
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                parseExcel(file);
+            }
+        });
+
+        async function exportData() {
+            const exportBtn = document.getElementById('exportBtn');
+            const spinner = document.getElementById('spinner');
+            spinner.style.display = 'block'; // Show spinner
+            const outputTextArea = document.getElementById('output');
+            outputTextArea.value = ''; // Clear output
+
+            try {
+                const token = new URLSearchParams(window.location.search).get('token');
+                const response = await fetch('https://api.cac1.pure.cloud/api/v2/users', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const users = data.entities.map(user => ({
+                        AgentName: user.name,
+                        AgentId: user.id,
+                        AgentEmail: user.email
+                    }));
+
+                    const wb = XLSX.utils.book_new();
+                    const ws = XLSX.utils.json_to_sheet(users);
+                    XLSX.utils.book_append_sheet(wb, ws, 'Users');
+
+                    // Adding Management Unit and Business Unit columns
+                    ws['!cols'] = [{ wch: 20 }, { wch: 36 }, { wch: 30 }, { wch: 36 }, { wch: 36 }];
+
+                    for (const user of users) {
+                        const muResponse = await fetch(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/agents/${user.AgentId}/managementunit`, {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+
+                        if (muResponse.ok) {
+                            const muData = await muResponse.json();
+                            user.ManagementUnit = muData.managementUnit.id;
+                            user.BusinessUnit = muData.businessUnit.id;
+
+                            const acResponse = await fetch(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits/${user.BusinessUnit}/activitycodes`, {
+                                method: 'GET',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                }
+                            });
+
+                            if (acResponse.ok) {
+                                const acData = await acResponse.json();
+                                user.ActivityCodeName = acData.entities.map(ac => ac.name || ac.category);
+                                user.ActivityCodeId = acData.entities.map(ac => ac.id);
+                            }
+                        }
+                    }
+
+                    // Add Date and Duration columns
+                    ws['!cols'].push({ wch: 20 }, { wch: 15 });
+                    XLSX.utils.sheet_add_aoa(ws, [['Date', 'Duration']], { origin: -1 });
+
+                    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
+                    const blob = new Blob([s2ab(wbout)], { type: 'application/octet-stream' });
+
+                    saveAs(blob, 'users_data.xlsx');
+                    outputTextArea.value += 'Export completed successfully.\n';
+
+                    document.getElementById('importBtn').style.display = 'inline-block';
+                } else {
+                    const errorMessage = `Error fetching users: ${response.statusText}`;
+                    console.error(errorMessage);
+                    outputTextArea.value += `❌ ${errorMessage}\n`;
+                }
+            } catch (error) {
+                const errorMessage = `Error: ${error}`;
+                console.error(errorMessage);
+                outputTextArea.value += `❌ ${errorMessage}\n`;
+            } finally {
+                spinner.style.display = 'none'; // Hide spinner
+            }
+        }
+
+        function parseExcel(file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(firstSheet);
+                console.log('Excel data parsed:', rows);
+                executeImport(rows);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        async function executeImport(rows) {
+            const token = new URLSearchParams(window.location.search).get('token');
+            const outputTextArea = document.getElementById('output');
+            outputTextArea.value = ''; // Clear output
+
+            for (const row of rows) {
+                const requestBody = {
+                    status: 'APPROVED',
+                    users: [{ id: row.AgentId }],
+                    activityCodeId: row.ActivityCodeId,
+                    notes: 'Initial time-off load',
+                    fullDayManagementUnitDates: [row.Date],
+                    partialDayStartDateTimes: [],
+                    dailyDurationMinutes: row.Duration
+                };
+
+                try {
+                    const response = await fetch(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/managementunits/${row.ManagementUnit}/timeoffrequests`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(requestBody)
+                    });
+
+                    if (response.ok) {
+                        const successMessage = `✅ Successfully imported time-off request for agent ${row.AgentName}.`;
+                        console.log(successMessage);
+                        outputTextArea.value += `${successMessage}\n`;
+                    } else {
+                        const errorMessage = `Error importing time-off request for agent ${row.AgentName}: ${response.statusText}`;
+                        console.error(errorMessage);
+                        outputTextArea.value += `❌ ${errorMessage}\n`;
+                    }
+                } catch (error) {
+                    const errorMessage = `Error: ${error}`;
+                    console.error(errorMessage);
+                    outputTextArea.value += `❌ ${errorMessage}\n`;
+                }
+            }
+        }
+
+        function s2ab(s) {
+            const buf = new ArrayBuffer(s.length);
+            const view = new Uint8Array(buf);
+            for (let i = 0; i < s.length; i++) view[i] = s.charCodeAt(i) & 0xFF;
+            return buf;
+        }
+    </script>
+</body>
+</html>
