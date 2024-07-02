@@ -94,18 +94,14 @@
             <textarea id="output" readonly></textarea>
         </div>
         <button class="button" id="exportBtn">Export</button>
-        <button class="button" id="uploadBtn">Upload</button>
+        <button class="button" id="importBtn" style="display:none;">Import</button>
         <input type="file" id="fileInput" accept=".xlsx">
-        <button class="button" id="importBtn">Import</button>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script>
         document.getElementById('exportBtn').addEventListener('click', exportData);
-        document.getElementById('uploadBtn').addEventListener('click', () => {
-            document.getElementById('fileInput').click();
-        });
-
         document.getElementById('fileInput').addEventListener('change', () => {
             const fileInput = document.getElementById('fileInput');
             if (fileInput.files.length > 0) {
@@ -132,44 +128,47 @@
 
             try {
                 const token = new URLSearchParams(window.location.search).get('token');
-                const response = await fetch('https://api.cac1.pure.cloud/api/v2/users', {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
+                let pageNumber = 1;
+                let hasMorePages = true;
+                let users = [];
+
+                while (hasMorePages) {
+                    const response = await fetch(`https://api.cac1.pure.cloud/api/v2/users?pageSize=100&pageNumber=${pageNumber}`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        users = users.concat(data.entities.map(user => ({
+                            AgentName: user.name,
+                            AgentId: user.id,
+                            AgentEmail: user.email
+                        })));
+
+                        hasMorePages = !!data.nextUri;
+                        pageNumber++;
+                    } else {
+                        const errorMessage = `Error fetching users: ${response.statusText}`;
+                        console.error(errorMessage);
+                        outputTextArea.value += `❌ ${errorMessage}\n`;
+                        break;
                     }
-                });
+                }
 
-                if (response.ok) {
-                    const data = await response.json();
-                    const users = data.entities.map(user => ({
-                        AgentName: user.name,
-                        AgentId: user.id,
-                        AgentEmail: user.email
-                    }));
-
+                if (users.length > 0) {
                     const wb = XLSX.utils.book_new();
                     const ws = XLSX.utils.json_to_sheet(users);
                     XLSX.utils.book_append_sheet(wb, ws, 'Users');
 
-                    // Adding Management Unit and Business Unit columns
                     ws['!cols'] = [{ wch: 20 }, { wch: 36 }, { wch: 30 }, { wch: 36 }, { wch: 36 }];
 
                     for (const user of users) {
-                        const muResponse = await fetch(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/agents/${user.AgentId}/managementunit`, {
-                            method: 'GET',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${token}`
-                            }
-                        });
-
-                        if (muResponse.ok) {
-                            const muData = await muResponse.json();
-                            user.ManagementUnit = muData.managementUnit.id;
-                            user.BusinessUnit = muData.businessUnit.id;
-
-                            const acResponse = await fetch(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits/${user.BusinessUnit}/activitycodes`, {
+                        try {
+                            const muResponse = await fetch(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/agents/${user.AgentId}/managementunit`, {
                                 method: 'GET',
                                 headers: {
                                     'Content-Type': 'application/json',
@@ -177,15 +176,38 @@
                                 }
                             });
 
-                            if (acResponse.ok) {
-                                const acData = await acResponse.json();
-                                user.ActivityCodeName = acData.entities.map(ac => ac.name || ac.category);
-                                user.ActivityCodeId = acData.entities.map(ac => ac.id);
+                            if (muResponse.ok) {
+                                const muData = await muResponse.json();
+                                user.ManagementUnit = muData.managementUnit.id;
+                                user.BusinessUnit = muData.businessUnit.id;
+
+                                const acResponse = await fetch(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits/${user.BusinessUnit}/activitycodes`, {
+                                    method: 'GET',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'Authorization': `Bearer ${token}`
+                                    }
+                                });
+
+                                if (acResponse.ok) {
+                                    const acData = await acResponse.json();
+                                    user.ActivityCodeName = acData.entities.map(ac => ac.name || ac.category);
+                                    user.ActivityCodeId = acData.entities.map(ac => ac.id);
+                                }
+                            } else if (muResponse.status === 404) {
+                                console.warn(`Management unit not found for agent ${user.AgentId}`);
+                            } else {
+                                const errorMessage = `Error fetching management unit for agent ${user.AgentId}: ${muResponse.statusText}`;
+                                console.error(errorMessage);
+                                outputTextArea.value += `❌ ${errorMessage}\n`;
                             }
+                        } catch (error) {
+                            const errorMessage = `Error: ${error}`;
+                            console.error(errorMessage);
+                            outputTextArea.value += `❌ ${errorMessage}\n`;
                         }
                     }
 
-                    // Add Date and Duration columns
                     ws['!cols'].push({ wch: 20 }, { wch: 15 });
                     XLSX.utils.sheet_add_aoa(ws, [['Date', 'Duration']], { origin: -1 });
 
@@ -197,9 +219,7 @@
 
                     document.getElementById('importBtn').style.display = 'inline-block';
                 } else {
-                    const errorMessage = `Error fetching users: ${response.statusText}`;
-                    console.error(errorMessage);
-                    outputTextArea.value += `❌ ${errorMessage}\n`;
+                    outputTextArea.value += 'No users found to export.\n';
                 }
             } catch (error) {
                 const errorMessage = `Error: ${error}`;
