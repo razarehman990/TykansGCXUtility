@@ -148,7 +148,7 @@
                         if (acResponse.ok) {
                             const acData = await acResponse.json();
                             acData.entities.forEach(ac => {
-                                activityCodes.set(ac.name || ac.category, ac.id);
+                                activityCodes.set(ac.name || ac.category, { id: ac.id, category: ac.category });
                             });
                         } else {
                             const errorMessage = `Error fetching activity codes for business unit ${businessUnit.id}: ${acResponse.statusText}`;
@@ -201,6 +201,12 @@
                                 const muData = await muResponse.json();
                                 user.ManagementUnit = muData.managementUnit.id;
                                 user.BusinessUnit = muData.businessUnit.id;
+                                // Update the worksheet with the new values
+                                const userIndex = users.findIndex(u => u.AgentId === user.AgentId);
+                                if (userIndex !== -1) {
+                                    ws[`D${userIndex + 2}`] = { t: 's', v: user.ManagementUnit };
+                                    ws[`E${userIndex + 2}`] = { t: 's', v: user.BusinessUnit };
+                                }
 
                                 outputTextArea.value += `✅ Successfully processed user ${user.AgentName}.\n`;
                             } else if (muResponse.status === 404) {
@@ -219,7 +225,7 @@
                         }
                     }
 
-                    const acSheetData = Array.from(activityCodes.entries()).map(([ActivityCodeName, ActivityCodeId]) => ({ ActivityCodeName, ActivityCodeId }));
+                    const acSheetData = Array.from(activityCodes.entries()).map(([ActivityCodeName, { id, category }]) => ({ ActivityCodeName, ActivityCodeId: id, ActivityCategory: category }));
                     if (acSheetData.length > 0) {
                         const wsAc = XLSX.utils.json_to_sheet(acSheetData);
                         XLSX.utils.book_append_sheet(wb, wsAc, 'Activity Codes');
