@@ -171,8 +171,10 @@
                             AgentName: user.name,
                             AgentId: user.id,
                             AgentEmail: user.email,
-                            ManagementUnit: "",
-                            BusinessUnit: "",
+                            ManagementUnitId: "",
+                            ManagementUnitName: "",
+                            BusinessUnitId: "",
+                            BusinessUnitName: "",
                             ActivityCodeName: "",
                             Date: "",
                             Duration: ""
@@ -189,23 +191,32 @@
                 }
 
                 if (users.length > 0) {
-                    const wb = XLSX.utils.book_new();
-                    const ws = XLSX.utils.json_to_sheet(users, { header: ["AgentName", "AgentId", "AgentEmail", "ManagementUnit", "BusinessUnit", "ActivityCodeName", "Date", "Duration"] });
-                    XLSX.utils.book_append_sheet(wb, ws, 'Time-off Request');
-
                     for (const user of users) {
                         try {
                             const muResponse = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/agents/${user.AgentId}/managementunit`, token);
-
                             if (muResponse.ok) {
                                 const muData = await muResponse.json();
-                                user.ManagementUnit = muData.managementUnit.id;
-                                user.BusinessUnit = muData.businessUnit.id;
-                                // Update the worksheet with the new values
-                                const userIndex = users.findIndex(u => u.AgentId === user.AgentId);
-                                if (userIndex !== -1) {
-                                    ws[`D${userIndex + 2}`] = { t: 's', v: user.ManagementUnit };
-                                    ws[`E${userIndex + 2}`] = { t: 's', v: user.BusinessUnit };
+                                user.ManagementUnitId = muData.managementUnit.id;
+                                user.BusinessUnitId = muData.businessUnit.id;
+
+                                const buResponse = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits/${user.BusinessUnitId}`, token);
+                                if (buResponse.ok) {
+                                    const buData = await buResponse.json();
+                                    user.BusinessUnitName = buData.name;
+                                } else {
+                                    const errorMessage = `Error fetching business unit for agent ${user.AgentName} (${user.AgentId}): ${buResponse.statusText}`;
+                                    console.error(errorMessage);
+                                    outputTextArea.value += `❌ ${errorMessage}\n`;
+                                }
+
+                                const muNameResponse = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/managementunits/${user.ManagementUnitId}`, token);
+                                if (muNameResponse.ok) {
+                                    const muNameData = await muNameResponse.json();
+                                    user.ManagementUnitName = muNameData.name;
+                                } else {
+                                    const errorMessage = `Error fetching management unit name for agent ${user.AgentName} (${user.AgentId}): ${muNameResponse.statusText}`;
+                                    console.error(errorMessage);
+                                    outputTextArea.value += `❌ ${errorMessage}\n`;
                                 }
 
                                 outputTextArea.value += `✅ Successfully processed user ${user.AgentName}.\n`;
@@ -224,6 +235,13 @@
                             outputTextArea.value += `❌ ${errorMessage}\n`;
                         }
                     }
+
+                    // Filter out users with both ManagementUnitId and BusinessUnitId empty
+                    users = users.filter(user => user.ManagementUnitId || user.BusinessUnitId);
+
+                    const wb = XLSX.utils.book_new();
+                    const ws = XLSX.utils.json_to_sheet(users, { header: ["AgentName", "AgentEmail", "AgentId", "BusinessUnitName", "BusinessUnitId", "ManagementUnitName", "ManagementUnitId", "ActivityCodeName", "Date", "Duration"] });
+                    XLSX.utils.book_append_sheet(wb, ws, 'Time-off Request');
 
                     const acSheetData = Array.from(activityCodes.entries()).map(([ActivityCodeName, { id, category }]) => ({ ActivityCodeName, ActivityCodeId: id, ActivityCategory: category }));
                     if (acSheetData.length > 0) {
@@ -304,7 +322,7 @@
                 };
 
                 try {
-                    const response = await fetch(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/managementunits/${row.ManagementUnit}/timeoffrequests`, {
+                    const response = await fetch(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/managementunits/${row.ManagementUnitId}/timeoffrequests`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
