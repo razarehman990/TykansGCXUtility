@@ -134,7 +134,9 @@
         });
 
         document.getElementById('importBtn').addEventListener('click', () => {
+            console.log('Import button clicked');
             if (uploadedRows && uploadedRows.length > 0) {
+                console.log('Executing import with uploaded rows:', uploadedRows);
                 executeImport(uploadedRows);
             } else {
                 alert('Please upload a valid Excel file first.');
