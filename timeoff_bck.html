@@ -76,10 +76,6 @@
             margin: 20px auto;
         }
 
-        #importBtn {
-            display: none;
-        }
-
         #importSpinner {
             display: none;
             width: 20px;
@@ -108,6 +104,10 @@
             <div class="spinner" id="spinner"></div>
         </div>
         <div>
+            <button class="button" id="uploadBtn">Upload</button>
+            <div class="spinner" id="uploadSpinner"></div>
+        </div>
+        <div>
             <button class="button" id="importBtn" style="display:none;">Import</button>
             <div class="spinner" id="importSpinner"></div>
         </div>
@@ -117,210 +117,225 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script>
+        let uploadedRows = [];
+
         document.getElementById('exportBtn').addEventListener('click', exportData);
+        document.getElementById('uploadBtn').addEventListener('click', () => {
+            document.getElementById('fileInput').click();
+        });
+
         document.getElementById('fileInput').addEventListener('change', () => {
             const fileInput = document.getElementById('fileInput');
             if (fileInput.files.length > 0) {
                 const file = fileInput.files[0];
                 console.log(`File uploaded: ${file.name} (${file.size} bytes, ${file.type})`);
-                document.getElementById('importBtn').style.display = 'inline-block';
+                uploadedRows = []; // Reset the uploadedRows array
+                document.getElementById('importBtn').style.display = 'none'; // Hide Import button until parsing completes
+                parseExcel(file);
+                fileInput.value = ''; // Reset the file input value to allow re-upload of the same file
             }
         });
 
         document.getElementById('importBtn').addEventListener('click', () => {
-            const fileInput = document.getElementById('fileInput');
-            if (fileInput.files.length > 0) {
-                const file = fileInput.files[0];
-                parseExcel(file);
+            console.log('Import button clicked');
+            if (uploadedRows && uploadedRows.length > 0) {
+                console.log('Executing import with uploaded rows:', uploadedRows);
+                executeImport(uploadedRows);
             } else {
-                alert("Please upload an Excel file first.");
+                console.log('No uploaded rows found');
+                alert('Please upload a valid Excel file first.');
             }
         });
 
-        async function exportData() {
-            const exportBtn = document.getElementById('exportBtn');
-            const spinner = document.getElementById('spinner');
-            spinner.style.display = 'inline-block'; // Show spinner
-            const outputTextArea = document.getElementById('output');
-            outputTextArea.value = ''; // Clear output
+       async function exportData() {
+    const exportBtn = document.getElementById('exportBtn');
+    const spinner = document.getElementById('spinner');
+    spinner.style.display = 'inline-block'; // Show spinner
+    const outputTextArea = document.getElementById('output');
+    outputTextArea.value = ''; // Clear output
 
-            try {
-                const token = new URLSearchParams(window.location.search).get('token');
-                let pageNumber = 1;
-                let hasMorePages = true;
-                let users = [];
-                let activityCodes = new Map();
+    try {
+        const token = new URLSearchParams(window.location.search).get('token');
+        let pageNumber = 1;
+        let hasMorePages = true;
+        let users = [];
+        let activityCodes = new Map();
 
-                // Fetch business units
+        // Fetch business units
+        try {
+            const businessUnitsResponse = await fetchWithRetry('https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits', token);
+            if (!businessUnitsResponse.ok) {
+                const errorResponse = await businessUnitsResponse.json();
+                throw new Error(`Error fetching business units: ${businessUnitsResponse.statusText}: ${errorResponse.message}`);
+            }
+            const businessUnitsData = await businessUnitsResponse.json();
+            const businessUnits = businessUnitsData.entities;
+
+            outputTextArea.value += `✅ Successfully fetched business units.\n`;
+
+            // Fetch activity codes for each business unit
+            for (const businessUnit of businessUnits) {
                 try {
-                    const businessUnitsResponse = await fetchWithRetry('https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits', token);
-                    if (!businessUnitsResponse.ok) {
-                        throw new Error(`Error fetching business units: ${businessUnitsResponse.statusText}`);
-                    }
-                    const businessUnitsData = await businessUnitsResponse.json();
-                    const businessUnits = businessUnitsData.entities;
-
-                    outputTextArea.value += `✅ Successfully fetched business units.\n`;
-
-                    // Fetch activity codes for each business unit
-                    for (const businessUnit of businessUnits) {
-                        try {
-                            const acResponse = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits/${businessUnit.id}/activitycodes`, token);
-                            if (acResponse.ok) {
-                                const acData = await acResponse.json();
-                                acData.entities.forEach(ac => {
-                                    activityCodes.set(ac.name || ac.category, { id: ac.id, category: ac.category });
-                                });
-                                outputTextArea.value += `✅ Successfully fetched activity codes for business unit ${businessUnit.id}.\n`;
-                            } else {
-                                const errorMessage = `Error fetching activity codes for business unit ${businessUnit.id}: ${acResponse.statusText}`;
-                                console.error(errorMessage);
-                                outputTextArea.value += `❌ ${errorMessage}\n`;
-                            }
-                        } catch (error) {
-                            const errorMessage = `Error: ${error}`;
-                            console.error(errorMessage);
-                            outputTextArea.value += `❌ ${errorMessage}\n`;
-                        }
+                    const acResponse = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits/${businessUnit.id}/activitycodes`, token);
+                    if (acResponse.ok) {
+                        const acData = await acResponse.json();
+                        acData.entities.forEach(ac => {
+                            activityCodes.set(ac.name || ac.category, { id: ac.id, category: ac.category });
+                        });
+                        outputTextArea.value += `✅ Successfully fetched activity codes for business unit ${businessUnit.id}.\n`;
+                    } else {
+                        const errorResponse = await acResponse.json();
+                        const errorMessage = `Error fetching activity codes for business unit ${businessUnit.id}: ${acResponse.statusText}: ${errorResponse.message}`;
+                        console.error(errorMessage);
+                        outputTextArea.value += `❌ ${errorMessage}\n`;
                     }
                 } catch (error) {
-                    const errorMessage = `Error: ${error}`;
+                    const errorMessage = `Error: ${error.message}`;
                     console.error(errorMessage);
                     outputTextArea.value += `❌ ${errorMessage}\n`;
                 }
+            }
+        } catch (error) {
+            const errorMessage = `Error: ${error.message}`;
+            console.error(errorMessage);
+            outputTextArea.value += `❌ ${errorMessage}\n`;
+        }
 
-                // Fetch users
-                while (hasMorePages) {
-                    const response = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/users?pageSize=100&pageNumber=${pageNumber}`, token);
-                    if (response.ok) {
-                        const data = await response.json();
-                        users = users.concat(data.entities.map(user => ({
-                            AgentName: user.name,
-                            AgentId: user.id,
-                            AgentEmail: user.email,
-                            ManagementUnitId: "",
-                            ManagementUnitName: "",
-                            BusinessUnitId: "",
-                            BusinessUnitName: "",
-                            ActivityCodeName: "",
-                            ActivityCodeId: "",
-                            Date: "",
-                            Duration: "",
-                            UPDATES: "FALSE"
-                        })));
+        // Fetch users
+        while (hasMorePages) {
+            const response = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/users?pageSize=100&pageNumber=${pageNumber}`, token);
+            if (response.ok) {
+                const data = await response.json();
+                users = users.concat(data.entities.map(user => ({
+                    AgentName: user.name,
+                    AgentId: user.id,
+                    AgentEmail: user.email,
+                    ManagementUnitId: "",
+                    ManagementUnitName: "",
+                    BusinessUnitId: "",
+                    BusinessUnitName: "",
+                    ActivityCodeName: "",
+                    ActivityCodeId: "",
+                    Date: "",
+                    Duration: "",
+                    UPDATES: "FALSE"
+                })));
 
-                        hasMorePages = !!data.nextUri;
-                        pageNumber++;
-                    } else {
-                        const errorMessage = `Error fetching users: ${response.statusText}`;
-                        console.error(errorMessage);
-                        outputTextArea.value += `❌ ${errorMessage}\n`;
-                        break;
-                    }
-                }
+                hasMorePages = !!data.nextUri;
+                pageNumber++;
+            } else {
+                const errorResponse = await response.json();
+                const errorMessage = `Error fetching users: ${response.statusText}: ${errorResponse.message}`;
+                console.error(errorMessage);
+                outputTextArea.value += `❌ ${errorMessage}\n`;
+                break;
+            }
+        }
 
-                if (users.length > 0) {
-                    for (const user of users) {
-                        try {
-                            const muResponse = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/agents/${user.AgentId}/managementunit`, token);
-                            if (muResponse.ok) {
-                                const muData = await muResponse.json();
-                                user.ManagementUnitId = muData.managementUnit.id;
-                                user.BusinessUnitId = muData.businessUnit.id;
+        if (users.length > 0) {
+            for (const user of users) {
+                try {
+                    const muResponse = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/agents/${user.AgentId}/managementunit`, token);
+                    if (muResponse.ok) {
+                        const muData = await muResponse.json();
+                        user.ManagementUnitId = muData.managementUnit.id;
+                        user.BusinessUnitId = muData.businessUnit.id;
 
-                                const buResponse = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits/${user.BusinessUnitId}`, token);
-                                if (buResponse.ok) {
-                                    const buData = await buResponse.json();
-                                    user.BusinessUnitName = buData.name;
-                                } else {
-                                    const errorMessage = `Error fetching business unit for agent ${user.AgentName} (${user.AgentId}): ${buResponse.statusText}`;
-                                    console.error(errorMessage);
-                                    outputTextArea.value += `❌ ${errorMessage}\n`;
-                                }
-
-                                const muNameResponse = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/managementunits/${user.ManagementUnitId}`, token);
-                                if (muNameResponse.ok) {
-                                    const muNameData = await muNameResponse.json();
-                                    user.ManagementUnitName = muNameData.name;
-                                } else {
-                                    const errorMessage = `Error fetching management unit name for agent ${user.AgentName} (${user.AgentId}): ${muNameResponse.statusText}`;
-                                    console.error(errorMessage);
-                                    outputTextArea.value += `❌ ${errorMessage}\n`;
-                                }
-
-                                outputTextArea.value += `✅ Successfully processed user ${user.AgentName}.\n`;
-                            } else if (muResponse.status === 404) {
-                                const warnMessage = `Management unit not found for agent ${user.AgentName} (${user.AgentId})`;
-                                console.warn(warnMessage);
-                                outputTextArea.value += `⚠️ ${warnMessage}\n`;
-                            } else {
-                                const errorMessage = `Error fetching management unit for agent ${user.AgentName} (${user.AgentId}): ${muResponse.statusText}`;
-                                console.error(errorMessage);
-                                outputTextArea.value += `❌ ${errorMessage}\n`;
-                            }
-                        } catch (error) {
-                            const errorMessage = `Error processing user ${user.AgentName} (${user.AgentId}): ${error}`;
+                        const buResponse = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits/${user.BusinessUnitId}`, token);
+                        if (buResponse.ok) {
+                            const buData = await buResponse.json();
+                            user.BusinessUnitName = buData.name;
+                        } else {
+                            const errorResponse = await buResponse.json();
+                            const errorMessage = `Error fetching business unit for agent ${user.AgentName} (${user.AgentId}): ${buResponse.statusText}: ${errorResponse.message}`;
                             console.error(errorMessage);
                             outputTextArea.value += `❌ ${errorMessage}\n`;
                         }
+
+                        const muNameResponse = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/managementunits/${user.ManagementUnitId}`, token);
+                        if (muNameResponse.ok) {
+                            const muNameData = await muNameResponse.json();
+                            user.ManagementUnitName = muNameData.name;
+                        } else {
+                            const errorResponse = await muNameResponse.json();
+                            const errorMessage = `Error fetching management unit name for agent ${user.AgentName} (${user.AgentId}): ${muNameResponse.statusText}: ${errorResponse.message}`;
+                            console.error(errorMessage);
+                            outputTextArea.value += `❌ ${errorMessage}\n`;
+                        }
+
+                        outputTextArea.value += `✅ Successfully processed user ${user.AgentName}.\n`;
+                    } else if (muResponse.status === 404) {
+                        const warnMessage = `Management unit not found for agent ${user.AgentName} (${user.AgentId})`;
+                        console.warn(warnMessage);
+                        outputTextArea.value += `⚠️ ${warnMessage}\n`;
+                    } else {
+                        const errorResponse = await muResponse.json();
+                        const errorMessage = `Error fetching management unit for agent ${user.AgentName} (${user.AgentId}): ${muResponse.statusText}: ${errorResponse.message}`;
+                        console.error(errorMessage);
+                        outputTextArea.value += `❌ ${errorMessage}\n`;
                     }
-
-                    // Filter out users with both ManagementUnitId and BusinessUnitId empty
-                    users = users.filter(user => user.ManagementUnitId || user.BusinessUnitId);
-
-                    const wb = XLSX.utils.book_new();
-                    const ws = XLSX.utils.json_to_sheet(users, { header: ["AgentName", "AgentEmail", "AgentId", "BusinessUnitName", "BusinessUnitId", "ManagementUnitName", "ManagementUnitId", "ActivityCodeName", "ActivityCodeId", "Date", "Duration", "UPDATES"] });
-
-                    XLSX.utils.book_append_sheet(wb, ws, 'Time-off Request');
-
-                    const acSheetData = Array.from(activityCodes.entries()).map(([ActivityCodeName, { id, category }]) => ({ ActivityCodeName, ActivityCodeId: id, ActivityCategory: category }));
-                    if (acSheetData.length > 0) {
-                        const wsAc = XLSX.utils.json_to_sheet(acSheetData);
-                        XLSX.utils.book_append_sheet(wb, wsAc, 'Activity Codes');
-                    }
-
-                    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
-                    const blob = new Blob([s2ab(wbout)], { type: 'application/octet-stream' });
-
-                    saveAs(blob, 'GCXUtility_Timeoff.xlsx');
-                    outputTextArea.value += 'Export completed successfully.\n';
-
-                    document.getElementById('importBtn').style.display = 'inline-block';
-                } else {
-                    outputTextArea.value += 'No users found to export.\n';
-                }
-            } catch (error) {
-                const errorMessage = `Error: ${error}`;
-                console.error(errorMessage);
-                outputTextArea.value += `❌ ${errorMessage}\n`;
-            } finally {
-                spinner.style.display = 'none'; // Hide spinner
-            }
-        }
-
-        async function fetchWithRetry(url, token, retries = 3) {
-            for (let i = 0; i < retries; i++) {
-                const response = await fetch(url, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (response.ok) {
-                    return response;
-                } else if (response.status === 429) {
-                    const retryAfter = parseInt(response.headers.get('Retry-After') || '1', 10);
-                    console.warn(`Too many requests. Retrying after ${retryAfter} seconds...`);
-                    await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
-                } else {
-                    if (i === retries - 1) {
-                        throw new Error(`Request failed with status ${response.status}: ${response.statusText}`);
-                    }
+                } catch (error) {
+                    const errorMessage = `Error processing user ${user.AgentName} (${user.AgentId}): ${error.message}`;
+                    console.error(errorMessage);
+                    outputTextArea.value += `❌ ${errorMessage}\n`;
                 }
             }
+
+            // Filter out users with both ManagementUnitId and BusinessUnitId empty
+            users = users.filter(user => user.ManagementUnitId || user.BusinessUnitId);
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(users, { header: ["AgentName", "AgentEmail", "AgentId", "BusinessUnitName", "BusinessUnitId", "ManagementUnitName", "ManagementUnitId", "ActivityCodeName", "ActivityCodeId", "Date", "Duration", "UPDATES"] });
+
+            XLSX.utils.book_append_sheet(wb, ws, 'Time-off Request');
+
+            const acSheetData = Array.from(activityCodes.entries()).map(([ActivityCodeName, { id, category }]) => ({ ActivityCodeName, ActivityCodeId: id, ActivityCategory: category }));
+            if (acSheetData.length > 0) {
+                const wsAc = XLSX.utils.json_to_sheet(acSheetData);
+                XLSX.utils.book_append_sheet(wb, wsAc, 'Activity Codes');
+            }
+
+            const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
+            const blob = new Blob([s2ab(wbout)], { type: 'application/octet-stream' });
+
+            saveAs(blob, 'GCXUtility_Timeoff.xlsx');
+            outputTextArea.value += 'Export completed successfully.\n';
+        } else {
+            outputTextArea.value += 'No users found to export.\n';
         }
+    } catch (error) {
+        const errorMessage = `Error: ${error.message}`;
+        console.error(errorMessage);
+        outputTextArea.value += `❌ ${errorMessage}\n`;
+    } finally {
+        spinner.style.display = 'none'; // Hide spinner
+    }
+}
+
+async function fetchWithRetry(url, token, retries = 3) {
+    for (let i = 0; i < retries; i++) {
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (response.ok) {
+            return response;
+        } else if (response.status === 429) {
+            const retryAfter = parseInt(response.headers.get('Retry-After') || '1', 10);
+            console.warn(`Too many requests. Retrying after ${retryAfter} seconds...`);
+            await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+        } else {
+            if (i === retries - 1) {
+                const errorResponse = await response.json();
+                throw new Error(`Request failed with status ${response.status}: ${response.statusText}: ${errorResponse.message}`);
+            }
+        }
+    }
+}
 
         function parseExcel(file) {
             const reader = new FileReader();
@@ -330,59 +345,64 @@
                 const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                 const rows = XLSX.utils.sheet_to_json(firstSheet);
                 console.log('Excel data parsed:', rows);
-                executeImport(rows);
+                uploadedRows = rows; // Store parsed rows in global variable
+                document.getElementById('importBtn').style.display = 'inline-block'; // Show Import button
             };
             reader.readAsArrayBuffer(file);
         }
 
         async function executeImport(rows) {
-            const token = new URLSearchParams(window.location.search).get('token');
-            const outputTextArea = document.getElementById('output');
-            const importSpinner = document.getElementById('importSpinner');
-            outputTextArea.value = ''; // Clear output
-            importSpinner.style.display = 'inline-block'; // Show spinner
+    const token = new URLSearchParams(window.location.search).get('token');
+    const outputTextArea = document.getElementById('output');
+    const importSpinner = document.getElementById('importSpinner');
+    outputTextArea.value = ''; // Clear output
+    importSpinner.style.display = 'inline-block'; // Show spinner
 
-            for (const row of rows) {
-                if (row.UPDATES === "TRUE") {
-                    const requestBody = {
-                        status: 'APPROVED',
-                        users: [{ id: row.AgentId }],
-                        activityCodeId: row.ActivityCodeId,
-                        notes: 'Initial time-off load',
-                        fullDayManagementUnitDates: [row.Date],
-                        partialDayStartDateTimes: [],
-                        dailyDurationMinutes: row.Duration
-                    };
+    for (const row of rows) {
+        if (row.UPDATES === true) {
+            const dates = row.Date.split(',').map(date => date.trim().replace(/^"|"$/g, '')); // Split and clean date values
+            const requestBody = {
+                status: 'APPROVED',
+                users: [{ id: row.AgentId }],
+                activityCodeId: row.ActivityCodeId,
+                notes: 'Initial time-off load',
+                fullDayManagementUnitDates: dates, // Use cleaned dates
+                partialDayStartDateTimes: [],
+                dailyDurationMinutes: row.Duration
+            };
 
-                    try {
-                        const response = await fetch(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/managementunits/${row.ManagementUnitId}/timeoffrequests`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${token}`
-                            },
-                            body: JSON.stringify(requestBody)
-                        });
+            console.log('Sending API request with body:', requestBody);
 
-                        if (response.ok) {
-                            const successMessage = `✅ Successfully imported time-off request for agent ${row.AgentName}.`;
-                            console.log(successMessage);
-                            outputTextArea.value += `${successMessage}\n`;
-                        } else {
-                            const errorMessage = `Error importing time-off request for agent ${row.AgentName}: ${response.statusText}`;
-                            console.error(errorMessage);
-                            outputTextArea.value += `❌ ${errorMessage}\n`;
-                        }
-                    } catch (error) {
-                        const errorMessage = `Error: ${error}`;
-                        console.error(errorMessage);
-                        outputTextArea.value += `❌ ${errorMessage}\n`;
-                    }
+            try {
+                const response = await fetch(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/managementunits/${row.ManagementUnitId}/timeoffrequests`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (response.ok) {
+                    const successMessage = `✅ Successfully imported time-off request for agent ${row.AgentName}.`;
+                    console.log(successMessage);
+                    outputTextArea.value += `${successMessage}\n`;
+                } else {
+                    const errorResponse = await response.json();
+                    const errorMessage = `Error importing time-off request for agent ${row.AgentName}: ${response.statusText}: ${errorResponse.message}`;
+                    console.error(errorMessage);
+                    outputTextArea.value += `❌ ${errorMessage}\n`;
                 }
+            } catch (error) {
+                const errorMessage = `Error: ${error}`;
+                console.error(errorMessage);
+                outputTextArea.value += `❌ ${errorMessage}\n`;
             }
-
-            importSpinner.style.display = 'none'; // Hide spinner
         }
+    }
+
+    importSpinner.style.display = 'none'; // Hide spinner
+}
 
         function s2ab(s) {
             const buf = new ArrayBuffer(s.length);
