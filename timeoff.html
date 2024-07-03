@@ -113,9 +113,7 @@
             line-height: 30px;
             text-align: center;
             cursor: pointer;
-            position: absolute;
-            top: 0;
-            right: -40px;
+            margin-top: 10px;
         }
 
         .cancel-button:hover {
@@ -182,7 +180,7 @@
             if (exportController) {
                 exportController.abort();
                 console.log('Export process cancelled.');
-                document.getElementById('output').value += '❌ Export process cancelled.\n';
+                document.getElementById('output').value += '❌ Export process has been cancelled.\n';
                 document.getElementById('spinner').style.display = 'none';
                 document.getElementById('cancelExportBtn').style.display = 'none';
             }
@@ -192,7 +190,7 @@
             if (importController) {
                 importController.abort();
                 console.log('Import process cancelled.');
-                document.getElementById('output').value += '❌ Import process cancelled.\n';
+                document.getElementById('output').value += '❌ Import process has been cancelled.\n';
                 document.getElementById('importSpinner').style.display = 'none';
                 document.getElementById('cancelImportBtn').style.display = 'none';
             }
