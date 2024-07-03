@@ -132,6 +132,7 @@
                 uploadedRows = []; // Reset the uploadedRows array
                 document.getElementById('importBtn').style.display = 'none'; // Hide Import button until parsing completes
                 parseExcel(file);
+                fileInput.value = ''; // Reset the file input value to allow re-upload of the same file
             }
         });
 
