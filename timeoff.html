@@ -134,32 +134,41 @@
                 let activityCodes = new Map();
 
                 // Fetch business units
-                const businessUnitsResponse = await fetchWithRetry('https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits', token);
-                if (!businessUnitsResponse.ok) {
-                    throw new Error(`Error fetching business units: ${businessUnitsResponse.statusText}`);
-                }
-                const businessUnitsData = await businessUnitsResponse.json();
-                const businessUnits = businessUnitsData.entities;
+                try {
+                    const businessUnitsResponse = await fetchWithRetry('https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits', token);
+                    if (!businessUnitsResponse.ok) {
+                        throw new Error(`Error fetching business units: ${businessUnitsResponse.statusText}`);
+                    }
+                    const businessUnitsData = await businessUnitsResponse.json();
+                    const businessUnits = businessUnitsData.entities;
 
-                // Fetch activity codes for each business unit
-                for (const businessUnit of businessUnits) {
-                    try {
-                        const acResponse = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits/${businessUnit.id}/activitycodes`, token);
-                        if (acResponse.ok) {
-                            const acData = await acResponse.json();
-                            acData.entities.forEach(ac => {
-                                activityCodes.set(ac.name || ac.category, { id: ac.id, category: ac.category });
-                            });
-                        } else {
-                            const errorMessage = `Error fetching activity codes for business unit ${businessUnit.id}: ${acResponse.statusText}`;
+                    outputTextArea.value += `✅ Successfully fetched business units.\n`;
+
+                    // Fetch activity codes for each business unit
+                    for (const businessUnit of businessUnits) {
+                        try {
+                            const acResponse = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits/${businessUnit.id}/activitycodes`, token);
+                            if (acResponse.ok) {
+                                const acData = await acResponse.json();
+                                acData.entities.forEach(ac => {
+                                    activityCodes.set(ac.name || ac.category, { id: ac.id, category: ac.category });
+                                });
+                                outputTextArea.value += `✅ Successfully fetched activity codes for business unit ${businessUnit.id}.\n`;
+                            } else {
+                                const errorMessage = `Error fetching activity codes for business unit ${businessUnit.id}: ${acResponse.statusText}`;
+                                console.error(errorMessage);
+                                outputTextArea.value += `❌ ${errorMessage}\n`;
+                            }
+                        } catch (error) {
+                            const errorMessage = `Error: ${error}`;
                             console.error(errorMessage);
                             outputTextArea.value += `❌ ${errorMessage}\n`;
                         }
-                    } catch (error) {
-                        const errorMessage = `Error: ${error}`;
-                        console.error(errorMessage);
-                        outputTextArea.value += `❌ ${errorMessage}\n`;
                     }
+                } catch (error) {
+                    const errorMessage = `Error: ${error}`;
+                    console.error(errorMessage);
+                    outputTextArea.value += `❌ ${errorMessage}\n`;
                 }
 
                 // Fetch users
@@ -241,6 +250,17 @@
 
                     const wb = XLSX.utils.book_new();
                     const ws = XLSX.utils.json_to_sheet(users, { header: ["AgentName", "AgentEmail", "AgentId", "BusinessUnitName", "BusinessUnitId", "ManagementUnitName", "ManagementUnitId", "ActivityCodeName", "Date", "Duration"] });
+
+                    // Add dropdown for ActivityCodeName
+                    const activityCodeNames = Array.from(activityCodes.keys());
+                    const range = XLSX.utils.decode_range(ws['!ref']);
+                    for (let rowNum = range.s.r + 1; rowNum <= range.e.r; rowNum++) {
+                        const cell = ws[XLSX.utils.encode_cell({ r: rowNum, c: 7 })]; // 7 is the column index for ActivityCodeName
+                        if (cell) {
+                            cell.z = activityCodeNames.join(','); // Add data validation for dropdown
+                        }
+                    }
+
                     XLSX.utils.book_append_sheet(wb, ws, 'Time-off Request');
 
                     const acSheetData = Array.from(activityCodes.entries()).map(([ActivityCodeName, { id, category }]) => ({ ActivityCodeName, ActivityCodeId: id, ActivityCategory: category }));
