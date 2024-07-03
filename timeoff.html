@@ -104,6 +104,10 @@
             <div class="spinner" id="spinner"></div>
         </div>
         <div>
+            <button class="button" id="uploadBtn" style="display:none;">Upload</button>
+            <div class="spinner" id="uploadSpinner"></div>
+        </div>
+        <div>
             <button class="button" id="importBtn" style="display:none;">Import</button>
             <div class="spinner" id="importSpinner"></div>
         </div>
@@ -114,7 +118,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script>
         document.getElementById('exportBtn').addEventListener('click', exportData);
-        document.getElementById('importBtn').addEventListener('click', () => {
+        document.getElementById('uploadBtn').addEventListener('click', () => {
             document.getElementById('fileInput').click();
         });
 
@@ -124,6 +128,15 @@
                 const file = fileInput.files[0];
                 console.log(`File uploaded: ${file.name} (${file.size} bytes, ${file.type})`);
                 parseExcel(file);
+            }
+        });
+
+        document.getElementById('importBtn').addEventListener('click', () => {
+            const rows = JSON.parse(localStorage.getItem('uploadedRows'));
+            if (rows && rows.length > 0) {
+                executeImport(rows);
+            } else {
+                alert('Please upload a valid Excel file first.');
             }
         });
 
@@ -275,7 +288,7 @@
                     saveAs(blob, 'GCXUtility_Timeoff.xlsx');
                     outputTextArea.value += 'Export completed successfully.\n';
 
-                    document.getElementById('importBtn').style.display = 'inline-block';
+                    document.getElementById('uploadBtn').style.display = 'inline-block';
                 } else {
                     outputTextArea.value += 'No users found to export.\n';
                 }
@@ -320,7 +333,8 @@
                 const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                 const rows = XLSX.utils.sheet_to_json(firstSheet);
                 console.log('Excel data parsed:', rows);
-                executeImport(rows);
+                localStorage.setItem('uploadedRows', JSON.stringify(rows));
+                document.getElementById('importBtn').style.display = 'inline-block';
             };
             reader.readAsArrayBuffer(file);
         }
