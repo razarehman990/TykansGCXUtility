@@ -96,9 +96,10 @@
             margin-top: 20px;
         }
 
-        .button-container div {
-            margin: 0 10px;
+        .button-wrapper {
             position: relative;
+            margin: 0 10px;
+            text-align: center;
         }
 
         .cancel-button {
@@ -131,16 +132,16 @@
             <textarea id="output" readonly></textarea>
         </div>
         <div class="button-container">
-            <div>
+            <div class="button-wrapper">
                 <button class="button" id="exportBtn">Export</button>
                 <div class="spinner" id="spinner"></div>
                 <button class="cancel-button" id="cancelExportBtn">x</button>
             </div>
-            <div>
+            <div class="button-wrapper">
                 <button class="button" id="uploadBtn">Upload</button>
                 <div class="spinner" id="uploadSpinner"></div>
             </div>
-            <div>
+            <div class="button-wrapper">
                 <button class="button" id="importBtn" style="display:none;">Import</button>
                 <div class="spinner" id="importSpinner"></div>
                 <button class="cancel-button" id="cancelImportBtn">x</button>
@@ -154,6 +155,7 @@
     <script>
         let uploadedRows = [];
         let exportController, importController;
+        let exportCancelled = false;
 
         document.getElementById('exportBtn').addEventListener('click', exportData);
         document.getElementById('cancelExportBtn').addEventListener('click', cancelExport);
@@ -179,6 +181,7 @@
         function cancelExport() {
             if (exportController) {
                 exportController.abort();
+                exportCancelled = true;
                 console.log('Export process cancelled.');
                 document.getElementById('output').value += '❌ Export process has been cancelled.\n';
                 document.getElementById('spinner').style.display = 'none';
@@ -207,6 +210,7 @@
 
             exportController = new AbortController();
             const { signal } = exportController;
+            exportCancelled = false;
 
             try {
                 const token = new URLSearchParams(window.location.search).get('token');
@@ -335,25 +339,27 @@
                         }
                     }
 
-                    // Filter out users with both ManagementUnitId and BusinessUnitId empty
-                    users = users.filter(user => user.ManagementUnitId || user.BusinessUnitId);
+                    if (!exportCancelled) {
+                        // Filter out users with both ManagementUnitId and BusinessUnitId empty
+                        users = users.filter(user => user.ManagementUnitId || user.BusinessUnitId);
 
-                    const wb = XLSX.utils.book_new();
-                    const ws = XLSX.utils.json_to_sheet(users, { header: ["AgentName", "AgentEmail", "AgentId", "BusinessUnitName", "BusinessUnitId", "ManagementUnitName", "ManagementUnitId", "ActivityCodeName", "ActivityCodeId", "Date", "Duration", "UPDATES"] });
+                        const wb = XLSX.utils.book_new();
+                        const ws = XLSX.utils.json_to_sheet(users, { header: ["AgentName", "AgentEmail", "AgentId", "BusinessUnitName", "BusinessUnitId", "ManagementUnitName", "ManagementUnitId", "ActivityCodeName", "ActivityCodeId", "Date", "Duration", "UPDATES"] });
 
-                    XLSX.utils.book_append_sheet(wb, ws, 'Time-off Request');
+                        XLSX.utils.book_append_sheet(wb, ws, 'Time-off Request');
 
-                    const acSheetData = Array.from(activityCodes.entries()).map(([ActivityCodeName, { id, category }]) => ({ ActivityCodeName, ActivityCodeId: id, ActivityCategory: category }));
-                    if (acSheetData.length > 0) {
-                        const wsAc = XLSX.utils.json_to_sheet(acSheetData);
-                        XLSX.utils.book_append_sheet(wb, wsAc, 'Activity Codes');
+                        const acSheetData = Array.from(activityCodes.entries()).map(([ActivityCodeName, { id, category }]) => ({ ActivityCodeName, ActivityCodeId: id, ActivityCategory: category }));
+                        if (acSheetData.length > 0) {
+                            const wsAc = XLSX.utils.json_to_sheet(acSheetData);
+                            XLSX.utils.book_append_sheet(wb, wsAc, 'Activity Codes');
+                        }
+
+                        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
+                        const blob = new Blob([s2ab(wbout)], { type: 'application/octet-stream' });
+
+                        saveAs(blob, 'GCXUtility_Timeoff.xlsx');
+                        outputTextArea.value += 'Export completed successfully.\n';
                     }
-
-                    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
-                    const blob = new Blob([s2ab(wbout)], { type: 'application/octet-stream' });
-
-                    saveAs(blob, 'GCXUtility_Timeoff.xlsx');
-                    outputTextArea.value += 'Export completed successfully.\n';
                 } else {
                     outputTextArea.value += 'No users found to export.\n';
                 }
