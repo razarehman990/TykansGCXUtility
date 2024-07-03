@@ -76,10 +76,6 @@
             margin: 20px auto;
         }
 
-        #importBtn {
-            display: none;
-        }
-
         #importSpinner {
             display: none;
             width: 20px;
@@ -108,7 +104,7 @@
             <div class="spinner" id="spinner"></div>
         </div>
         <div>
-            <button class="button" id="importBtn" style="display:none;">Import</button>
+            <button class="button" id="importBtn">Import</button>
             <div class="spinner" id="importSpinner"></div>
         </div>
         <input type="file" id="fileInput" accept=".xlsx">
@@ -122,19 +118,12 @@
             const fileInput = document.getElementById('fileInput');
             if (fileInput.files.length > 0) {
                 const file = fileInput.files[0];
-                console.log(`File uploaded: ${file.name} (${file.size} bytes, ${file.type})`);
-                document.getElementById('importBtn').style.display = 'inline-block';
+                parseExcel(file);
             }
         });
 
         document.getElementById('importBtn').addEventListener('click', () => {
-            const fileInput = document.getElementById('fileInput');
-            if (fileInput.files.length > 0) {
-                const file = fileInput.files[0];
-                parseExcel(file);
-            } else {
-                alert("Please upload an Excel file first.");
-            }
+            document.getElementById('fileInput').click();
         });
 
         async function exportData() {
@@ -310,8 +299,7 @@
 
                 if (response.ok) {
                     return response;
-                } else if (response.status === 429) {
-                    const retryAfter = parseInt(response.headers.get('Retry-After') || '1', 10);
+                } else if (response.status === 429)                    const retryAfter = parseInt(response.headers.get('Retry-After') || '1', 10);
                     console.warn(`Too many requests. Retrying after ${retryAfter} seconds...`);
                     await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
                 } else {
