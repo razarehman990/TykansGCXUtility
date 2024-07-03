@@ -117,6 +117,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script>
+        let uploadedRows = [];
+
         document.getElementById('exportBtn').addEventListener('click', exportData);
         document.getElementById('uploadBtn').addEventListener('click', () => {
             document.getElementById('fileInput').click();
@@ -132,9 +134,8 @@
         });
 
         document.getElementById('importBtn').addEventListener('click', () => {
-            const rows = JSON.parse(localStorage.getItem('uploadedRows'));
-            if (rows && rows.length > 0) {
-                executeImport(rows);
+            if (uploadedRows && uploadedRows.length > 0) {
+                executeImport(uploadedRows);
             } else {
                 alert('Please upload a valid Excel file first.');
             }
@@ -333,7 +334,7 @@
                 const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                 const rows = XLSX.utils.sheet_to_json(firstSheet);
                 console.log('Excel data parsed:', rows);
-                localStorage.setItem('uploadedRows', JSON.stringify(rows));
+                uploadedRows = rows;
                 document.getElementById('importBtn').style.display = 'inline-block';
             };
             reader.readAsArrayBuffer(file);
