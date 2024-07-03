@@ -341,7 +341,7 @@
             reader.readAsArrayBuffer(file);
         }
 
-        async function executeImport(rows) {
+async function executeImport(rows) {
     const token = new URLSearchParams(window.location.search).get('token');
     const outputTextArea = document.getElementById('output');
     const importSpinner = document.getElementById('importSpinner');
@@ -350,12 +350,13 @@
 
     for (const row of rows) {
         if (row.UPDATES === true) {
+            const cleanedDate = row.Date.replace(/^"|"$/g, ''); // Remove surrounding quotes if present
             const requestBody = {
                 status: 'APPROVED',
                 users: [{ id: row.AgentId }],
                 activityCodeId: row.ActivityCodeId,
                 notes: 'Initial time-off load',
-                fullDayManagementUnitDates: [row.Date], // Use Date as is from Excel
+                fullDayManagementUnitDates: [cleanedDate], // Use cleaned date
                 partialDayStartDateTimes: [],
                 dailyDurationMinutes: row.Duration
             };
