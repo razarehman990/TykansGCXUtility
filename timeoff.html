@@ -35,28 +35,6 @@
             border: 2px solid #0F3057;
         }
 
-        .button.disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
-        }
-
-        .button.cancel {
-            background-color: #d9534f;
-            color: #fff;
-            border: none;
-            position: relative;
-        }
-
-        .button.cancel::after {
-            content: 'X';
-            color: #000;
-            font-weight: bold;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-
         #output-container {
             position: relative;
             width: 80%;
@@ -118,10 +96,9 @@
             margin-top: 20px;
         }
 
-        .button-wrapper {
-            position: relative;
+        .button-container div {
             margin: 0 10px;
-            text-align: center;
+            position: relative;
         }
     </style>
 </head>
@@ -135,15 +112,15 @@
             <textarea id="output" readonly></textarea>
         </div>
         <div class="button-container">
-            <div class="button-wrapper">
+            <div>
                 <button class="button" id="exportBtn">Export</button>
                 <div class="spinner" id="spinner"></div>
             </div>
-            <div class="button-wrapper">
+            <div>
                 <button class="button" id="uploadBtn">Upload</button>
                 <div class="spinner" id="uploadSpinner"></div>
             </div>
-            <div class="button-wrapper">
+            <div>
                 <button class="button" id="importBtn" style="display:none;">Import</button>
                 <div class="spinner" id="importSpinner"></div>
             </div>
@@ -155,8 +132,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script>
         let uploadedRows = [];
-        let exportController, importController;
-        let exportCancelled = false;
 
         document.getElementById('exportBtn').addEventListener('click', exportData);
         document.getElementById('uploadBtn').addEventListener('click', () => {
@@ -175,57 +150,23 @@
             }
         });
 
-        document.getElementById('importBtn').addEventListener('click', importData);
-
-        function disableButtons() {
-            document.getElementById('exportBtn').classList.add('disabled');
-            document.getElementById('uploadBtn').classList.add('disabled');
-            document.getElementById('importBtn').classList.add('disabled');
-        }
-
-        function enableButtons() {
-            document.getElementById('exportBtn').classList.remove('disabled');
-            document.getElementById('uploadBtn').classList.remove('disabled');
-            document.getElementById('importBtn').classList.remove('disabled');
-        }
-
-        function cancelExport() {
-            if (exportController) {
-                exportController.abort();
-                exportCancelled = true;
-                console.log('Export process cancelled.');
-                document.getElementById('output').value += '❌ Export process has been cancelled.\n';
-                document.getElementById('spinner').style.display = 'none';
-                document.getElementById('exportBtn').classList.remove('cancel');
-                enableButtons();
+        document.getElementById('importBtn').addEventListener('click', () => {
+            console.log('Import button clicked');
+            if (uploadedRows && uploadedRows.length > 0) {
+                console.log('Executing import with uploaded rows:', uploadedRows);
+                executeImport(uploadedRows);
+            } else {
+                console.log('No uploaded rows found');
+                alert('Please upload a valid Excel file first.');
             }
-        }
-
-        function cancelImport() {
-            if (importController) {
-                importController.abort();
-                console.log('Import process cancelled.');
-                document.getElementById('output').value += '❌ Import process has been cancelled.\n';
-                document.getElementById('importSpinner').style.display = 'none';
-                document.getElementById('importBtn').classList.remove('cancel');
-                enableButtons();
-            }
-        }
+        });
 
         async function exportData() {
             const exportBtn = document.getElementById('exportBtn');
             const spinner = document.getElementById('spinner');
             spinner.style.display = 'inline-block'; // Show spinner
-            exportBtn.classList.add('cancel'); // Show cancel button
-            disableButtons();
-            exportBtn.removeEventListener('click', exportData);
-            exportBtn.addEventListener('click', cancelExport);
             const outputTextArea = document.getElementById('output');
             outputTextArea.value = ''; // Clear output
-
-            exportController = new AbortController();
-            const { signal } = exportController;
-            exportCancelled = false;
 
             try {
                 const token = new URLSearchParams(window.location.search).get('token');
@@ -236,7 +177,7 @@
 
                 // Fetch business units
                 try {
-                    const businessUnitsResponse = await fetchWithRetry('https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits', token, signal);
+                    const businessUnitsResponse = await fetchWithRetry('https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits', token);
                     if (!businessUnitsResponse.ok) {
                         const errorResponse = await businessUnitsResponse.json();
                         throw new Error(`Error fetching business units: ${businessUnitsResponse.statusText}: ${errorResponse.message}`);
@@ -249,7 +190,7 @@
                     // Fetch activity codes for each business unit
                     for (const businessUnit of businessUnits) {
                         try {
-                            const acResponse = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits/${businessUnit.id}/activitycodes`, token, signal);
+                            const acResponse = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits/${businessUnit.id}/activitycodes`, token);
                             if (acResponse.ok) {
                                 const acData = await acResponse.json();
                                 acData.entities.forEach(ac => {
@@ -276,7 +217,7 @@
 
                 // Fetch users
                 while (hasMorePages) {
-                    const response = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/users?pageSize=100&pageNumber=${pageNumber}`, token, signal);
+                    const response = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/users?pageSize=100&pageNumber=${pageNumber}`, token);
                     if (response.ok) {
                         const data = await response.json();
                         users = users.concat(data.entities.map(user => ({
@@ -308,13 +249,13 @@
                 if (users.length > 0) {
                     for (const user of users) {
                         try {
-                            const muResponse = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/agents/${user.AgentId}/managementunit`, token, signal);
+                            const muResponse = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/agents/${user.AgentId}/managementunit`, token);
                             if (muResponse.ok) {
                                 const muData = await muResponse.json();
                                 user.ManagementUnitId = muData.managementUnit.id;
                                 user.BusinessUnitId = muData.businessUnit.id;
 
-                                const buResponse = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits/${user.BusinessUnitId}`, token, signal);
+                                const buResponse = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits/${user.BusinessUnitId}`, token);
                                 if (buResponse.ok) {
                                     const buData = await buResponse.json();
                                     user.BusinessUnitName = buData.name;
@@ -325,7 +266,7 @@
                                     outputTextArea.value += `❌ ${errorMessage}\n`;
                                 }
 
-                                const muNameResponse = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/managementunits/${user.ManagementUnitId}`, token, signal);
+                                const muNameResponse = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/managementunits/${user.ManagementUnitId}`, token);
                                 if (muNameResponse.ok) {
                                     const muNameData = await muNameResponse.json();
                                     user.ManagementUnitName = muNameData.name;
@@ -354,56 +295,45 @@
                         }
                     }
 
-                    if (!exportCancelled) {
-                        // Filter out users with both ManagementUnitId and BusinessUnitId empty
-                        users = users.filter(user => user.ManagementUnitId || user.BusinessUnitId);
+                    // Filter out users with both ManagementUnitId and BusinessUnitId empty
+                    users = users.filter(user => user.ManagementUnitId || user.BusinessUnitId);
 
-                        const wb = XLSX.utils.book_new();
-                        const ws = XLSX.utils.json_to_sheet(users, { header: ["AgentName", "AgentEmail", "AgentId", "BusinessUnitName", "BusinessUnitId", "ManagementUnitName", "ManagementUnitId", "ActivityCodeName", "ActivityCodeId", "Date", "Duration", "UPDATES"] });
+                    const wb = XLSX.utils.book_new();
+                    const ws = XLSX.utils.json_to_sheet(users, { header: ["AgentName", "AgentEmail", "AgentId", "BusinessUnitName", "BusinessUnitId", "ManagementUnitName", "ManagementUnitId", "ActivityCodeName", "ActivityCodeId", "Date", "Duration", "UPDATES"] });
 
-                        XLSX.utils.book_append_sheet(wb, ws, 'Time-off Request');
+                    XLSX.utils.book_append_sheet(wb, ws, 'Time-off Request');
 
-                        const acSheetData = Array.from(activityCodes.entries()).map(([ActivityCodeName, { id, category }]) => ({ ActivityCodeName, ActivityCodeId: id, ActivityCategory: category }));
-                        if (acSheetData.length > 0) {
-                            const wsAc = XLSX.utils.json_to_sheet(acSheetData);
-                            XLSX.utils.book_append_sheet(wb, wsAc, 'Activity Codes');
-                        }
-
-                        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
-                        const blob = new Blob([s2ab(wbout)], { type: 'application/octet-stream' });
-
-                        saveAs(blob, 'GCXUtility_Timeoff.xlsx');
-                        outputTextArea.value += 'Export completed successfully.\n';
+                    const acSheetData = Array.from(activityCodes.entries()).map(([ActivityCodeName, { id, category }]) => ({ ActivityCodeName, ActivityCodeId: id, ActivityCategory: category }));
+                    if (acSheetData.length > 0) {
+                        const wsAc = XLSX.utils.json_to_sheet(acSheetData);
+                        XLSX.utils.book_append_sheet(wb, wsAc, 'Activity Codes');
                     }
+
+                    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
+                    const blob = new Blob([s2ab(wbout)], { type: 'application/octet-stream' });
+
+                    saveAs(blob, 'GCXUtility_Timeoff.xlsx');
+                    outputTextArea.value += 'Export completed successfully.\n';
                 } else {
                     outputTextArea.value += 'No users found to export.\n';
                 }
             } catch (error) {
-                if (error.name === 'AbortError') {
-                    console.log('Export process was aborted.');
-                } else {
-                    const errorMessage = `Error: ${error.message}`;
-                    console.error(errorMessage);
-                    outputTextArea.value += `❌ ${errorMessage}\n`;
-                }
+                const errorMessage = `Error: ${error.message}`;
+                console.error(errorMessage);
+                outputTextArea.value += `❌ ${errorMessage}\n`;
             } finally {
                 spinner.style.display = 'none'; // Hide spinner
-                exportBtn.classList.remove('cancel'); // Remove cancel button
-                enableButtons();
-                exportBtn.removeEventListener('click', cancelExport);
-                exportBtn.addEventListener('click', exportData);
             }
         }
 
-        async function fetchWithRetry(url, token, signal, retries = 3) {
+        async function fetchWithRetry(url, token, retries = 3) {
             for (let i = 0; i < retries; i++) {
                 const response = await fetch(url, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
-                    },
-                    signal
+                    }
                 });
 
                 if (response.ok) {
@@ -435,22 +365,14 @@
             reader.readAsArrayBuffer(file);
         }
 
-        async function importData() {
+        async function executeImport(rows) {
             const token = new URLSearchParams(window.location.search).get('token');
             const outputTextArea = document.getElementById('output');
             const importSpinner = document.getElementById('importSpinner');
-            const importBtn = document.getElementById('importBtn');
             outputTextArea.value = ''; // Clear output
             importSpinner.style.display = 'inline-block'; // Show spinner
-            importBtn.classList.add('cancel'); // Show cancel button
-            disableButtons();
-            importBtn.removeEventListener('click', importData);
-            importBtn.addEventListener('click', cancelImport);
 
-            importController = new AbortController();
-            const { signal } = importController;
-
-            for (const row of uploadedRows) {
+            for (const row of rows) {
                 if (row.UPDATES === true) {
                     const dates = row.Date.split(',').map(date => date.trim().replace(/^"|"$/g, '')); // Split and clean date values
                     const requestBody = {
@@ -472,8 +394,7 @@
                                 'Content-Type': 'application/json',
                                 'Authorization': `Bearer ${token}`
                             },
-                            body: JSON.stringify(requestBody),
-                            signal
+                            body: JSON.stringify(requestBody)
                         });
 
                         if (response.ok) {
@@ -487,22 +408,14 @@
                             outputTextArea.value += `❌ ${errorMessage}\n`;
                         }
                     } catch (error) {
-                        if (error.name === 'AbortError') {
-                            console.log('Import process was aborted.');
-                        } else {
-                            const errorMessage = `Error: ${error.message}`;
-                            console.error(errorMessage);
-                            outputTextArea.value += `❌ ${errorMessage}\n`;
-                        }
+                        const errorMessage = `Error: ${error.message}`;
+                        console.error(errorMessage);
+                        outputTextArea.value += `❌ ${errorMessage}\n`;
                     }
                 }
             }
 
             importSpinner.style.display = 'none'; // Hide spinner
-            importBtn.classList.remove('cancel'); // Remove cancel button
-            enableButtons();
-            importBtn.removeEventListener('click', cancelImport);
-            importBtn.addEventListener('click', importData);
         }
 
         function s2ab(s) {
