@@ -35,6 +35,28 @@
             border: 2px solid #0F3057;
         }
 
+        .button.disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .button.cancel {
+            background-color: #d9534f;
+            color: #fff;
+            border: none;
+            position: relative;
+        }
+
+        .button.cancel::after {
+            content: 'X';
+            color: #000;
+            font-weight: bold;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
         #output-container {
             position: relative;
             width: 80%;
@@ -101,25 +123,6 @@
             margin: 0 10px;
             text-align: center;
         }
-
-        .cancel-button {
-            display: none;
-            background-color: #d9534f;
-            color: #fff;
-            border: none;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            font-size: 18px;
-            line-height: 30px;
-            text-align: center;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-
-        .cancel-button:hover {
-            background-color: #c9302c;
-        }
     </style>
 </head>
 <body>
@@ -135,7 +138,6 @@
             <div class="button-wrapper">
                 <button class="button" id="exportBtn">Export</button>
                 <div class="spinner" id="spinner"></div>
-                <button class="cancel-button" id="cancelExportBtn">x</button>
             </div>
             <div class="button-wrapper">
                 <button class="button" id="uploadBtn">Upload</button>
@@ -144,7 +146,6 @@
             <div class="button-wrapper">
                 <button class="button" id="importBtn" style="display:none;">Import</button>
                 <div class="spinner" id="importSpinner"></div>
-                <button class="cancel-button" id="cancelImportBtn">x</button>
             </div>
         </div>
         <input type="file" id="fileInput" accept=".xlsx">
@@ -158,7 +159,6 @@
         let exportCancelled = false;
 
         document.getElementById('exportBtn').addEventListener('click', exportData);
-        document.getElementById('cancelExportBtn').addEventListener('click', cancelExport);
         document.getElementById('uploadBtn').addEventListener('click', () => {
             document.getElementById('fileInput').click();
         });
@@ -176,7 +176,18 @@
         });
 
         document.getElementById('importBtn').addEventListener('click', importData);
-        document.getElementById('cancelImportBtn').addEventListener('click', cancelImport);
+
+        function disableButtons() {
+            document.getElementById('exportBtn').classList.add('disabled');
+            document.getElementById('uploadBtn').classList.add('disabled');
+            document.getElementById('importBtn').classList.add('disabled');
+        }
+
+        function enableButtons() {
+            document.getElementById('exportBtn').classList.remove('disabled');
+            document.getElementById('uploadBtn').classList.remove('disabled');
+            document.getElementById('importBtn').classList.remove('disabled');
+        }
 
         function cancelExport() {
             if (exportController) {
@@ -185,7 +196,8 @@
                 console.log('Export process cancelled.');
                 document.getElementById('output').value += '❌ Export process has been cancelled.\n';
                 document.getElementById('spinner').style.display = 'none';
-                document.getElementById('cancelExportBtn').style.display = 'none';
+                document.getElementById('exportBtn').classList.remove('cancel');
+                enableButtons();
             }
         }
 
@@ -195,16 +207,19 @@
                 console.log('Import process cancelled.');
                 document.getElementById('output').value += '❌ Import process has been cancelled.\n';
                 document.getElementById('importSpinner').style.display = 'none';
-                document.getElementById('cancelImportBtn').style.display = 'none';
+                document.getElementById('importBtn').classList.remove('cancel');
+                enableButtons();
             }
         }
 
         async function exportData() {
             const exportBtn = document.getElementById('exportBtn');
             const spinner = document.getElementById('spinner');
-            const cancelBtn = document.getElementById('cancelExportBtn');
             spinner.style.display = 'inline-block'; // Show spinner
-            cancelBtn.style.display = 'inline-block'; // Show cancel button
+            exportBtn.classList.add('cancel'); // Show cancel button
+            disableButtons();
+            exportBtn.removeEventListener('click', exportData);
+            exportBtn.addEventListener('click', cancelExport);
             const outputTextArea = document.getElementById('output');
             outputTextArea.value = ''; // Clear output
 
@@ -373,7 +388,10 @@
                 }
             } finally {
                 spinner.style.display = 'none'; // Hide spinner
-                cancelBtn.style.display = 'none'; // Hide cancel button
+                exportBtn.classList.remove('cancel'); // Remove cancel button
+                enableButtons();
+                exportBtn.removeEventListener('click', cancelExport);
+                exportBtn.addEventListener('click', exportData);
             }
         }
 
@@ -421,10 +439,13 @@
             const token = new URLSearchParams(window.location.search).get('token');
             const outputTextArea = document.getElementById('output');
             const importSpinner = document.getElementById('importSpinner');
-            const cancelBtn = document.getElementById('cancelImportBtn');
+            const importBtn = document.getElementById('importBtn');
             outputTextArea.value = ''; // Clear output
             importSpinner.style.display = 'inline-block'; // Show spinner
-            cancelBtn.style.display = 'inline-block'; // Show cancel button
+            importBtn.classList.add('cancel'); // Show cancel button
+            disableButtons();
+            importBtn.removeEventListener('click', importData);
+            importBtn.addEventListener('click', cancelImport);
 
             importController = new AbortController();
             const { signal } = importController;
@@ -478,7 +499,10 @@
             }
 
             importSpinner.style.display = 'none'; // Hide spinner
-            cancelBtn.style.display = 'none'; // Hide cancel button
+            importBtn.classList.remove('cancel'); // Remove cancel button
+            enableButtons();
+            importBtn.removeEventListener('click', cancelImport);
+            importBtn.addEventListener('click', importData);
         }
 
         function s2ab(s) {
