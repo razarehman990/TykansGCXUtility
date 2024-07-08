@@ -67,13 +67,11 @@
         <h3>Tykans Genesys Cloud Configuration Utility</h3>
         <form id="authForm">
             <label for="clientId">Client ID:</label>
-            <div id="clientIdContainer">
-                <select id="clientIdSelect" onchange="handleClientIdChange()">
-                    <option value="">Enter Client ID Manually/option>
-                    <option value="f7015055-9e4a-457b-a753-429fbdc00877">Tykans Lab (f7015055-9e4a-457b-a753-429fbdc00877)</option>
-                </select>
-                <input type="text" id="clientIdInput" placeholder="Enter your client ID" style="display: none;">
-            </div>
+            <input list="clientIds" id="clientId" placeholder="Enter or select your client ID">
+            <datalist id="clientIds">
+                <option value="31d9d71d-1239-455c-aeb9-bf59efd5f21a">Tykans Lab (31d9d71d-1239-455c-aeb9-bf59efd5f21a)</option>
+                <!-- Add more options here as needed -->
+            </datalist>
 
             <div class="error-message" id="clientIdError">Please enter a valid Client ID.</div>
 
@@ -92,25 +90,11 @@
     </div>
 
     <script>
-        function handleClientIdChange() {
-            const select = document.getElementById('clientIdSelect');
-            const input = document.getElementById('clientIdInput');
-            if (select.value === '') {
-                input.style.display = 'block';
-                input.value = '';
-            } else {
-                input.style.display = 'none';
-                input.value = select.value;
-            }
-        }
-
         document.getElementById('authForm').addEventListener('submit', function(event) {
             event.preventDefault(); // Prevent default form submission
 
             // Get input values
-            const clientIdSelect = document.getElementById('clientIdSelect');
-            const clientIdInput = document.getElementById('clientIdInput');
-            const clientId = clientIdInput.style.display === 'none' ? clientIdSelect.value : clientIdInput.value.trim();
+            const clientId = document.getElementById('clientId').value.trim();
             const redirectUri = document.getElementById('redirectUri').value.trim();
             const environment = document.getElementById('environment').value.trim();
 
