@@ -29,7 +29,8 @@
         }
 
         /* Styles for input fields */
-        .container input {
+        .container input,
+        .container select {
             width: 100%;
             margin-bottom: 10px;
             padding: 8px;
@@ -66,7 +67,13 @@
         <h3>Tykans Genesys Cloud Configuration Utility</h3>
         <form id="authForm">
             <label for="clientId">Client ID:</label>
-            <input type="text" id="clientId" placeholder="Enter your client ID" value="">
+            <div id="clientIdContainer">
+                <select id="clientIdSelect" onchange="handleClientIdChange()">
+                    <option value="">Select a Client ID</option>
+                    <option value="31d9d71d-1239-455c-aeb9-bf59efd5f21a">Tykans Lab (31d9d71d-1239-455c-aeb9-bf59efd5f21a)</option>
+                </select>
+                <input type="text" id="clientIdInput" placeholder="Enter your client ID" style="display: none;">
+            </div>
 
             <div class="error-message" id="clientIdError">Please enter a valid Client ID.</div>
 
@@ -85,11 +92,25 @@
     </div>
 
     <script>
+        function handleClientIdChange() {
+            const select = document.getElementById('clientIdSelect');
+            const input = document.getElementById('clientIdInput');
+            if (select.value === '') {
+                input.style.display = 'block';
+                input.value = '';
+            } else {
+                input.style.display = 'none';
+                input.value = select.value;
+            }
+        }
+
         document.getElementById('authForm').addEventListener('submit', function(event) {
             event.preventDefault(); // Prevent default form submission
 
             // Get input values
-            const clientId = document.getElementById('clientId').value.trim();
+            const clientIdSelect = document.getElementById('clientIdSelect');
+            const clientIdInput = document.getElementById('clientIdInput');
+            const clientId = clientIdInput.style.display === 'none' ? clientIdSelect.value : clientIdInput.value.trim();
             const redirectUri = document.getElementById('redirectUri').value.trim();
             const environment = document.getElementById('environment').value.trim();
 
