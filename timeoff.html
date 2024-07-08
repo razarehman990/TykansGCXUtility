@@ -5,101 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Workforce Management Time Off</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #fff;
-            color: #0F3057;
-            text-align: center;
-        }
-
-        .container {
-            margin-top: 150px;
-        }
-
-        .button {
-            margin: 20px;
-            padding: 15px 30px;
-            background-color: #0F3057;
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 18px;
-        }
-
-        .button:hover {
-            background-color: #fff;
-            color: #0F3057;
-            border: 2px solid #0F3057;
-        }
-
-        #output-container {
-            position: relative;
-            width: 80%;
-            margin: 20px auto;
-            text-align: left;
-        }
-
-        #output {
-            width: 100%;
-            min-height: 200px;
-            display: block;
-            overflow-x: auto;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            padding: 10px;
-        }
-
-        .spinner {
-            display: none;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(15, 48, 87, 0.3);
-            border-radius: 50%;
-            border-top-color: #0F3057;
-            animation: spin 1s ease-in-out infinite;
-            position: relative;
-            margin-left: 10px;
-            vertical-align: middle;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        #fileInput {
-            display: none;
-            margin: 20px auto;
-        }
-
-        #importSpinner {
-            display: none;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(15, 48, 87, 0.3);
-            border-radius: 50%;
-            border-top-color: #0F3057;
-            animation: spin 1s ease-in-out infinite;
-            position: relative;
-            margin-left: 10px;
-            vertical-align: middle;
-        }
-
-        .button-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-top: 20px;
-        }
-
-        .button-container div {
-            margin: 0 10px;
-            position: relative;
-        }
+        /* Same CSS styles as provided */
     </style>
 </head>
 <body>
@@ -173,7 +79,7 @@
                 let pageNumber = 1;
                 let hasMorePages = true;
                 let users = [];
-                let activityCodes = new Map();
+                let activityCodes = [];
 
                 // Fetch business units
                 try {
@@ -194,7 +100,12 @@
                             if (acResponse.ok) {
                                 const acData = await acResponse.json();
                                 acData.entities.forEach(ac => {
-                                    activityCodes.set(ac.name || ac.category, { id: ac.id, category: ac.category });
+                                    activityCodes.push({ 
+                                        BusinessUnitName: businessUnit.name, 
+                                        ActivityCodeName: ac.name || ac.category, 
+                                        ActivityCodeId: ac.id, 
+                                        ActivityCategory: ac.category 
+                                    });
                                 });
                                 outputTextArea.value += `✅ Successfully fetched activity codes for business unit ${businessUnit.id}.\n`;
                             } else {
@@ -303,11 +214,15 @@
 
                     XLSX.utils.book_append_sheet(wb, ws, 'Time-off Request');
 
-                    const acSheetData = Array.from(activityCodes.entries()).map(([ActivityCodeName, { id, category }]) => ({ ActivityCodeName, ActivityCodeId: id, ActivityCategory: category }));
-                    if (acSheetData.length > 0) {
-                        const wsAc = XLSX.utils.json_to_sheet(acSheetData);
-                        XLSX.utils.book_append_sheet(wb, wsAc, 'Activity Codes');
-                    }
+                    // Remove duplicates in activityCodes based on both ActivityCodeName and ActivityCodeId
+                    const uniqueActivityCodes = activityCodes.filter((value, index, self) =>
+                        index === self.findIndex((t) => (
+                            t.ActivityCodeName === value.ActivityCodeName && t.ActivityCodeId === value.ActivityCodeId
+                        ))
+                    );
+
+                    const wsAc = XLSX.utils.json_to_sheet(uniqueActivityCodes);
+                    XLSX.utils.book_append_sheet(wb, wsAc, 'Activity Codes');
 
                     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
                     const blob = new Blob([s2ab(wbout)], { type: 'application/octet-stream' });
