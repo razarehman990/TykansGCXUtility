@@ -315,7 +315,29 @@
                         ))
                     );
 
-                    const wsAc = XLSX.utils.json_to_sheet(uniqueActivityCodes);
+                    // List of specific ActivityCodeName and ActivityCodeId pairs to blank out BusinessUnitName
+                    const specificCodes = [
+                        { name: 'OnQueueWork', id: '0' },
+                        { name: 'Break', id: '1' },
+                        { name: 'Meal', id: '2' },
+                        { name: 'Meeting', id: '3' },
+                        { name: 'OffQueueWork', id: '4' },
+                        { name: 'TimeOff', id: '5' },
+                        { name: 'Training', id: '6' },
+                        { name: 'Unavailable', id: '7' }
+                    ];
+
+                    const wsAcData = uniqueActivityCodes.map(code => {
+                        const shouldBlank = specificCodes.some(sc => sc.name === code.ActivityCodeName && sc.id === code.ActivityCodeId);
+                        return {
+                            BusinessUnitName: shouldBlank ? '' : code.BusinessUnitName,
+                            ActivityCodeName: code.ActivityCodeName,
+                            ActivityCodeId: code.ActivityCodeId,
+                            ActivityCategory: code.ActivityCategory
+                        };
+                    });
+
+                    const wsAc = XLSX.utils.json_to_sheet(wsAcData);
                     XLSX.utils.book_append_sheet(wb, wsAc, 'Activity Codes');
 
                     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
