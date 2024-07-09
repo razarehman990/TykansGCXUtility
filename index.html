@@ -74,8 +74,9 @@
         }
 
         datalist option {
-            padding: 10px;
+            padding: 5px;
             cursor: pointer;
+            font-size: 14px; /* Smaller font size for better fit */
         }
 
         datalist option:hover {
@@ -90,7 +91,7 @@
 
     <div class="container">
         <h3>Tykans Genesys Cloud Configuration Utility</h3>
-        <form id="authForm">
+        <form id="authForm" autocomplete="off">
             <label for="clientId">Client ID:</label>
             <input list="clientIds" id="clientId" placeholder="Enter or select your client ID" autocomplete="off" onfocus="showDatalist()" onblur="hideDatalist()" oninput="updateClientId()">
             <datalist id="clientIds">
@@ -98,18 +99,19 @@
                 <option data-id="31d9d71d-1239-455c-aeb9-bf59efd5f21a" value="EComm Production (31d9d71d-1239-455c-aeb9-bf59efd5f21a)">EComm Production (31d9d71d-1239-455c-aeb9-bf59efd5f21a)</option>
                 <option data-id="dcb5033f-40ee-47ce-b840-5ef1f6498d9b" value="EComm Development (dcb5033f-40ee-47ce-b840-5ef1f6498d9b)">EComm Development (dcb5033f-40ee-47ce-b840-5ef1f6498d9b)</option>
                 <option data-id="827e2fe5-f2dd-432b-a73b-619349b2bf7e" value="HLBC Production (827e2fe5-f2dd-432b-a73b-619349b2bf7e)">HLBC Production (827e2fe5-f2dd-432b-a73b-619349b2bf7e)</option>
+                <option data-id="123456789" value="Test1 (123456789)">Test1 (123456789)</option>
                 <!-- Add more options here as needed -->
             </datalist>
 
             <div class="error-message" id="clientIdError">Please enter a valid Client ID.</div>
 
             <label for="redirectUri">Redirect URI:</label>
-            <input type="text" id="redirectUri" placeholder="Enter your redirect URI" value="https://razarehman990.github.io/TykansGCXUtility/auth.html">
+            <input type="text" id="redirectUri" placeholder="Enter your redirect URI" value="https://razarehman990.github.io/TykansGCXUtility/auth.html" autocomplete="off">
 
             <div class="error-message" id="redirectUriError">Please enter a valid Redirect URI.</div>
 
             <label for="environment">Genesys Cloud Environment:</label>
-            <input type="text" id="environment" placeholder="Enter Genesys Cloud environment" value="cac1.pure.cloud">
+            <input type="text" id="environment" placeholder="Enter Genesys Cloud environment" value="cac1.pure.cloud" autocomplete="off">
 
             <div class="error-message" id="environmentError">Please enter a valid Genesys Cloud Environment.</div>
 
