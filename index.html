@@ -72,6 +72,15 @@
             overflow-y: auto;
             box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
         }
+
+        datalist option {
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        datalist option:hover {
+            background-color: #f0f0f0;
+        }
     </style>
 </head>
 <body>
@@ -83,7 +92,7 @@
         <h3>Tykans Genesys Cloud Configuration Utility</h3>
         <form id="authForm">
             <label for="clientId">Client ID:</label>
-            <input list="clientIds" id="clientId" placeholder="Enter or select your client ID" onfocus="showDatalist()" onblur="hideDatalist()" oninput="updateClientId()">
+            <input list="clientIds" id="clientId" placeholder="Enter or select your client ID" autocomplete="off" onfocus="showDatalist()" onblur="hideDatalist()" oninput="updateClientId()">
             <datalist id="clientIds">
                 <option data-id="f7015055-9e4a-457b-a753-429fbdc00877" value="Tykans Lab (f7015055-9e4a-457b-a753-429fbdc00877)">Tykans Lab (f7015055-9e4a-457b-a753-429fbdc00877)</option>
                 <option data-id="31d9d71d-1239-455c-aeb9-bf59efd5f21a" value="EComm Production (31d9d71d-1239-455c-aeb9-bf59efd5f21a)">EComm Production (31d9d71d-1239-455c-aeb9-bf59efd5f21a)</option>
