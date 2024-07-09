@@ -36,6 +36,7 @@
             padding: 8px;
             border: 1px solid #ccc;
             border-radius: 5px;
+            box-sizing: border-box; /* Ensure padding is included in width */
         }
 
         /* Styles for error messages */
@@ -59,7 +60,7 @@
 
         /* Adjust the width of the datalist */
         #clientId {
-            width: calc(100% - 16px); /* Adjust based on padding */
+            width: 100%;
         }
     </style>
 </head>
@@ -72,7 +73,7 @@
         <h3>Tykans Genesys Cloud Configuration Utility</h3>
         <form id="authForm">
             <label for="clientId">Client ID:</label>
-            <input list="clientIds" id="clientId" placeholder="Enter or select your client ID">
+            <input list="clientIds" id="clientId" placeholder="Enter or select your client ID" oninput="this.setCustomValidity('')">
             <datalist id="clientIds">
                 <option value="Tykans Lab (f7015055-9e4a-457b-a753-429fbdc00877)">Tykans Lab (f7015055-9e4a-457b-a753-429fbdc00877)</option>
                 <option value="EComm Production (31d9d71d-1239-455c-aeb9-bf59efd5f21a)">EComm Production (31d9d71d-1239-455c-aeb9-bf59efd5f21a)</option>
