@@ -317,8 +317,20 @@ async function exportData() {
                 ))
             );
 
+            // List of specific ActivityCodeName and ActivityCodeId pairs to blank out BusinessUnitName
+            const specificCodes = [
+                { name: 'OnQueueWork', id: '0' },
+                { name: 'Break', id: '1' },
+                { name: 'Meal', id: '2' },
+                { name: 'Meeting', id: '3' },
+                { name: 'OffQueueWork', id: '4' },
+                { name: 'TimeOff', id: '5' },
+                { name: 'Training', id: '6' },
+                { name: 'Unavailable', id: '7' }
+            ];
+
             const wsAcData = uniqueActivityCodes.map(code => {
-                const shouldBlank = activityCodes.some(sc => sc.ActivityCodeName === code.ActivityCodeName && sc.ActivityCodeId === code.ActivityCodeId && sc.BusinessUnitName !== code.BusinessUnitName);
+                const shouldBlank = specificCodes.some(sc => sc.name === code.ActivityCodeName && sc.id === code.ActivityCodeId);
                 return {
                     BusinessUnitName: shouldBlank ? '' : code.BusinessUnitName,
                     ActivityCodeName: code.ActivityCodeName,
