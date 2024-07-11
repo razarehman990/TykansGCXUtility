@@ -161,7 +161,7 @@
             }
         });
 
-        async function exportData() {
+async function exportData() {
     const exportBtn = document.getElementById('exportBtn');
     const spinner = document.getElementById('spinner');
     spinner.style.display = 'inline-block'; // Show spinner
@@ -317,7 +317,17 @@
                 ))
             );
 
-            const wsAc = XLSX.utils.json_to_sheet(uniqueActivityCodes);
+            const wsAcData = uniqueActivityCodes.map(code => {
+                const shouldBlank = activityCodes.some(sc => sc.ActivityCodeName === code.ActivityCodeName && sc.ActivityCodeId === code.ActivityCodeId && sc.BusinessUnitName !== code.BusinessUnitName);
+                return {
+                    BusinessUnitName: shouldBlank ? '' : code.BusinessUnitName,
+                    ActivityCodeName: code.ActivityCodeName,
+                    ActivityCodeId: code.ActivityCodeId,
+                    ActivityCategory: code.ActivityCategory
+                };
+            });
+
+            const wsAc = XLSX.utils.json_to_sheet(wsAcData);
             XLSX.utils.book_append_sheet(wb, wsAc, 'Activity Codes');
 
             const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
