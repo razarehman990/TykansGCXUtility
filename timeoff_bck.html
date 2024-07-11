@@ -173,7 +173,7 @@
                 let pageNumber = 1;
                 let hasMorePages = true;
                 let users = [];
-                let activityCodes = new Map();
+                let activityCodes = [];
 
                 // Fetch business units
                 try {
@@ -194,7 +194,12 @@
                             if (acResponse.ok) {
                                 const acData = await acResponse.json();
                                 acData.entities.forEach(ac => {
-                                    activityCodes.set(ac.name || ac.category, { id: ac.id, category: ac.category });
+                                    activityCodes.push({ 
+                                        BusinessUnitName: businessUnit.name, 
+                                        ActivityCodeName: ac.name || ac.category, 
+                                        ActivityCodeId: ac.id, 
+                                        ActivityCategory: ac.category 
+                                    });
                                 });
                                 outputTextArea.value += `✅ Successfully fetched activity codes for business unit ${businessUnit.id}.\n`;
                             } else {
@@ -303,11 +308,37 @@
 
                     XLSX.utils.book_append_sheet(wb, ws, 'Time-off Request');
 
-                    const acSheetData = Array.from(activityCodes.entries()).map(([ActivityCodeName, { id, category }]) => ({ ActivityCodeName, ActivityCodeId: id, ActivityCategory: category }));
-                    if (acSheetData.length > 0) {
-                        const wsAc = XLSX.utils.json_to_sheet(acSheetData);
-                        XLSX.utils.book_append_sheet(wb, wsAc, 'Activity Codes');
-                    }
+                    // Remove duplicates in activityCodes based on both ActivityCodeName and ActivityCodeId
+                    const uniqueActivityCodes = activityCodes.filter((value, index, self) =>
+                        index === self.findIndex((t) => (
+                            t.ActivityCodeName === value.ActivityCodeName && t.ActivityCodeId === value.ActivityCodeId
+                        ))
+                    );
+
+                    // List of specific ActivityCodeName and ActivityCodeId pairs to blank out BusinessUnitName
+                    const specificCodes = [
+                        { name: 'OnQueueWork', id: '0' },
+                        { name: 'Break', id: '1' },
+                        { name: 'Meal', id: '2' },
+                        { name: 'Meeting', id: '3' },
+                        { name: 'OffQueueWork', id: '4' },
+                        { name: 'TimeOff', id: '5' },
+                        { name: 'Training', id: '6' },
+                        { name: 'Unavailable', id: '7' }
+                    ];
+
+                    const wsAcData = uniqueActivityCodes.map(code => {
+                        const shouldBlank = specificCodes.some(sc => sc.name === code.ActivityCodeName && sc.id === code.ActivityCodeId);
+                        return {
+                            BusinessUnitName: shouldBlank ? '' : code.BusinessUnitName,
+                            ActivityCodeName: code.ActivityCodeName,
+                            ActivityCodeId: code.ActivityCodeId,
+                            ActivityCategory: code.ActivityCategory
+                        };
+                    });
+
+                    const wsAc = XLSX.utils.json_to_sheet(wsAcData);
+                    XLSX.utils.book_append_sheet(wb, wsAc, 'Activity Codes');
 
                     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
                     const blob = new Blob([s2ab(wbout)], { type: 'application/octet-stream' });
