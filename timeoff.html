@@ -310,21 +310,23 @@
                     XLSX.utils.book_append_sheet(wb, ws, 'Time-off Request');
 
                     // Handle duplicates in activityCodes
-                    const uniqueActivityCodes = [];
-                    const activityCodeSet = new Set();
+                    const activityCodeMap = new Map();
 
                     activityCodes.forEach(code => {
                         const key = `${code.ActivityCodeName}-${code.ActivityCodeId}`;
-                        if (!activityCodeSet.has(key)) {
-                            activityCodeSet.add(key);
-                            uniqueActivityCodes.push(code);
+                        if (!activityCodeMap.has(key)) {
+                            activityCodeMap.set(key, { ...code });
                         } else {
-                            uniqueActivityCodes.push({ ...code, BusinessUnitName: '' });
+                            const existingCode = activityCodeMap.get(key);
+                            activityCodeMap.set(key, {
+                                ...existingCode,
+                                BusinessUnitName: ''
+                            });
                         }
                     });
 
                     // Filter Activity Codes tab
-                    const filteredActivityCodes = uniqueActivityCodes.filter(code => code.ActivityCategory === 'TimeOff');
+                    const filteredActivityCodes = Array.from(activityCodeMap.values()).filter(code => code.ActivityCategory === 'TimeOff');
 
                     const wsAcData = filteredActivityCodes.map(code => {
                         return {
