@@ -314,7 +314,10 @@
                         index === self.findIndex((t) => (
                             t.ActivityCodeName === value.ActivityCodeName && t.ActivityCodeId === value.ActivityCodeId
                         ))
-                    );
+                    ).map(code => ({
+                        ...code,
+                        BusinessUnitName: '' // Keep BusinessUnitName empty for duplicates
+                    }));
 
                     // Filter Activity Codes tab
                     const filteredActivityCodes = uniqueActivityCodes.filter(code => code.ActivityCategory === 'TimeOff');
