@@ -237,6 +237,7 @@ async function exportData() {
                     BusinessUnitName: "",
                     ActivityCodeName: "",
                     ActivityCodeId: "",
+                    Type: "", // Add the Type column with an empty string initially
                     Date: "",
                     Duration: "",
                     UPDATES: "FALSE"
@@ -342,23 +343,6 @@ async function exportData() {
 
             const wsAc = XLSX.utils.json_to_sheet(wsAcData);
             XLSX.utils.book_append_sheet(wb, wsAc, 'Activity Codes');
-
-            // Add data validation for the Type column
-            const range = XLSX.utils.decode_range(wsAc['!ref']);
-            for (let R = range.s.r + 1; R <= range.e.r; ++R) {
-                const cell = wsAc[XLSX.utils.encode_cell({ r: R, c: 3 })]; // Type column is the 4th column (0-indexed)
-                if (!cell) wsAc[XLSX.utils.encode_cell({ r: R, c: 3 })] = { v: '', t: 's' }; // Initialize cell if it doesn't exist
-            }
-            wsAc['!dataValidations'] = [
-                {
-                    sqref: `D2:D${range.e.r + 1}`, // Apply validation to the Type column
-                    type: 'list',
-                    formula1: '"F,P"',
-                    showErrorMessage: true,
-                    errorTitle: 'Invalid input',
-                    error: 'Please select a value from the dropdown.'
-                }
-            ];
 
             const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
             const blob = new Blob([s2ab(wbout)], { type: 'application/octet-stream' });
