@@ -161,204 +161,201 @@
             }
         });
 
-async function exportData() {
-    const exportBtn = document.getElementById('exportBtn');
-    const spinner = document.getElementById('spinner');
-    spinner.style.display = 'inline-block'; // Show spinner
-    const outputTextArea = document.getElementById('output');
-    outputTextArea.value = ''; // Clear output
+        async function exportData() {
+            const exportBtn = document.getElementById('exportBtn');
+            const spinner = document.getElementById('spinner');
+            spinner.style.display = 'inline-block'; // Show spinner
+            const outputTextArea = document.getElementById('output');
+            outputTextArea.value = ''; // Clear output
 
-    try {
-        const token = new URLSearchParams(window.location.search).get('token');
-        let pageNumber = 1;
-        let hasMorePages = true;
-        let users = [];
-        let activityCodes = [];
+            try {
+                const token = new URLSearchParams(window.location.search).get('token');
+                let pageNumber = 1;
+                let hasMorePages = true;
+                let users = [];
+                let activityCodes = [];
 
-        // Fetch business units
-        try {
-            const businessUnitsResponse = await fetchWithRetry('https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits', token);
-            if (!businessUnitsResponse.ok) {
-                const errorResponse = await businessUnitsResponse.json();
-                throw new Error(`Error fetching business units: ${businessUnitsResponse.statusText}: ${errorResponse.message}`);
-            }
-            const businessUnitsData = await businessUnitsResponse.json();
-            const businessUnits = businessUnitsData.entities;
-
-            outputTextArea.value += `✅ Successfully fetched business units.\n`;
-
-            // Fetch activity codes for each business unit
-            for (const businessUnit of businessUnits) {
+                // Fetch business units
                 try {
-                    const acResponse = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits/${businessUnit.id}/activitycodes`, token);
-                    if (acResponse.ok) {
-                        const acData = await acResponse.json();
-                        acData.entities.forEach(ac => {
-                            if (ac.category === "TimeOff") { // Only include activity codes with ActivityCategory "TimeOff"
-                                activityCodes.push({
-                                    BusinessUnitName: businessUnit.name,
-                                    ActivityCodeName: ac.name || ac.category,
-                                    ActivityCodeId: ac.id,
-                                    ActivityCategory: ac.category
+                    const businessUnitsResponse = await fetchWithRetry('https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits', token);
+                    if (!businessUnitsResponse.ok) {
+                        const errorResponse = await businessUnitsResponse.json();
+                        throw new Error(`Error fetching business units: ${businessUnitsResponse.statusText}: ${errorResponse.message}`);
+                    }
+                    const businessUnitsData = await businessUnitsResponse.json();
+                    const businessUnits = businessUnitsData.entities;
+
+                    outputTextArea.value += `✅ Successfully fetched business units.\n`;
+
+                    // Fetch activity codes for each business unit
+                    for (const businessUnit of businessUnits) {
+                        try {
+                            const acResponse = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits/${businessUnit.id}/activitycodes`, token);
+                            if (acResponse.ok) {
+                                const acData = await acResponse.json();
+                                acData.entities.forEach(ac => {
+                                    activityCodes.push({ 
+                                        BusinessUnitName: businessUnit.name, 
+                                        ActivityCodeName: ac.name || ac.category, 
+                                        ActivityCodeId: ac.id, 
+                                        ActivityCategory: ac.category 
+                                    });
                                 });
+                                outputTextArea.value += `✅ Successfully fetched activity codes for business unit ${businessUnit.id}.\n`;
+                            } else {
+                                const errorResponse = await acResponse.json();
+                                const errorMessage = `Error fetching activity codes for business unit ${businessUnit.id}: ${acResponse.statusText}: ${errorResponse.message}`;
+                                console.error(errorMessage);
+                                outputTextArea.value += `❌ ${errorMessage}\n`;
                             }
-                        });
-                        outputTextArea.value += `✅ Successfully fetched activity codes for business unit ${businessUnit.id}.\n`;
-                    } else {
-                        const errorResponse = await acResponse.json();
-                        const errorMessage = `Error fetching activity codes for business unit ${businessUnit.id}: ${acResponse.statusText}: ${errorResponse.message}`;
-                        console.error(errorMessage);
-                        outputTextArea.value += `❌ ${errorMessage}\n`;
+                        } catch (error) {
+                            const errorMessage = `Error: ${error.message}`;
+                            console.error(errorMessage);
+                            outputTextArea.value += `❌ ${errorMessage}\n`;
+                        }
                     }
                 } catch (error) {
                     const errorMessage = `Error: ${error.message}`;
                     console.error(errorMessage);
                     outputTextArea.value += `❌ ${errorMessage}\n`;
                 }
-            }
-        } catch (error) {
-            const errorMessage = `Error: ${error.message}`;
-            console.error(errorMessage);
-            outputTextArea.value += `❌ ${errorMessage}\n`;
-        }
 
-        // Fetch users
-        while (hasMorePages) {
-            const response = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/users?pageSize=100&pageNumber=${pageNumber}`, token);
-            if (response.ok) {
-                const data = await response.json();
-                users = users.concat(data.entities.map(user => ({
-                    AgentName: user.name,
-                    AgentId: user.id,
-                    AgentEmail: user.email,
-                    ManagementUnitId: "",
-                    ManagementUnitName: "",
-                    BusinessUnitId: "",
-                    BusinessUnitName: "",
-                    ActivityCodeName: "",
-                    ActivityCodeId: "",
-                    Type: "", // Add the Type column with an empty string initially
-                    Date: "",
-                    Duration: "",
-                    UPDATES: "FALSE"
-                })));
+                // Fetch users
+                while (hasMorePages) {
+                    const response = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/users?pageSize=100&pageNumber=${pageNumber}`, token);
+                    if (response.ok) {
+                        const data = await response.json();
+                        users = users.concat(data.entities.map(user => ({
+                            AgentName: user.name,
+                            AgentId: user.id,
+                            AgentEmail: user.email,
+                            ManagementUnitId: "",
+                            ManagementUnitName: "",
+                            BusinessUnitId: "",
+                            BusinessUnitName: "",
+                            ActivityCodeName: "",
+                            ActivityCodeId: "",
+                            Date: "",
+                            Duration: "",
+                            UPDATES: "FALSE"
+                        })));
 
-                hasMorePages = !!data.nextUri;
-                pageNumber++;
-            } else {
-                const errorResponse = await response.json();
-                const errorMessage = `Error fetching users: ${response.statusText}: ${errorResponse.message}`;
-                console.error(errorMessage);
-                outputTextArea.value += `❌ ${errorMessage}\n`;
-                break;
-            }
-        }
-
-        if (users.length > 0) {
-            for (const user of users) {
-                try {
-                    const muResponse = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/agents/${user.AgentId}/managementunit`, token);
-                    if (muResponse.ok) {
-                        const muData = await muResponse.json();
-                        user.ManagementUnitId = muData.managementUnit.id;
-                        user.BusinessUnitId = muData.businessUnit.id;
-
-                        const buResponse = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits/${user.BusinessUnitId}`, token);
-                        if (buResponse.ok) {
-                            const buData = await buResponse.json();
-                            user.BusinessUnitName = buData.name;
-                        } else {
-                            const errorResponse = await buResponse.json();
-                            const errorMessage = `Error fetching business unit for agent ${user.AgentName} (${user.AgentId}): ${buResponse.statusText}: ${errorResponse.message}`;
-                            console.error(errorMessage);
-                            outputTextArea.value += `❌ ${errorMessage}\n`;
-                        }
-
-                        const muNameResponse = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/managementunits/${user.ManagementUnitId}`, token);
-                        if (muNameResponse.ok) {
-                            const muNameData = await muNameResponse.json();
-                            user.ManagementUnitName = muNameData.name;
-                        } else {
-                            const errorResponse = await muNameResponse.json();
-                            const errorMessage = `Error fetching management unit name for agent ${user.AgentName} (${user.AgentId}): ${muNameResponse.statusText}: ${errorResponse.message}`;
-                            console.error(errorMessage);
-                            outputTextArea.value += `❌ ${errorMessage}\n`;
-                        }
-
-                        outputTextArea.value += `✅ Successfully processed user ${user.AgentName}.\n`;
-                    } else if (muResponse.status === 404) {
-                        const warnMessage = `Management unit not found for agent ${user.AgentName} (${user.AgentId})`;
-                        console.warn(warnMessage);
-                        outputTextArea.value += `⚠️ ${warnMessage}\n`;
+                        hasMorePages = !!data.nextUri;
+                        pageNumber++;
                     } else {
-                        const errorResponse = await muResponse.json();
-                        const errorMessage = `Error fetching management unit for agent ${user.AgentName} (${user.AgentId}): ${muResponse.statusText}: ${errorResponse.message}`;
+                        const errorResponse = await response.json();
+                        const errorMessage = `Error fetching users: ${response.statusText}: ${errorResponse.message}`;
                         console.error(errorMessage);
                         outputTextArea.value += `❌ ${errorMessage}\n`;
+                        break;
                     }
-                } catch (error) {
-                    const errorMessage = `Error processing user ${user.AgentName} (${user.AgentId}): ${error.message}`;
-                    console.error(errorMessage);
-                    outputTextArea.value += `❌ ${errorMessage}\n`;
                 }
+
+                if (users.length > 0) {
+                    for (const user of users) {
+                        try {
+                            const muResponse = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/agents/${user.AgentId}/managementunit`, token);
+                            if (muResponse.ok) {
+                                const muData = await muResponse.json();
+                                user.ManagementUnitId = muData.managementUnit.id;
+                                user.BusinessUnitId = muData.businessUnit.id;
+
+                                const buResponse = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits/${user.BusinessUnitId}`, token);
+                                if (buResponse.ok) {
+                                    const buData = await buResponse.json();
+                                    user.BusinessUnitName = buData.name;
+                                } else {
+                                    const errorResponse = await buResponse.json();
+                                    const errorMessage = `Error fetching business unit for agent ${user.AgentName} (${user.AgentId}): ${buResponse.statusText}: ${errorResponse.message}`;
+                                    console.error(errorMessage);
+                                    outputTextArea.value += `❌ ${errorMessage}\n`;
+                                }
+
+                                const muNameResponse = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/managementunits/${user.ManagementUnitId}`, token);
+                                if (muNameResponse.ok) {
+                                    const muNameData = await muNameResponse.json();
+                                    user.ManagementUnitName = muNameData.name;
+                                } else {
+                                    const errorResponse = await muNameResponse.json();
+                                    const errorMessage = `Error fetching management unit name for agent ${user.AgentName} (${user.AgentId}): ${muNameResponse.statusText}: ${errorResponse.message}`;
+                                    console.error(errorMessage);
+                                    outputTextArea.value += `❌ ${errorMessage}\n`;
+                                }
+
+                                outputTextArea.value += `✅ Successfully processed user ${user.AgentName}.\n`;
+                            } else if (muResponse.status === 404) {
+                                const warnMessage = `Management unit not found for agent ${user.AgentName} (${user.AgentId})`;
+                                console.warn(warnMessage);
+                                outputTextArea.value += `⚠️ ${warnMessage}\n`;
+                            } else {
+                                const errorResponse = await muResponse.json();
+                                const errorMessage = `Error fetching management unit for agent ${user.AgentName} (${user.AgentId}): ${muResponse.statusText}: ${errorResponse.message}`;
+                                console.error(errorMessage);
+                                outputTextArea.value += `❌ ${errorMessage}\n`;
+                            }
+                        } catch (error) {
+                            const errorMessage = `Error processing user ${user.AgentName} (${user.AgentId}): ${error.message}`;
+                            console.error(errorMessage);
+                            outputTextArea.value += `❌ ${errorMessage}\n`;
+                        }
+                    }
+
+                    // Filter out users with both ManagementUnitId and BusinessUnitId empty
+                    users = users.filter(user => user.ManagementUnitId || user.BusinessUnitId);
+
+                    const wb = XLSX.utils.book_new();
+                    const ws = XLSX.utils.json_to_sheet(users, { header: ["AgentName", "AgentEmail", "AgentId", "BusinessUnitName", "BusinessUnitId", "ManagementUnitName", "ManagementUnitId", "ActivityCodeName", "ActivityCodeId", "Date", "Duration", "UPDATES"] });
+
+                    XLSX.utils.book_append_sheet(wb, ws, 'Time-off Request');
+
+                    // Remove duplicates in activityCodes based on both ActivityCodeName and ActivityCodeId
+                    const uniqueActivityCodes = activityCodes.filter((value, index, self) =>
+                        index === self.findIndex((t) => (
+                            t.ActivityCodeName === value.ActivityCodeName && t.ActivityCodeId === value.ActivityCodeId
+                        ))
+                    );
+
+                    // List of specific ActivityCodeName and ActivityCodeId pairs to blank out BusinessUnitName
+                    const specificCodes = [
+                        { name: 'OnQueueWork', id: '0' },
+                        { name: 'Break', id: '1' },
+                        { name: 'Meal', id: '2' },
+                        { name: 'Meeting', id: '3' },
+                        { name: 'OffQueueWork', id: '4' },
+                        { name: 'TimeOff', id: '5' },
+                        { name: 'Training', id: '6' },
+                        { name: 'Unavailable', id: '7' }
+                    ];
+
+                    const wsAcData = uniqueActivityCodes.map(code => {
+                        const shouldBlank = specificCodes.some(sc => sc.name === code.ActivityCodeName && sc.id === code.ActivityCodeId);
+                        return {
+                            BusinessUnitName: shouldBlank ? '' : code.BusinessUnitName,
+                            ActivityCodeName: code.ActivityCodeName,
+                            ActivityCodeId: code.ActivityCodeId,
+                            ActivityCategory: code.ActivityCategory
+                        };
+                    });
+
+                    const wsAc = XLSX.utils.json_to_sheet(wsAcData);
+                    XLSX.utils.book_append_sheet(wb, wsAc, 'Activity Codes');
+
+                    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
+                    const blob = new Blob([s2ab(wbout)], { type: 'application/octet-stream' });
+
+                    saveAs(blob, 'GCXUtility_Timeoff.xlsx');
+                    outputTextArea.value += 'Export completed successfully.\n';
+                } else {
+                    outputTextArea.value += 'No users found to export.\n';
+                }
+            } catch (error) {
+                const errorMessage = `Error: ${error.message}`;
+                console.error(errorMessage);
+                outputTextArea.value += `❌ ${errorMessage}\n`;
+            } finally {
+                spinner.style.display = 'none'; // Hide spinner
             }
-
-            // Filter out users with both ManagementUnitId and BusinessUnitId empty
-            users = users.filter(user => user.ManagementUnitId || user.BusinessUnitId);
-
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.json_to_sheet(users, { header: ["AgentName", "AgentEmail", "AgentId", "BusinessUnitName", "BusinessUnitId", "ManagementUnitName", "ManagementUnitId", "ActivityCodeName", "ActivityCodeId", "Type", "Date", "Duration", "UPDATES"] });
-
-            XLSX.utils.book_append_sheet(wb, ws, 'Time-off Request');
-
-            // Remove duplicates in activityCodes based on both ActivityCodeName and ActivityCodeId
-            const uniqueActivityCodes = activityCodes.filter((value, index, self) =>
-                index === self.findIndex((t) => (
-                    t.ActivityCodeName === value.ActivityCodeName && t.ActivityCodeId === value.ActivityCodeId
-                ))
-            );
-
-            // List of specific ActivityCodeName and ActivityCodeId pairs to blank out BusinessUnitName
-            const specificCodes = [
-                { name: 'OnQueueWork', id: '0' },
-                { name: 'Break', id: '1' },
-                { name: 'Meal', id: '2' },
-                { name: 'Meeting', id: '3' },
-                { name: 'OffQueueWork', id: '4' },
-                { name: 'TimeOff', id: '5' },
-                { name: 'Training', id: '6' },
-                { name: 'Unavailable', id: '7' }
-            ];
-
-            const wsAcData = uniqueActivityCodes.map(code => {
-                const shouldBlank = specificCodes.some(sc => sc.name === code.ActivityCodeName && sc.id === code.ActivityCodeId);
-                return {
-                    BusinessUnitName: shouldBlank ? '' : code.BusinessUnitName,
-                    ActivityCodeName: code.ActivityCodeName,
-                    ActivityCodeId: code.ActivityCodeId,
-                    ActivityCategory: code.ActivityCategory
-                };
-            });
-
-            const wsAc = XLSX.utils.json_to_sheet(wsAcData);
-            XLSX.utils.book_append_sheet(wb, wsAc, 'Activity Codes');
-
-            const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
-            const blob = new Blob([s2ab(wbout)], { type: 'application/octet-stream' });
-
-            saveAs(blob, 'GCXUtility_Timeoff.xlsx');
-            outputTextArea.value += 'Export completed successfully.\n';
-        } else {
-            outputTextArea.value += 'No users found to export.\n';
         }
-    } catch (error) {
-        const errorMessage = `Error: ${error.message}`;
-        console.error(errorMessage);
-        outputTextArea.value += `❌ ${errorMessage}\n`;
-    } finally {
-        spinner.style.display = 'none'; // Hide spinner
-    }
-}
 
         async function fetchWithRetry(url, token, retries = 3) {
             for (let i = 0; i < retries; i++) {
