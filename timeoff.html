@@ -235,6 +235,7 @@
                             BusinessUnitName: "",
                             ActivityCodeName: "",
                             ActivityCodeId: "",
+                            Type: "", // Added Type column
                             Date: "",
                             Duration: "",
                             UPDATES: "FALSE"
@@ -304,7 +305,7 @@
                     users = users.filter(user => user.ManagementUnitId || user.BusinessUnitId);
 
                     const wb = XLSX.utils.book_new();
-                    const ws = XLSX.utils.json_to_sheet(users, { header: ["AgentName", "AgentEmail", "AgentId", "BusinessUnitName", "BusinessUnitId", "ManagementUnitName", "ManagementUnitId", "ActivityCodeName", "ActivityCodeId", "Date", "Duration", "UPDATES"] });
+                    const ws = XLSX.utils.json_to_sheet(users, { header: ["AgentName", "AgentEmail", "AgentId", "BusinessUnitName", "BusinessUnitId", "ManagementUnitName", "ManagementUnitId", "ActivityCodeName", "ActivityCodeId", "Type", "Date", "Duration", "UPDATES"] });
 
                     XLSX.utils.book_append_sheet(wb, ws, 'Time-off Request');
 
@@ -315,22 +316,12 @@
                         ))
                     );
 
-                    // List of specific ActivityCodeName and ActivityCodeId pairs to blank out BusinessUnitName
-                    const specificCodes = [
-                        { name: 'OnQueueWork', id: '0' },
-                        { name: 'Break', id: '1' },
-                        { name: 'Meal', id: '2' },
-                        { name: 'Meeting', id: '3' },
-                        { name: 'OffQueueWork', id: '4' },
-                        { name: 'TimeOff', id: '5' },
-                        { name: 'Training', id: '6' },
-                        { name: 'Unavailable', id: '7' }
-                    ];
+                    // Filter Activity Codes tab
+                    const filteredActivityCodes = uniqueActivityCodes.filter(code => code.ActivityCategory === 'TimeOff');
 
-                    const wsAcData = uniqueActivityCodes.map(code => {
-                        const shouldBlank = specificCodes.some(sc => sc.name === code.ActivityCodeName && sc.id === code.ActivityCodeId);
+                    const wsAcData = filteredActivityCodes.map(code => {
                         return {
-                            BusinessUnitName: shouldBlank ? '' : code.BusinessUnitName,
+                            BusinessUnitName: code.BusinessUnitName,
                             ActivityCodeName: code.ActivityCodeName,
                             ActivityCodeId: code.ActivityCodeId,
                             ActivityCategory: code.ActivityCategory
@@ -406,15 +397,27 @@
             for (const row of rows) {
                 if (row.UPDATES === true) {
                     const dates = row.Date.split(',').map(date => date.trim().replace(/^"|"$/g, '')); // Split and clean date values
-                    const requestBody = {
-                        status: 'APPROVED',
-                        users: [{ id: row.AgentId }],
-                        activityCodeId: row.ActivityCodeId,
-                        notes: 'Initial time-off load',
-                        fullDayManagementUnitDates: dates, // Use cleaned dates
-                        partialDayStartDateTimes: [],
-                        dailyDurationMinutes: row.Duration
-                    };
+                    let requestBody;
+
+                    if (row.Type === 'F') {
+                        requestBody = {
+                            status: 'APPROVED',
+                            users: [{ id: row.AgentId }],
+                            activityCodeId: row.ActivityCodeId,
+                            notes: 'Initial time-off load',
+                            fullDayManagementUnitDates: dates, // Use cleaned dates
+                            dailyDurationMinutes: row.Duration
+                        };
+                    } else if (row.Type === 'P') {
+                        requestBody = {
+                            status: 'APPROVED',
+                            users: [{ id: row.AgentId }],
+                            activityCodeId: row.ActivityCodeId,
+                            notes: 'Initial time-off load',
+                            partialDayStartDateTimes: dates, // Use cleaned dates
+                            dailyDurationMinutes: row.Duration
+                        };
+                    }
 
                     console.log('Sending API request with body:', requestBody);
 
