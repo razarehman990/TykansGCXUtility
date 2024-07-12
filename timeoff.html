@@ -314,13 +314,20 @@
                         index === self.findIndex((t) => (
                             t.ActivityCodeName === value.ActivityCodeName && t.ActivityCodeId === value.ActivityCodeId
                         ))
-                    ).map(code => ({
-                        ...code,
-                        BusinessUnitName: '' // Keep BusinessUnitName empty for duplicates
-                    }));
+                    );
 
                     // Filter Activity Codes tab
-                    const filteredActivityCodes = uniqueActivityCodes.filter(code => code.ActivityCategory === 'TimeOff');
+                    const filteredActivityCodes = uniqueActivityCodes.map((code, index, self) => {
+                        const isDuplicate = self.some((t, i) => 
+                            i !== index && 
+                            t.ActivityCodeName === code.ActivityCodeName && 
+                            t.ActivityCodeId === code.ActivityCodeId
+                        );
+                        return {
+                            ...code,
+                            BusinessUnitName: isDuplicate ? '' : code.BusinessUnitName
+                        };
+                    }).filter(code => code.ActivityCategory === 'TimeOff');
 
                     const wsAcData = filteredActivityCodes.map(code => {
                         return {
