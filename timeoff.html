@@ -154,6 +154,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.34/moment-timezone-with-data.min.js"></script>
     <script>
         let uploadedRows = [];
+        const timezones = moment.tz.names();
 
         document.getElementById('exportBtn').addEventListener('click', exportData);
         document.getElementById('uploadBtn').addEventListener('click', () => {
@@ -330,6 +331,21 @@
                     const wb = XLSX.utils.book_new();
                     const ws = XLSX.utils.json_to_sheet(users, { header: ["AgentName", "AgentEmail", "AgentId", "BusinessUnitName", "BusinessUnitId", "ManagementUnitName", "ManagementUnitId", "ActivityCodeName", "ActivityCodeId", "Type", "Date", "Timezone", "Duration", "UPDATES"] });
 
+                    // Add Timezone dropdown
+                    const range = XLSX.utils.decode_range(ws['!ref']);
+                    for (let C = range.s.c; C <= range.e.c; ++C) {
+                        const address = XLSX.utils.encode_col(C) + "1";
+                        if (ws[address].v === "Timezone") {
+                            const dropdownAddress = XLSX.utils.encode_col(C) + "2:" + XLSX.utils.encode_col(C) + range.e.r;
+                            ws['!dataValidations'] = (ws['!dataValidations'] || []).concat([{
+                                sqref: dropdownAddress,
+                                type: 'list',
+                                formula1: '"' + timezones.join(",") + '"'
+                            }]);
+                            break;
+                        }
+                    }
+
                     XLSX.utils.book_append_sheet(wb, ws, 'Time-off Request');
 
                     // Handle duplicates in activityCodes
@@ -488,9 +504,6 @@
 
         // Converts local date/time to UTC, considering DST and specified timezone
         function convertToUTC(localDateTime, timezone) {
-            if (localDateTime.endsWith('Z')) {
-                localDateTime = localDateTime.slice(0, -1);
-            }
             const local = moment.tz(localDateTime, timezone);
             const utcDate = local.utc().format();
             console.log(`Converted local date/time ${localDateTime} (${timezone}) to UTC ${utcDate}`);
