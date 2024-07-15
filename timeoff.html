@@ -100,6 +100,22 @@
             margin: 0 10px;
             position: relative;
         }
+
+        .version-link {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            font-size: 14px;
+        }
+
+        .version-link a {
+            color: #0F3057;
+            text-decoration: none;
+        }
+
+        .version-link a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -126,6 +142,10 @@
             </div>
         </div>
         <input type="file" id="fileInput" accept=".xlsx">
+    </div>
+
+    <div class="version-link">
+        <a href="timeoff_NoUTCConversion.html">Click here for Version 1 (No UTC Conversion)</a>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
