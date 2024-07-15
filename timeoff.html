@@ -599,13 +599,47 @@
             window.history.back();
         }
 
-        function logout() {
-            // Clear the token from the URL
-            const url = new URL(window.location.href);
-            url.searchParams.delete('token');
-            window.location.href = url.toString();
-            // Redirect to the index.html page
-            window.location.href = 'index.html';
+        async function logout() {
+            const token = new URLSearchParams(window.location.search).get('token');
+            try {
+                // Step 1: Get user ID
+                const userResponse = await fetch('/api/v2/users/me', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!userResponse.ok) {
+                    throw new Error(`Failed to fetch user info: ${userResponse.statusText}`);
+                }
+
+                const userData = await userResponse.json();
+                const userId = userData.id;
+
+                // Step 2: Delete token
+                const deleteResponse = await fetch(`/api/v2/tokens/${userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!deleteResponse.ok) {
+                    throw new Error(`Failed to delete token: ${deleteResponse.statusText}`);
+                }
+
+                // Step 3: Clear the token from the URL and redirect to index.html
+                const url = new URL(window.location.href);
+                url.searchParams.delete('token');
+                window.location.href = url.toString();
+                window.location.href = 'index.html';
+            } catch (error) {
+                console.error('Logout failed:', error);
+                alert('Logout failed. Please try again.');
+            }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
