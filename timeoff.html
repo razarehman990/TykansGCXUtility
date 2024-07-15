@@ -259,6 +259,7 @@
                             ActivityCodeId: "",
                             Type: "", // Added Type column
                             Date: "",
+                            Timezone: "America/Vancouver", // Default Timezone
                             Duration: "",
                             UPDATES: "FALSE"
                         })));
@@ -327,7 +328,7 @@
                     users = users.filter(user => user.ManagementUnitId || user.BusinessUnitId);
 
                     const wb = XLSX.utils.book_new();
-                    const ws = XLSX.utils.json_to_sheet(users, { header: ["AgentName", "AgentEmail", "AgentId", "BusinessUnitName", "BusinessUnitId", "ManagementUnitName", "ManagementUnitId", "ActivityCodeName", "ActivityCodeId", "Type", "Date", "Duration", "UPDATES"] });
+                    const ws = XLSX.utils.json_to_sheet(users, { header: ["AgentName", "AgentEmail", "AgentId", "BusinessUnitName", "BusinessUnitId", "ManagementUnitName", "ManagementUnitId", "ActivityCodeName", "ActivityCodeId", "Type", "Date", "Timezone", "Duration", "UPDATES"] });
 
                     XLSX.utils.book_append_sheet(wb, ws, 'Time-off Request');
 
@@ -440,7 +441,7 @@
                             dailyDurationMinutes: row.Duration
                         };
                     } else if (row.Type === 'P') {
-                        const utcDates = dates.map(date => convertToUTC(date));
+                        const utcDates = dates.map(date => convertToUTC(date, row.Timezone));
 
                         requestBody = {
                             status: 'APPROVED',
@@ -485,14 +486,14 @@
             importSpinner.style.display = 'none'; // Hide spinner
         }
 
-        // Converts local date/time to UTC, considering DST
-        function convertToUTC(localDateTime) {
+        // Converts local date/time to UTC, considering DST and specified timezone
+        function convertToUTC(localDateTime, timezone) {
             if (localDateTime.endsWith('Z')) {
                 localDateTime = localDateTime.slice(0, -1);
             }
-            const local = moment.tz(localDateTime, "America/Vancouver");
+            const local = moment.tz(localDateTime, timezone);
             const utcDate = local.utc().format();
-            console.log(`Converted local date/time ${localDateTime} to UTC ${utcDate}`);
+            console.log(`Converted local date/time ${localDateTime} (${timezone}) to UTC ${utcDate}`);
             return utcDate;
         }
 
