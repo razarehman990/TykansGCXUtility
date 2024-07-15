@@ -145,7 +145,7 @@
     </div>
 
     <div class="version-link">
-        <a href="timeoff_NoUTCConversion.html">Click here for Version 1 (No UTC Conversion)</a>
+        <a id="versionLink" href="#">Click here for Version 1 (No UTC Conversion)</a>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
@@ -502,6 +502,12 @@
             for (let i = 0; i < s.length; i++) view[i] = s.charCodeAt(i) & 0xFF;
             return buf;
         }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = new URLSearchParams(window.location.search).get('token');
+            const versionLink = document.getElementById('versionLink');
+            versionLink.href = `timeoff_NoUTCConversion.html?token=${token}`;
+        });
     </script>
 </body>
 </html>
