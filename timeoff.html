@@ -116,6 +116,35 @@
         .version-link a:hover {
             text-decoration: underline;
         }
+
+        .back-button, .logout-button {
+            position: absolute;
+            top: 10px;
+            width: 40px;
+            height: 40px;
+            background-color: #0F3057;
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .back-button {
+            left: 10px;
+        }
+
+        .logout-button {
+            right: 10px;
+        }
+
+        .logout-button:hover {
+            background-color: red;
+            color: #fff;
+        }
     </style>
 </head>
 <body>
@@ -147,6 +176,9 @@
     <div class="version-link">
         <a id="versionLink" href="#">Click here for Version 1 (No UTC Conversion)</a>
     </div>
+
+    <button class="back-button" onclick="goBack()">&#8592;</button>
+    <button class="logout-button" onclick="logout()">&#x2715;</button>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -505,6 +537,14 @@
             const view = new Uint8Array(buf);
             for (let i = 0; i < s.length; i++) view[i] = s.charCodeAt(i) & 0xFF;
             return buf;
+        }
+
+        function goBack() {
+            window.history.back();
+        }
+
+        function logout() {
+            window.location.href = 'index.html';
         }
 
         document.addEventListener('DOMContentLoaded', () => {
