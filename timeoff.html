@@ -603,7 +603,7 @@
             const token = new URLSearchParams(window.location.search).get('token');
             try {
                 // Step 1: Get user ID
-                const userResponse = await fetch('/api/v2/users/me', {
+                const userResponse = await fetch('https://api.cac1.pure.cloud/api/v2/users/me', {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -619,7 +619,7 @@
                 const userId = userData.id;
 
                 // Step 2: Delete token
-                const deleteResponse = await fetch(`/api/v2/tokens/${userId}`, {
+                const deleteResponse = await fetch(`https://api.cac1.pure.cloud/api/v2/tokens/${userId}`, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json',
