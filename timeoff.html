@@ -143,6 +143,23 @@
             border: 2px solid #0F3057;
         }
 
+        .back-button::after {
+            content: "Go Back";
+            display: none;
+            position: absolute;
+            top: 50px;
+            left: -10px;
+            background-color: #0F3057;
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 5px;
+            white-space: nowrap;
+        }
+
+        .back-button:hover::after {
+            display: block;
+        }
+
         .logout-button {
             right: 10px;
         }
@@ -151,12 +168,43 @@
             background-color: red;
             color: #fff;
         }
+
+        .logout-button::after {
+            content: "Logout";
+            display: none;
+            position: absolute;
+            top: 50px;
+            right: -10px;
+            background-color: red;
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 5px;
+            white-space: nowrap;
+        }
+
+        .logout-button:hover::after {
+            display: block;
+        }
+
+        #instructions {
+            margin-top: 20px;
+            text-align: left;
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
     <div id="header">
         <img id="logo" src="https://www.tykans.com/hs-fs/hubfs/Tykans_June2023/Images/Tykans%20-header-logo.png" alt="Tykans Logo">
         <h1 id="title">Workforce Management Time Off</h1>
+        <div id="instructions">
+            <p><strong>INSTRUCTIONS:</strong></p>
+            <ol>
+                <li><strong>Export Button:</strong> Generates an Excel file containing a list of WFM Users with their ID, Email, Business Unit, and Management Unit information. This helps to get data in a single click.</li>
+                <li><strong>Upload Button:</strong> Allows you to upload the new time off request data into the utility and screen any data formatting issues.</li>
+                <li><strong>Import Button:</strong> Appears upon successfully uploading the new time off request data. This will execute the import process, creating new time off requests in the Genesys system.</li>
+            </ol>
+        </div>
     </div>
     <div class="container">
         <div id="output-container">
