@@ -137,6 +137,12 @@
             left: 10px;
         }
 
+        .back-button:hover {
+            background-color: #fff;
+            color: #0F3057;
+            border: 2px solid #0F3057;
+        }
+
         .logout-button {
             right: 10px;
         }
@@ -544,6 +550,11 @@
         }
 
         function logout() {
+            // Clear the token from the URL
+            const url = new URL(window.location.href);
+            url.searchParams.delete('token');
+            window.location.href = url.toString();
+            // Redirect to the index.html page
             window.location.href = 'index.html';
         }
 
