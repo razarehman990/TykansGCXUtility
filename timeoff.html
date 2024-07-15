@@ -467,6 +467,9 @@
 
         // Converts local date/time to UTC, considering DST
         function convertToUTC(localDateTime) {
+            if (localDateTime.endsWith('Z')) {
+                localDateTime = localDateTime.slice(0, -1);
+            }
             const local = moment.tz(localDateTime, "America/Vancouver");
             const utcDate = local.utc().format();
             console.log(`Converted local date/time ${localDateTime} to UTC ${utcDate}`);
