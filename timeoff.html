@@ -418,12 +418,14 @@
                             dailyDurationMinutes: row.Duration
                         };
                     } else if (row.Type === 'P') {
+                        const utcDates = dates.map(date => convertToUTC(date));
+
                         requestBody = {
                             status: 'APPROVED',
                             users: [{ id: row.AgentId }],
                             activityCodeId: row.ActivityCodeId,
                             notes: 'Initial time-off load',
-                            partialDayStartDateTimes: dates, // Use cleaned dates
+                            partialDayStartDateTimes: utcDates, // Use UTC dates
                             dailyDurationMinutes: row.Duration
                         };
                     }
@@ -459,6 +461,12 @@
             }
 
             importSpinner.style.display = 'none'; // Hide spinner
+        }
+
+        // Converts local date/time to UTC, considering DST
+        function convertToUTC(localDateTime) {
+            const date = new Date(localDateTime); // Interprets the input as local date/time, including DST
+            return date.toISOString(); // Converts to ISO string in UTC
         }
 
         function s2ab(s) {
