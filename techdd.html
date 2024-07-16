@@ -1,1 +1,183 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate Document</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #fff;
+            color: #0F3057;
+            text-align: center;
+        }
+
+        .container {
+            margin-top: 150px;
+        }
+
+        .button {
+            margin: 20px;
+            padding: 15px 30px;
+            background-color: #0F3057;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        .button:hover {
+            background-color: #fff;
+            color: #0F3057;
+            border: 2px solid #0F3057;
+        }
+
+        #output-container {
+            position: relative;
+            width: 80%;
+            margin: 20px auto;
+            text-align: left;
+        }
+
+        #output {
+            width: 100%;
+            min-height: 300px;
+            display: block;
+            overflow-x: auto;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+        }
+
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(15, 48, 87, 0.3);
+            border-radius: 50%;
+            border-top-color: #0F3057;
+            animation: spin 1s ease-in-out infinite;
+            position: relative;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .button-container div {
+            margin: 0 10px;
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="output-container">
+            <textarea id="output" readonly></textarea>
+        </div>
+        <div class="button-container">
+            <div>
+                <button class="button" id="generateBtn">Generate Document</button>
+                <div class="spinner" id="spinner"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script>
+        document.getElementById('generateBtn').addEventListener('click', generateDocument);
+
+        async function generateDocument() {
+            const generateBtn = document.getElementById('generateBtn');
+            const spinner = document.getElementById('spinner');
+            const outputTextArea = document.getElementById('output');
+            outputTextArea.value = ''; // Clear output
+            spinner.style.display = 'inline-block'; // Show spinner
+
+            try {
+                // Add your API calls and data fetching logic here
+                outputTextArea.value += 'Starting document generation...\n';
+
+                // Example of logging each step
+                outputTextArea.value += 'Fetching Architect Flows...\n';
+                const architectFlows = await fetchArchitectFlows();
+                outputTextArea.value += 'Architect Flows fetched successfully.\n';
+
+                outputTextArea.value += 'Fetching Queue data...\n';
+                const queueData = await fetchQueueData();
+                outputTextArea.value += 'Queue data fetched successfully.\n';
+
+                // ... repeat for other tabs
+
+                // Create the Excel file
+                const wb = XLSX.utils.book_new();
+
+                // Example: Architect Flows tab
+                const wsArchitectFlows = XLSX.utils.json_to_sheet(architectFlows);
+                XLSX.utils.book_append_sheet(wb, wsArchitectFlows, 'Architect Flows');
+
+                // Example: Queue tab
+                const wsQueue = XLSX.utils.json_to_sheet(queueData);
+                XLSX.utils.book_append_sheet(wb, wsQueue, 'Queue');
+
+                // ... repeat for other tabs
+
+                const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
+                const blob = new Blob([s2ab(wbout)], { type: 'application/octet-stream' });
+
+                saveAs(blob, 'GeneratedDocument.xlsx');
+                outputTextArea.value += 'Document generation completed successfully.\n';
+            } catch (error) {
+                const errorMessage = `Error: ${error.message}`;
+                console.error(errorMessage);
+                outputTextArea.value += `❌ ${errorMessage}\n`;
+            } finally {
+                spinner.style.display = 'none'; // Hide spinner
+            }
+        }
+
+        async function fetchArchitectFlows() {
+            // Add your API call logic here
+            // Example:
+            return [
+                { id: 1, name: 'Flow 1' },
+                { id: 2, name: 'Flow 2' }
+            ];
+        }
+
+        async function fetchQueueData() {
+            // Add your API call logic here
+            // Example:
+            return [
+                { id: 1, name: 'Queue 1' },
+                { id: 2, name: 'Queue 2' }
+            ];
+        }
+
+        // ... add similar functions for other tabs
+
+        function s2ab(s) {
+            const buf = new ArrayBuffer(s.length);
+            const view = new Uint8Array(buf);
+            for (let i = 0; i < s.length; i++) view[i] = s.charCodeAt(i) & 0xFF;
+            return buf;
+        }
+    </script>
+</body>
+</html>
