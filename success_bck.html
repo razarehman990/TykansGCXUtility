@@ -119,6 +119,7 @@
             <li><button>Roles</button></li>
             <li><button>Scripts</button></li>
             <li><button id="workplanBtn">Workplan</button></li>
+            <li><button id="timeOffBtn">Time-Off</button></li>
         </ul>
     </div>
 
@@ -147,6 +148,12 @@
         document.getElementById('workplanBtn').addEventListener('click', function() {
             const token = new URLSearchParams(window.location.search).get('token');
             window.location.href = `workplan.html?token=${token}`;
+        });
+
+        // Redirect to timeoff.html with token when Time-Off button is clicked
+        document.getElementById('timeOffBtn').addEventListener('click', function() {
+            const token = new URLSearchParams(window.location.search).get('token');
+            window.location.href = `timeoff.html?token=${token}`;
         });
     </script>
 </body>
