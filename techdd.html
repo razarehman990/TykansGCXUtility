@@ -299,13 +299,13 @@
         async function fetchQueueData() {
             // Add your API call logic here
             return [
-                { id: 1, name: 'Queue 1
+                { id: 1,
                 { id: 2, name: 'Queue 2' }
             ];
         }
 
         async function fetchWrapupCodes() {
-            // Dummy data for Wrapup Codes
+            // Add your API call logic here
             return [
                 { id: 1, code: 'Code 1' },
                 { id: 2, code: 'Code 2' }
@@ -313,7 +313,7 @@
         }
 
         async function fetchDataActions() {
-            // Dummy data for Data Actions
+            // Add your API call logic here
             return [
                 { id: 1, action: 'Action 1' },
                 { id: 2, action: 'Action 2' }
@@ -321,7 +321,7 @@
         }
 
         async function fetchOAuthClients() {
-            // Dummy data for OAuth Clients
+            // Add your API call logic here
             return [
                 { id: 1, clientName: 'Client 1' },
                 { id: 2, clientName: 'Client 2' }
@@ -329,7 +329,7 @@
         }
 
         async function fetchSites() {
-            // Dummy data for Sites
+            // Add your API call logic here
             return [
                 { id: 1, siteName: 'Site 1' },
                 { id: 2, siteName: 'Site 2' }
@@ -337,7 +337,7 @@
         }
 
         async function fetchScripts() {
-            // Dummy data for Scripts
+            // Add your API call logic here
             return [
                 { id: 1, scriptName: 'Script 1' },
                 { id: 2, scriptName: 'Script 2' }
@@ -345,7 +345,7 @@
         }
 
         async function fetchDID() {
-            // Dummy data for DID
+            // Add your API call logic here
             return [
                 { id: 1, didNumber: 'DID 1' },
                 { id: 2, didNumber: 'DID 2' }
@@ -418,8 +418,6 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             const token = new URLSearchParams(window.location.search).get('token');
-            const versionLink = document.getElementById('versionLink');
-            versionLink.href = `timeoff_NoUTCConversion.html?token=${token}`;
         });
     </script>
 </body>
