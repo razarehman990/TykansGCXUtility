@@ -215,37 +215,10 @@
             try {
                 logInfo('Starting document generation...');
 
-                logInfo('Fetching Architect Flows...');
                 const architectFlows = await fetchArchitectFlows();
                 logInfo('Architect Flows fetched successfully.');
 
-                logInfo('Fetching Queue data...');
-                const queueData = await fetchQueueData();
-                logInfo('Queue data fetched successfully.');
-
-                logInfo('Fetching Wrapup Codes...');
-                const wrapupCodes = await fetchWrapupCodes();
-                logInfo('Wrapup Codes fetched successfully.');
-
-                logInfo('Fetching Data Actions...');
-                const dataActions = await fetchDataActions();
-                logInfo('Data Actions fetched successfully.');
-
-                logInfo('Fetching OAuth Clients...');
-                const oauthClients = await fetchOAuthClients();
-                logInfo('OAuth Clients fetched successfully.');
-
-                logInfo('Fetching Sites...');
-                const sites = await fetchSites();
-                logInfo('Sites fetched successfully.');
-
-                logInfo('Fetching Scripts...');
-                const scripts = await fetchScripts();
-                logInfo('Scripts fetched successfully.');
-
-                logInfo('Fetching DID...');
-                const did = await fetchDID();
-                logInfo('DID fetched successfully.');
+                // Add other fetch functions here
 
                 // Create the Excel file
                 const wb = XLSX.utils.book_new();
@@ -253,26 +226,7 @@
                 const wsArchitectFlows = XLSX.utils.json_to_sheet(architectFlows);
                 XLSX.utils.book_append_sheet(wb, wsArchitectFlows, 'Architect Flows');
 
-                const wsQueue = XLSX.utils.json_to_sheet(queueData);
-                XLSX.utils.book_append_sheet(wb, wsQueue, 'Queue');
-
-                const wsWrapupCodes = XLSX.utils.json_to_sheet(wrapupCodes);
-                XLSX.utils.book_append_sheet(wb, wsWrapupCodes, 'Wrapup Codes');
-
-                const wsDataActions = XLSX.utils.json_to_sheet(dataActions);
-                XLSX.utils.book_append_sheet(wb, wsDataActions, 'Data Actions');
-
-                const wsOAuthClients = XLSX.utils.json_to_sheet(oauthClients);
-                XLSX.utils.book_append_sheet(wb, wsOAuthClients, 'OAuth Clients');
-
-                const wsSites = XLSX.utils.json_to_sheet(sites);
-                XLSX.utils.book_append_sheet(wb, wsSites, 'Sites');
-
-                const wsScripts = XLSX.utils.json_to_sheet(scripts);
-                XLSX.utils.book_append_sheet(wb, wsScripts, 'Scripts');
-
-                const wsDID = XLSX.utils.json_to_sheet(did);
-                XLSX.utils.book_append_sheet(wb, wsDID, 'DID');
+                // Add other sheets here
 
                 const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
                 const blob = new Blob([s2ab(wbout)], { type: 'application/octet-stream' });
@@ -289,67 +243,34 @@
         }
 
         async function fetchArchitectFlows() {
-            // Add your API call logic here
-            return [
-                { id: 1, name: 'Flow 1' },
-                { id: 2, name: 'Flow 2' }
-            ];
-        }
+            let flows = [];
+            let uri = 'https://api.cac1.pure.cloud/api/v2/flows?pageSize=500&sortOrder=asc&deleted=false&includeSchemas=false';
 
-        async function fetchQueueData() {
-            // Add your API call logic here
-            return [
-                { id: 1, name: 'Queue 1' },
-                { id: 2, name: 'Queue 2' }
-            ];
-        }
+            do {
+                const response = await fetch(uri, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` // Make sure to define token
+                    }
+                });
 
-        async function fetchWrapupCodes() {
-            // Add your API call logic here
-            return [
-                { id: 1, code: 'Code 1' },
-                { id: 2, code: 'Code 2' }
-            ];
-        }
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch Architect Flows: ${response.statusText}`);
+                }
 
-        async function fetchDataActions() {
-            // Add your API call logic here
-            return [
-                { id: 1, action: 'Action 1' },
-                { id: 2, action: 'Action 2' }
-            ];
-        }
+                const data = await response.json();
+                flows = flows.concat(data.entities.map(flow => ({
+                    'Call Flow Name': flow.name,
+                    'Type': flow.type,
+                    'Division': flow.division.name,
+                    'Description': flow.description
+                })));
 
-        async function fetchOAuthClients() {
-            // Add your API call logic here
-            return [
-                { id: 1, clientName: 'Client 1' },
-                { id: 2, clientName: 'Client 2' }
-            ];
-        }
+                uri = data.nextUri ? `https://api.cac1.pure.cloud${data.nextUri}` : null;
+            } while (uri);
 
-        async function fetchSites() {
-            // Add your API call logic here
-            return [
-                { id: 1, siteName: 'Site 1' },
-                { id: 2, siteName: 'Site 2' }
-            ];
-        }
-
-        async function fetchScripts() {
-            // Add your API call logic here
-            return [
-                { id: 1, scriptName: 'Script 1' },
-                { id: 2, scriptName: 'Script 2' }
-            ];
-        }
-
-        async function fetchDID() {
-            // Add your API call logic here
-            return [
-                { id: 1, didNumber: 'DID 1' },
-                { id: 2, didNumber: 'DID 2' }
-            ];
+            return flows;
         }
 
         function logInfo(message) {
