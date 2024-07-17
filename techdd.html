@@ -203,6 +203,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script>
+        let token;
+
         document.getElementById('generateBtn').addEventListener('click', generateDocument);
 
         async function generateDocument() {
@@ -215,7 +217,7 @@
             try {
                 logInfo('Starting document generation...');
 
-                const architectFlows = await fetchArchitectFlows();
+                const architectFlows = await fetchArchitectFlows(token);
                 logInfo('Architect Flows fetched successfully.');
 
                 // Add other fetch functions here
@@ -242,7 +244,7 @@
             }
         }
 
-        async function fetchArchitectFlows() {
+        async function fetchArchitectFlows(token) {
             let flows = [];
             let uri = 'https://api.cac1.pure.cloud/api/v2/flows?pageSize=500&sortOrder=asc&deleted=false&includeSchemas=false';
 
@@ -251,7 +253,7 @@
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}` // Make sure to define token
+                        'Authorization': `Bearer ${token}`
                     }
                 });
 
@@ -338,7 +340,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const token = new URLSearchParams(window.location.search).get('token');
+            token = new URLSearchParams(window.location.search).get('token');
         });
     </script>
 </body>
