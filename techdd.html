@@ -246,7 +246,7 @@
 
         async function fetchArchitectFlows(token) {
             let flows = [];
-            let uri = 'https://api.cac1.pure.cloud/api/v2/flows?pageSize=500&sortOrder=asc&deleted=false&includeSchemas=false';
+            let uri = 'https://api.cac1.pure.cloud/api/v2/flows?pageSize=10&sortOrder=asc&deleted=false&includeSchemas=false';
 
             do {
                 const response = await fetch(uri, {
