@@ -226,11 +226,37 @@
                 // Create the Excel file
                 const wb = XLSX.utils.book_new();
 
+                // Create worksheet and add data
                 const wsArchitectFlows = XLSX.utils.json_to_sheet(architectFlows);
+
+                // Insert header image and style
+                const img = new Image();
+                img.src = '/mnt/data/image.png'; // Your base64 image string here
+                const imgBase64 = img.src.split(',')[1];
+
+                wsArchitectFlows['!merges'] = [
+                    { s: { r: 0, c: 0 }, e: { r: 5, c: 3 } } // Merge the first 6 rows and 4 columns
+                ];
+                wsArchitectFlows['A1'] = { v: '', t: 's' }; // Placeholder for the image
+
+                wsArchitectFlows['!rows'] = [
+                    { hpt: 20 }, // Row height for the image
+                    {}, {}, {}, {}, {}, // Additional rows for spacing
+                    { hpt: 20 }  // Row height for column headers
+                ];
+
+                // Set column headers
+                const headers = ['Call Flow Name', 'Type', 'Division', 'Description'];
+                XLSX.utils.sheet_add_aoa(wsArchitectFlows, [headers], { origin: -1 });
+
+                // Append worksheet to workbook
                 XLSX.utils.book_append_sheet(wb, wsArchitectFlows, 'Architect Flows');
 
-                // Add other sheets here
+                // Create image sheet
+                const imgSheet = wb.Sheets['Architect Flows'];
+                imgSheet['!images'] = [{ name: 'image.png', data: imgBase64, opts: { base64: true, origin: 'A1' } }];
 
+                // Write workbook
                 const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
                 const blob = new Blob([s2ab(wbout)], { type: 'application/octet-stream' });
 
