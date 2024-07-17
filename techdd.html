@@ -220,7 +220,8 @@
                 const architectFlows = await fetchArchitectFlows(token);
                 logInfo('Architect Flows fetched successfully.');
 
-                // Add other fetch functions here
+                // Sort Architect Flows by Type
+                architectFlows.sort((a, b) => a.Type.localeCompare(b.Type));
 
                 // Create the Excel file
                 const wb = XLSX.utils.book_new();
@@ -246,7 +247,7 @@
 
         async function fetchArchitectFlows(token) {
             let flows = [];
-            let uri = 'https://api.cac1.pure.cloud/api/v2/flows?pageSize=10&sortOrder=asc&deleted=false&includeSchemas=false';
+            let uri = 'https://api.cac1.pure.cloud/api/v2/flows?pageSize=500&sortOrder=asc&deleted=false&includeSchemas=false';
 
             do {
                 const response = await fetch(uri, {
