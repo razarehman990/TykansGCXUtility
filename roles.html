@@ -1,1 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Genesys Roles/Permissions</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #fff;
+            color: #0F3057;
+            text-align: center;
+        }
 
+        .container {
+            margin-top: 150px;
+        }
+
+        .button {
+            margin: 20px;
+            padding: 15px 30px;
+            background-color: #0F3057;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        .button:hover {
+            background-color: #fff;
+            color: #0F3057;
+            border: 2px solid #0F3057;
+        }
+
+        #output-container {
+            position: relative;
+            width: 80%;
+            margin: 20px auto;
+            text-align: left;
+        }
+
+        #output {
+            width: 100%;
+            min-height: 300px;
+            display: block;
+            overflow-x: auto;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+        }
+
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(15, 48, 87, 0.3);
+            border-radius: 50%;
+            border-top-color: #0F3057;
+            animation: spin 1s ease-in-out infinite;
+            position: relative;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        #fileInput {
+            display: none;
+            margin: 20px auto;
+        }
+
+        #importSpinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(15, 48, 87, 0.3);
+            border-radius: 50%;
+            border-top-color: #0F3057;
+            animation: spin 1s ease-in-out infinite;
+            position: relative;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .button-container div {
+            margin: 0 10px;
+            position: relative;
+        }
+
+        .version-link {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            font-size: 14px;
+        }
+
+        .version-link a {
+            color: #0F3057;
+            text-decoration: none;
+        }
+
+        .version-link a:hover {
+            text-decoration: underline;
+        }
+
+        .back-button, .logout-button {
+            position: absolute;
+            top: 10px;
+            width: 40px;
+            height: 40px;
+            background-color: #0F3057;
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .back-button {
+            left: 10px;
+        }
+
+        .back-button:hover {
+            background-color: #fff;
+            color: #0F3057;
+            border: 2px solid #0F3057;
+        }
+
+        .back-button::after {
+            content: "Go Back";
+            display: none;
+            position: absolute;
+            top: 50px;
+            left: -10px;
+            background-color: #0F3057;
+            color: #fff;
+            padding: 2px 5px;
+            border-radius: 5px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .back-button:hover::after {
+            display: block;
+        }
+
+        .logout-button {
+            right: 10px;
+        }
+
+        .logout-button:hover {
+            background-color: red;
+            color: #fff;
+        }
+
+        .logout-button::after {
+            content: "Logout";
+            display: none;
+            position: absolute;
+            top: 50px;
+            right: -10px;
+            background-color: red;
+            color: #fff;
+            padding: 2px 5px;
+            border-radius: 5px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .logout-button:hover::after {
+            display: block;
+        }
+
+        #instructions {
+            margin-top: 10px;
+            text-align: left;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <img id="logo" src="https://www.tykans.com/hs-fs/hubfs/Tykans_June2023/Images/Tykans%20-header-logo.png" alt="Tykans Logo">
+        <h1 id="title">Genesys Roles/Permissions</h1>
+        <div id="instructions">
+            <p><strong>INSTRUCTIONS:</strong></p>
+            <ol>
+                <li><strong>Export Button:</strong> Generates an Excel file containing a list of roles with their details.</li>
+                <li><strong>Upload Button:</strong> Allows you to upload an Excel file with updated role data for validation.</li>
+                <li><strong>Import Button:</strong> Appears upon successfully uploading the file and will update roles in the Genesys system.</li>
+            </ol>
+        </div>
+    </div>
+    <div class="container">
+        <div id="output-container">
+            <textarea id="output" readonly></textarea>
+        </div>
+        <div class="button-container">
+            <div>
+                <button class="button" id="exportBtn">Export</button>
+                <div class="spinner" id="spinner"></div>
+            </div>
+            <div>
+                <button class="button" id="uploadBtn">Upload</button>
+                <div class="spinner" id="uploadSpinner"></div>
+            </div>
+            <div>
+                <button class="button" id="importBtn" style="display:none;">Import</button>
+                <div class="spinner" id="importSpinner"></div>
+            </div>
+        </div>
+        <input type="file" id="fileInput" accept=".xlsx">
+    </div>
+
+    <div class="version-link">
+        <a id="versionLink" href="#">Click here for Version 1 (No UTC Conversion)</a>
+    </div>
+
+    <button class="back-button" onclick="goBack()">&#8592;</button>
+    <button class="logout-button" onclick="logout()">&#x2715;</button>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script>
+        let uploadedRows = [];
+
+        document.getElementById('exportBtn').addEventListener('click', exportData);
+        document.getElementById('uploadBtn').addEventListener('click', () => {
+            document.getElementById('fileInput').click();
+        });
+
+        document.getElementById('fileInput').addEventListener('change', () => {
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                console.log(`File uploaded: ${file.name} (${file.size} bytes, ${file.type})`);
+                uploadedRows = [];
+                document.getElementById('importBtn').style.display = 'none';
+                parseExcel(file);
+                fileInput.value = '';
+            }
+        });
+
+        document.getElementById('importBtn').addEventListener('click', () => {
+            console.log('Import button clicked');
+            if (uploadedRows && uploadedRows.length > 0) {
+                console.log('Executing import with uploaded rows:', uploadedRows);
+                executeImport(uploadedRows);
+            } else {
+                console.log('No uploaded rows found');
+                alert('Please upload a valid Excel file first.');
+            }
+        });
+
+        async function exportData() {
+            const exportBtn = document.getElementById('exportBtn');
+            const spinner = document.getElementById('spinner');
+            spinner.style.display = 'inline-block';
+            const outputTextArea = document.getElementById('output');
+            outputTextArea.value = '';
+
+            try {
+                const token = new URLSearchParams(window.location.search).get('token');
+                let nextUri = 'https://api.cac1.pure.cloud/api/v2/authorization/roles?pageSize=500';
+                let roles = [];
+
+                while (nextUri) {
+                    const response = await fetch(nextUri, {
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        roles = roles.concat(data.entities);
+                        nextUri = data.nextUri;
+                    } else {
+                        const errorResponse = await response.json();
+                        throw new Error(`Error fetching roles: ${response.statusText}: ${errorResponse.message}`);
+                    }
+                }
+
+                const formattedRoles = roles.map(role => ({
+                    Name: role.name,
+                    ID: role.id,
+                    Description: role.description,
+                    Permissions: role.permissions.join(', '),
+                    'Permission Policies': JSON.stringify(role.permissionPolicies)
+                }));
+
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.json_to_sheet(formattedRoles, {
+                    header: ["Name", "ID", "Description", "Permissions", "Permission Policies"]
+                });
+
+                XLSX.utils.book_append_sheet(wb, ws, 'Roles');
+                const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
+                const blob = new Blob([s2ab(wbout)], { type: 'application/octet-stream' });
+
+                saveAs(blob, 'GenesysRoles.xlsx');
+                outputTextArea.value += 'Export completed successfully.\n';
+            } catch (error) {
+                const errorMessage = `Error: ${error.message}`;
+                console.error(errorMessage);
+                outputTextArea.value += `❌ ${errorMessage}\n`;
+            } finally {
+                spinner.style.display = 'none';
+            }
+        }
+
+        function s2ab(s) {
+            const buf = new ArrayBuffer(s.length);
+            const view = new Uint8Array(buf);
+            for (let i = 0; i < s.length; i++) view[i] = s.charCodeAt(i) & 0xFF;
+            return buf;
+        }
+
+        function parseExcel(file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(firstSheet);
+                console.log('Excel data parsed:', rows);
+                uploadedRows = rows;
+                document.getElementById('importBtn').style.display = 'inline-block';
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        async function executeImport(rows) {
+            const token = new URLSearchParams(window.location.search).get('token');
+            const outputTextArea = document.getElementById('output');
+            const importSpinner = document.getElementById('importSpinner');
+            outputTextArea.value = '';
+            importSpinner.style.display = 'inline-block';
+
+            for (const row of rows) {
+                try {
+                    const response = await fetch(`https://api.cac1.pure.cloud/api/v2/authorization/roles/${row.ID}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            id: row.ID,
+                            name: row.Name,
+                            description: "This temporary role has been created to grant the data team access to the Genesys system. It will be replaced with the appropriate permissions later.",
+                            permissions: row.Permissions.split(', '),
+                            permissionPolicies: JSON.parse(row['Permission Policies'])
+                        })
+                    });
+
+                    if (response.ok) {
+                        const successMessage = `✅ Successfully updated role ${row.Name}.`;
+                        console.log(successMessage);
+                        outputTextArea.value += `${successMessage}\n`;
+                    } else {
+                        const errorResponse = await response.json();
+                        const errorMessage = `Error updating role ${row.Name}: ${response.statusText}: ${errorResponse.message}`;
+                        console.error(errorMessage);
+                        outputTextArea.value += `❌ ${errorMessage}\n`;
+                    }
+                } catch (error) {
+                    const errorMessage = `Error: ${error.message}`;
+                    console.error(errorMessage);
+                    outputTextArea.value += `❌ ${errorMessage}\n`;
+                }
+            }
+
+            importSpinner.style.display = 'none';
+        }
+
+        function goBack() {
+            window.history.back();
+        }
+
+        async function logout() {
+            const token = new URLSearchParams(window.location.search).get('token');
+            try {
+                const userResponse = await fetch('https://api.cac1.pure.cloud/api/v2/users/me', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!userResponse.ok) {
+                    throw new Error(`Failed to fetch user info: ${userResponse.statusText}`);
+                }
+
+                const userData = await userResponse.json();
+                const userId = userData.id;
+
+                const deleteResponse = await fetch(`https://api.cac1.pure.cloud/api/v2/tokens/${userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!deleteResponse.ok) {
+                    throw new Error(`Failed to delete token: ${deleteResponse.statusText}`);
+                }
+
+                const url = new URL(window.location.href);
+                url.searchParams.delete('token');
+                window.location.href = url.toString();
+                window.location.href = 'index.html';
+            } catch (error) {
+                console.error('Logout failed:', error);
+                window.location.href = 'index.html';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = new URLSearchParams(window.location.search).get('token');
+            const versionLink = document.getElementById('versionLink');
+            versionLink.href = `roles_NoUTCConversion.html?token=${token}`;
+        });
+    </script>
+</body>
+</html>
