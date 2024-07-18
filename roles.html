@@ -250,7 +250,7 @@
             const fileInput = document.getElementById('fileInput');
             if (fileInput.files.length > 0) {
                 const file = fileInput.files[0];
-                console.log(`File uploaded: ${file.name} (${file.size} bytes, ${file.type})`);
+                logMessage(`File uploaded: ${file.name} (${file.size} bytes, ${file.type})`);
                 uploadedRows = [];
                 document.getElementById('importBtn').style.display = 'none';
                 parseExcel(file);
@@ -259,12 +259,12 @@
         });
 
         document.getElementById('importBtn').addEventListener('click', () => {
-            console.log('Import button clicked');
+            logMessage('Import button clicked');
             if (uploadedRows && uploadedRows.length > 0) {
-                console.log('Executing import with uploaded rows:', uploadedRows);
+                logMessage('Executing import with uploaded rows:', uploadedRows);
                 executeImport(uploadedRows);
             } else {
-                console.log('No uploaded rows found');
+                logMessage('No uploaded rows found');
                 alert('Please upload a valid Excel file first.');
             }
         });
@@ -304,24 +304,25 @@
                     ID: role.id,
                     Description: role.description,
                     Permissions: role.permissions.join(', '),
-                    'Permission Policies': JSON.stringify(role.permissionPolicies)
+                    'Permission Policies': JSON.stringify(role.permissionPolicies),
+                    UPDATE: "FALSE"
                 }));
 
                 const wb = XLSX.utils.book_new();
                 const ws = XLSX.utils.json_to_sheet(formattedRoles, {
-                    header: ["Name", "ID", "Description", "Permissions", "Permission Policies"]
+                    header: ["Name", "ID", "Description", "Permissions", "Permission Policies", "UPDATE"]
                 });
 
                 XLSX.utils.book_append_sheet(wb, ws, 'Roles');
                 const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
                 const blob = new Blob([s2ab(wbout)], { type: 'application/octet-stream' });
 
-                saveAs(blob, 'GenesysRoles.xlsx');
-                outputTextArea.value += 'Export completed successfully.\n';
+                saveAs(blob, 'GCXUtility_Roles.xlsx');
+                logMessage('Export completed successfully.');
             } catch (error) {
                 const errorMessage = `Error: ${error.message}`;
                 console.error(errorMessage);
-                outputTextArea.value += `❌ ${errorMessage}\n`;
+                logMessage(`❌ ${errorMessage}`);
             } finally {
                 spinner.style.display = 'none';
             }
@@ -341,7 +342,7 @@
                 const workbook = XLSX.read(data, { type: 'array' });
                 const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                 const rows = XLSX.utils.sheet_to_json(firstSheet);
-                console.log('Excel data parsed:', rows);
+                logMessage('Excel data parsed:', rows);
                 uploadedRows = rows;
                 document.getElementById('importBtn').style.display = 'inline-block';
             };
@@ -356,40 +357,45 @@
             importSpinner.style.display = 'inline-block';
 
             for (const row of rows) {
-                try {
-                    const response = await fetch(`https://api.cac1.pure.cloud/api/v2/authorization/roles/${row.ID}`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify({
-                            id: row.ID,
-                            name: row.Name,
-                            description: "This temporary role has been created to grant the data team access to the Genesys system. It will be replaced with the appropriate permissions later.",
-                            permissions: row.Permissions.split(', '),
-                            permissionPolicies: JSON.parse(row['Permission Policies'])
-                        })
-                    });
+                if (row.UPDATE === "TRUE") {
+                    try {
+                        const response = await fetch(`https://api.cac1.pure.cloud/api/v2/authorization/roles/${row.ID}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({
+                                id: row.ID,
+                                name: row.Name,
+                                description: "This temporary role has been created to grant the data team access to the Genesys system. It will be replaced with the appropriate permissions later.",
+                                permissions: row.Permissions.split(', '),
+                                permissionPolicies: JSON.parse(row['Permission Policies'])
+                            })
+                        });
 
-                    if (response.ok) {
-                        const successMessage = `✅ Successfully updated role ${row.Name}.`;
-                        console.log(successMessage);
-                        outputTextArea.value += `${successMessage}\n`;
-                    } else {
-                        const errorResponse = await response.json();
-                        const errorMessage = `Error updating role ${row.Name}: ${response.statusText}: ${errorResponse.message}`;
-                        console.error(errorMessage);
-                        outputTextArea.value += `❌ ${errorMessage}\n`;
+                        if (response.ok) {
+                            const successMessage = `✅ Successfully updated role ${row.Name}.`;
+                            logMessage(successMessage);
+                        } else {
+                            const errorResponse = await response.json();
+                            const errorMessage = `Error updating role ${row.Name}: ${response.statusText}: ${errorResponse.message}`;
+                            logMessage(`❌ ${errorMessage}`);
+                        }
+                    } catch (error) {
+                        const errorMessage = `Error: ${error.message}`;
+                        logMessage(`❌ ${errorMessage}`);
                     }
-                } catch (error) {
-                    const errorMessage = `Error: ${error.message}`;
-                    console.error(errorMessage);
-                    outputTextArea.value += `❌ ${errorMessage}\n`;
                 }
             }
 
             importSpinner.style.display = 'none';
+        }
+
+        function logMessage(message) {
+            const outputTextArea = document.getElementById('output');
+            const timestamp = new Date().toISOString();
+            outputTextArea.value += `[${timestamp}] ${message}\n`;
         }
 
         function goBack() {
