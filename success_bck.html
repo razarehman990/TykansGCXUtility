@@ -120,6 +120,7 @@
             <li><button>Scripts</button></li>
             <li><button id="workplanBtn">Workplan</button></li>
             <li><button id="timeOffBtn">Time-Off</button></li>
+            <li><button id="documentationBtn">Documentation</button></li>
         </ul>
     </div>
 
@@ -154,6 +155,12 @@
         document.getElementById('timeOffBtn').addEventListener('click', function() {
             const token = new URLSearchParams(window.location.search).get('token');
             window.location.href = `timeoff.html?token=${token}`;
+        });
+
+        // Redirect to techdd.html with token when Documentation button is clicked
+        document.getElementById('documentationBtn').addEventListener('click', function() {
+            const token = new URLSearchParams(window.location.search).get('token');
+            window.location.href = `techdd.html?token=${token}`;
         });
     </script>
 </body>
