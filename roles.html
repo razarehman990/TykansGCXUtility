@@ -101,22 +101,6 @@
             position: relative;
         }
 
-        .version-link {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            font-size: 14px;
-        }
-
-        .version-link a {
-            color: #0F3057;
-            text-decoration: none;
-        }
-
-        .version-link a:hover {
-            text-decoration: underline;
-        }
-
         .back-button, .logout-button {
             position: absolute;
             top: 10px;
@@ -227,10 +211,6 @@
             </div>
         </div>
         <input type="file" id="fileInput" accept=".xlsx">
-    </div>
-
-    <div class="version-link">
-        <a id="versionLink" href="#">Click here for Version 1 (No UTC Conversion)</a>
     </div>
 
     <button class="back-button" onclick="goBack()">&#8592;</button>
@@ -441,12 +421,6 @@
                 window.location.href = 'index.html';
             }
         }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const token = new URLSearchParams(window.location.search).get('token');
-            const versionLink = document.getElementById('versionLink');
-            versionLink.href = `roles_NoUTCConversion.html?token=${token}`;
-        });
     </script>
 </body>
 </html>
