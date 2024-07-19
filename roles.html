@@ -177,6 +177,16 @@
             text-align: left;
             display: inline-block;
         }
+
+        .log-success::before {
+            content: "🟢";
+            margin-right: 5px;
+        }
+
+        .log-failure::before {
+            content: "🔴";
+            margin-right: 5px;
+        }
     </style>
 </head>
 <body>
@@ -230,7 +240,7 @@
             const fileInput = document.getElementById('fileInput');
             if (fileInput.files.length > 0) {
                 const file = fileInput.files[0];
-                logMessage(`File uploaded: ${file.name} (${file.size} bytes, ${file.type})`);
+                logMessage(`File uploaded: ${file.name} (${file.size} bytes, ${file.type})`, 'success');
                 uploadedRows = [];
                 document.getElementById('importBtn').style.display = 'none';
                 parseExcel(file);
@@ -239,12 +249,12 @@
         });
 
         document.getElementById('importBtn').addEventListener('click', () => {
-            logMessage('Import button clicked');
+            logMessage('Import button clicked', 'info');
             if (uploadedRows && uploadedRows.length > 0) {
-                logMessage('Executing import with uploaded rows:', uploadedRows);
+                logMessage('Executing import with uploaded rows:', 'info');
                 executeImport(uploadedRows);
             } else {
-                logMessage('No uploaded rows found');
+                logMessage('No uploaded rows found', 'failure');
                 alert('Please upload a valid Excel file first.');
             }
         });
@@ -298,11 +308,11 @@
                 const blob = new Blob([s2ab(wbout)], { type: 'application/octet-stream' });
 
                 saveAs(blob, 'GCXUtility_Roles.xlsx');
-                logMessage('Export completed successfully.');
+                logMessage('Export completed successfully.', 'success');
             } catch (error) {
                 const errorMessage = `Error: ${error.message}`;
                 console.error(errorMessage);
-                logMessage(`❌ ${errorMessage}`);
+                logMessage(`Error: ${errorMessage}`, 'failure');
             } finally {
                 spinner.style.display = 'none';
             }
@@ -322,7 +332,7 @@
                 const workbook = XLSX.read(data, { type: 'array' });
                 const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                 const rows = XLSX.utils.sheet_to_json(firstSheet);
-                logMessage('Excel data parsed:', rows);
+                logMessage('Excel data parsed:', 'info');
                 uploadedRows = rows;
                 document.getElementById('importBtn').style.display = 'inline-block';
             };
@@ -355,16 +365,16 @@
                         });
 
                         if (response.ok) {
-                            const successMessage = `✅ Successfully updated role ${row.Name}.`;
-                            logMessage(successMessage);
+                            const successMessage = `Successfully updated role ${row.Name}.`;
+                            logMessage(successMessage, 'success');
                         } else {
                             const errorResponse = await response.json();
                             const errorMessage = `Error updating role ${row.Name}: ${response.statusText}: ${errorResponse.message}`;
-                            logMessage(`❌ ${errorMessage}`);
+                            logMessage(errorMessage, 'failure');
                         }
                     } catch (error) {
                         const errorMessage = `Error: ${error.message}`;
-                        logMessage(`❌ ${errorMessage}`);
+                        logMessage(errorMessage, 'failure');
                     }
                 }
             }
@@ -372,10 +382,11 @@
             importSpinner.style.display = 'none';
         }
 
-        function logMessage(message) {
+        function logMessage(message, type) {
             const outputTextArea = document.getElementById('output');
             const timestamp = new Date().toISOString();
-            outputTextArea.value += `[${timestamp}] ${message}\n`;
+            const className = type === 'success' ? 'log-success' : 'log-failure';
+            outputTextArea.value += `[${timestamp}] <span class="${className}">${message}</span>\n`;
         }
 
         function goBack() {
