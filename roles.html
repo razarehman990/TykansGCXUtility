@@ -50,27 +50,6 @@
             border: 1px solid #ccc;
             border-radius: 5px;
             padding: 10px;
-            background-color: #f9f9f9;
-        }
-
-        .log-entry {
-            display: flex;
-            align-items: center;
-            margin-bottom: 5px;
-        }
-
-        .log-entry span {
-            margin-left: 10px;
-        }
-
-        .log-success {
-            background-color: #d4edda;
-            border-left: 5px solid #28a745;
-        }
-
-        .log-failure {
-            background-color: #f8d7da;
-            border-left: 5px solid #dc3545;
         }
 
         .spinner {
@@ -215,7 +194,7 @@
     </div>
     <div class="container">
         <div id="output-container">
-            <div id="output"></div>
+            <textarea id="output" readonly></textarea>
         </div>
         <div class="button-container">
             <div>
@@ -251,7 +230,7 @@
             const fileInput = document.getElementById('fileInput');
             if (fileInput.files.length > 0) {
                 const file = fileInput.files[0];
-                logMessage(`File uploaded: ${file.name} (${file.size} bytes, ${file.type})`, 'log-success');
+                logMessage(`File uploaded: ${file.name} (${file.size} bytes, ${file.type})`);
                 uploadedRows = [];
                 document.getElementById('importBtn').style.display = 'none';
                 parseExcel(file);
@@ -260,12 +239,12 @@
         });
 
         document.getElementById('importBtn').addEventListener('click', () => {
-            logMessage('Import button clicked', 'log-success');
+            logMessage('Import button clicked');
             if (uploadedRows && uploadedRows.length > 0) {
-                logMessage('Executing import with uploaded rows', 'log-success');
+                logMessage('Executing import with uploaded rows:', uploadedRows);
                 executeImport(uploadedRows);
             } else {
-                logMessage('No uploaded rows found', 'log-failure');
+                logMessage('No uploaded rows found');
                 alert('Please upload a valid Excel file first.');
             }
         });
@@ -274,7 +253,8 @@
             const exportBtn = document.getElementById('exportBtn');
             const spinner = document.getElementById('spinner');
             spinner.style.display = 'inline-block';
-            const outputContainer = document.getElementById('output');
+            const outputTextArea = document.getElementById('output');
+            outputTextArea.value = '';
 
             try {
                 const token = new URLSearchParams(window.location.search).get('token');
@@ -318,11 +298,11 @@
                 const blob = new Blob([s2ab(wbout)], { type: 'application/octet-stream' });
 
                 saveAs(blob, 'GCXUtility_Roles.xlsx');
-                logMessage('Export completed successfully.', 'log-success');
+                logMessage('Export completed successfully.');
             } catch (error) {
                 const errorMessage = `Error: ${error.message}`;
                 console.error(errorMessage);
-                logMessage(`❌ ${errorMessage}`, 'log-failure');
+                logMessage(`❌ ${errorMessage}`);
             } finally {
                 spinner.style.display = 'none';
             }
@@ -342,7 +322,7 @@
                 const workbook = XLSX.read(data, { type: 'array' });
                 const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                 const rows = XLSX.utils.sheet_to_json(firstSheet);
-                logMessage('Excel data parsed successfully.', 'log-success');
+                logMessage('Excel data parsed:', rows);
                 uploadedRows = rows;
                 document.getElementById('importBtn').style.display = 'inline-block';
             };
@@ -351,7 +331,9 @@
 
         async function executeImport(rows) {
             const token = new URLSearchParams(window.location.search).get('token');
+            const outputTextArea = document.getElementById('output');
             const importSpinner = document.getElementById('importSpinner');
+            outputTextArea.value = '';
             importSpinner.style.display = 'inline-block';
 
             for (const row of rows) {
@@ -373,13 +355,16 @@
                         });
 
                         if (response.ok) {
-                            logMessage(`✅ Successfully updated role ${row.Name}.`, 'log-success');
+                            const successMessage = `✅ Successfully updated role ${row.Name}.`;
+                            logMessage(successMessage);
                         } else {
                             const errorResponse = await response.json();
-                            logMessage(`Error updating role ${row.Name}: ${response.statusText}: ${errorResponse.message}`, 'log-failure');
+                            const errorMessage = `Error updating role ${row.Name}: ${response.statusText}: ${errorResponse.message}`;
+                            logMessage(`❌ ${errorMessage}`);
                         }
                     } catch (error) {
-                        logMessage(`Error: ${error.message}`, 'log-failure');
+                        const errorMessage = `Error: ${error.message}`;
+                        logMessage(`❌ ${errorMessage}`);
                     }
                 }
             }
@@ -387,13 +372,10 @@
             importSpinner.style.display = 'none';
         }
 
-        function logMessage(message, type) {
-            const outputContainer = document.getElementById('output');
+        function logMessage(message) {
+            const outputTextArea = document.getElementById('output');
             const timestamp = new Date().toISOString();
-            const logEntry = document.createElement('div');
-            logEntry.classList.add('log-entry', type);
-            logEntry.innerHTML = `<span>${timestamp}</span><span>${message}</span>`;
-            outputContainer.appendChild(logEntry);
+            outputTextArea.value += `[${timestamp}] ${message}\n`;
         }
 
         function goBack() {
