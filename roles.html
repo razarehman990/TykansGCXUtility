@@ -275,7 +275,6 @@
             const spinner = document.getElementById('spinner');
             spinner.style.display = 'inline-block';
             const outputContainer = document.getElementById('output');
-            outputContainer.innerHTML = '';
 
             try {
                 const token = new URLSearchParams(window.location.search).get('token');
@@ -352,9 +351,7 @@
 
         async function executeImport(rows) {
             const token = new URLSearchParams(window.location.search).get('token');
-            const outputContainer = document.getElementById('output');
             const importSpinner = document.getElementById('importSpinner');
-            outputContainer.innerHTML = '';
             importSpinner.style.display = 'inline-block';
 
             for (const row of rows) {
