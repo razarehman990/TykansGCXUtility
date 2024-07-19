@@ -44,7 +44,7 @@
 
         #output {
             width: 100%;
-            min-height: 200px;
+            min-height: 300px;
             display: block;
             overflow-x: auto;
             border: 1px solid #ccc;
@@ -100,12 +100,113 @@
             margin: 0 10px;
             position: relative;
         }
+
+        .version-link {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            font-size: 14px;
+        }
+
+        .version-link a {
+            color: #0F3057;
+            text-decoration: none;
+        }
+
+        .version-link a:hover {
+            text-decoration: underline;
+        }
+
+        .back-button, .logout-button {
+            position: absolute;
+            top: 10px;
+            width: 40px;
+            height: 40px;
+            background-color: #0F3057;
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .back-button {
+            left: 10px;
+        }
+
+        .back-button:hover {
+            background-color: #fff;
+            color: #0F3057;
+            border: 2px solid #0F3057;
+        }
+
+        .back-button::after {
+            content: "Go Back";
+            display: none;
+            position: absolute;
+            top: 50px;
+            left: -10px;
+            background-color: #0F3057;
+            color: #fff;
+            padding: 2px 5px;
+            border-radius: 5px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .back-button:hover::after {
+            display: block;
+        }
+
+        .logout-button {
+            right: 10px;
+        }
+
+        .logout-button:hover {
+            background-color: red;
+            color: #fff;
+        }
+
+        .logout-button::after {
+            content: "Logout";
+            display: none;
+            position: absolute;
+            top: 50px;
+            right: -10px;
+            background-color: red;
+            color: #fff;
+            padding: 2px 5px;
+            border-radius: 5px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .logout-button:hover::after {
+            display: block;
+        }
+
+        #instructions {
+            margin-top: 10px;
+            text-align: left;
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
     <div id="header">
         <img id="logo" src="https://www.tykans.com/hs-fs/hubfs/Tykans_June2023/Images/Tykans%20-header-logo.png" alt="Tykans Logo">
         <h1 id="title">Workforce Management Time Off</h1>
+        <div id="instructions">
+            <p><strong>INSTRUCTIONS:</strong></p>
+            <ol>
+                <li><strong>Export Button:</strong> Generates an Excel file containing a list of WFM Users with their ID, Email, Business Unit, and Management Unit information. This helps you get the data with a single click.</li>
+                <li><strong>Upload Button:</strong> Allows you to upload new time off request data into the utility and screen for any data formatting issues.</li>
+                <li><strong>Import Button:</strong> Appears upon successfully uploading the new time off request data. This will execute the import process, creating new time off requests in the Genesys system.</li>
+            </ol>
+        </div>
     </div>
     <div class="container">
         <div id="output-container">
@@ -128,10 +229,21 @@
         <input type="file" id="fileInput" accept=".xlsx">
     </div>
 
+    <div class="version-link">
+        <a id="versionLink" href="#">Click here for Version 1 (No UTC Conversion)</a>
+    </div>
+
+    <button class="back-button" onclick="goBack()">&#8592;</button>
+    <button class="logout-button" onclick="logout()">&#x2715;</button>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.34/moment-timezone-with-data.min.js"></script>
     <script>
         let uploadedRows = [];
+        // Accepted timezone values
+        // ["Africa/Abidjan", "Africa/Accra", "Africa/Addis_Ababa", "Africa/Algiers", "Africa/Asmara", "Africa/Asmera", "Africa/Bamako", "Africa/Bangui", "Africa/Banjul", "Africa/Bissau", "Africa/Blantyre", "Africa/Brazzaville", "Africa/Bujumbura", "Africa/Cairo", "Africa/Casablanca", "Africa/Ceuta", "Africa/Conakry", "Africa/Dakar", "Africa/Dar_es_Salaam", "Africa/Djibouti", "Africa/Douala", "Africa/El_Aaiun", "Africa/Freetown", "Africa/Gaborone", "Africa/Harare", "Africa/Johannesburg", "Africa/Juba", "Africa/Kampala", "Africa/Khartoum", "Africa/Kigali", "Africa/Kinshasa", "Africa/Lagos", "Africa/Libreville", "Africa/Lome", "Africa/Luanda", "Africa/Lubumbashi", "Africa/Lusaka", "Africa/Malabo", "Africa/Maputo", "Africa/Maseru", "Africa/Mbabane", "Africa/Mogadishu", "Africa/Monrovia", "Africa/Nairobi", "Africa/Ndjamena", "Africa/Niamey", "Africa/Nouakchott", "Africa/Ouagadougou", "Africa/Porto-Novo", "Africa/Sao_Tome", "Africa/Timbuktu", "Africa/Tripoli", "Africa/Tunis", "Africa/Windhoek", "America/Adak", "America/Anchorage", "America/Anguilla", "America/Antigua", "America/Araguaina", "America/Argentina/Buenos_Aires", "America/Argentina/Catamarca", "America/Argentina/ComodRivadavia", "America/Argentina/Cordoba", "America/Argentina/Jujuy", "America/Argentina/La_Rioja", "America/Argentina/Mendoza", "America/Argentina/Rio_Gallegos", "America/Argentina/Salta", "America/Argentina/San_Juan", "America/Argentina/San_Luis", "America/Argentina/Tucuman", "America/Argentina/Ushuaia", "America/Aruba", "America/Asuncion", "America/Atikokan", "America/Atka", "America/Bahia", "America/Bahia_Banderas", "America/Barbados", "America/Belem", "America/Belize", "America/Blanc-Sablon", "America/Boa_Vista", "America/Bogota", "America/Boise", "America/Buenos_Aires", "America/Cambridge_Bay", "America/Campo_Grande", "America/Cancun", "America/Caracas", "America/Catamarca", "America/Cayenne", "America/Cayman", "America/Chicago", "America/Chihuahua", "America/Coral_Harbour", "America/Cordoba", "America/Costa_Rica", "America/Creston", "America/Cuiaba", "America/Curacao", "America/Danmarkshavn", "America/Dawson", "America/Dawson_Creek", "America/Denver", "America/Detroit", "America/Dominica", "America/Edmonton", "America/Eirunepe", "America/El_Salvador", "America/Ensenada", "America/Fort_Nelson", "America/Fort_Wayne", "America/Fortaleza", "America/Glace_Bay", "America/Godthab", "America/Goose_Bay", "America/Grand_Turk", "America/Grenada", "America/Guadeloupe", "America/Guatemala", "America/Guayaquil", "America/Guyana", "America/Halifax", "America/Havana", "America/Hermosillo", "America/Indiana/Indianapolis", "America/Indiana/Knox", "America/Indiana/Marengo", "America/Indiana/Petersburg", "America/Indiana/Tell_City", "America/Indiana/Vevay", "America/Indiana/Vincennes", "America/Indiana/Winamac", "America/Indianapolis", "America/Inuvik", "America/Iqaluit", "America/Jamaica", "America/Jujuy", "America/Juneau", "America/Kentucky/Louisville", "America/Kentucky/Monticello", "America/Knox_IN", "America/Kralendijk", "America/La_Paz", "America/Lima", "America/Los_Angeles", "America/Louisville", "America/Lower_Princes", "America/Maceio", "America/Managua", "America/Manaus", "America/Marigot", "America/Martinique", "America/Matamoros", "America/Mazatlan", "America/Mendoza", "America/Menominee", "America/Merida", "America/Metlakatla", "America/Mexico_City", "America/Miquelon", "America/Moncton", "America/Monterrey", "America/Montevideo", "America/Montreal", "America/Montserrat", "America/Nassau", "America/New_York", "America/Nipigon", "America/Nome", "America/Noronha", "America/North_Dakota/Beulah", "America/North_Dakota/Center", "America/North_Dakota/New_Salem", "America/Ojinaga", "America/Panama", "America/Pangnirtung", "America/Paramaribo", "America/Phoenix", "America/Port_of_Spain", "America/Port-au-Prince", "America/Porto_Acre", "America/Porto_Velho", "America/Puerto_Rico", "America/Punta_Arenas", "America/Rainy_River", "America/Rankin_Inlet", "America/Recife", "America/Regina", "America/Resolute", "America/Rio_Branco", "America/Rosario", "America/Santa_Isabel", "America/Santarem", "America/Santiago", "America/Santo_Domingo", "America/Sao_Paulo", "America/Scoresbysund", "America/Shiprock", "America/Sitka", "America/St_Barthelemy", "America/St_Johns", "America/St_Kitts", "America/St_Lucia", "America/St_Thomas", "America/St_Vincent", "America/Swift_Current", "America/Tegucigalpa", "America/Thule", "America/Thunder_Bay", "America/Tijuana", "America/Toronto", "America/Tortola", "America/Vancouver", "America/Virgin", "America/Whitehorse", "America/Winnipeg", "America/Yakutat", "America/Yellowknife"]
 
         document.getElementById('exportBtn').addEventListener('click', exportData);
         document.getElementById('uploadBtn').addEventListener('click', () => {
@@ -237,6 +349,7 @@
                             ActivityCodeId: "",
                             Type: "", // Added Type column
                             Date: "",
+                            Timezone: "", // Timezone column added
                             Duration: "",
                             UPDATES: "FALSE"
                         })));
@@ -305,7 +418,7 @@
                     users = users.filter(user => user.ManagementUnitId || user.BusinessUnitId);
 
                     const wb = XLSX.utils.book_new();
-                    const ws = XLSX.utils.json_to_sheet(users, { header: ["AgentName", "AgentEmail", "AgentId", "BusinessUnitName", "BusinessUnitId", "ManagementUnitName", "ManagementUnitId", "ActivityCodeName", "ActivityCodeId", "Type", "Date", "Duration", "UPDATES"] });
+                    const ws = XLSX.utils.json_to_sheet(users, { header: ["AgentName", "AgentEmail", "AgentId", "BusinessUnitName", "BusinessUnitId", "ManagementUnitName", "ManagementUnitId", "ActivityCodeName", "ActivityCodeId", "Type", "Date", "Timezone", "Duration", "UPDATES"] });
 
                     XLSX.utils.book_append_sheet(wb, ws, 'Time-off Request');
 
@@ -418,12 +531,14 @@
                             dailyDurationMinutes: row.Duration
                         };
                     } else if (row.Type === 'P') {
+                        const utcDates = dates.map(date => convertToUTC(date, row.Timezone));
+
                         requestBody = {
                             status: 'APPROVED',
                             users: [{ id: row.AgentId }],
                             activityCodeId: row.ActivityCodeId,
                             notes: 'Initial time-off load',
-                            partialDayStartDateTimes: dates, // Use cleaned dates
+                            partialDayStartDateTimes: utcDates, // Use UTC dates
                             dailyDurationMinutes: row.Duration
                         };
                     }
@@ -461,12 +576,77 @@
             importSpinner.style.display = 'none'; // Hide spinner
         }
 
+        // Converts local date/time to UTC, considering DST and specified timezone
+        function convertToUTC(localDateTime, timezone) {
+            if (!timezone || !moment.tz.zone(timezone)) {
+                console.error(`Invalid timezone: ${timezone}`);
+                return localDateTime;
+            }
+            const local = moment.tz(localDateTime, timezone);
+            const utcDate = local.utc().format();
+            console.log(`Converted local date/time ${localDateTime} (${timezone}) to UTC ${utcDate}`);
+            return utcDate;
+        }
+
         function s2ab(s) {
             const buf = new ArrayBuffer(s.length);
             const view = new Uint8Array(buf);
             for (let i = 0; i < s.length; i++) view[i] = s.charCodeAt(i) & 0xFF;
             return buf;
         }
+
+        function goBack() {
+            window.history.back();
+        }
+
+        async function logout() {
+            const token = new URLSearchParams(window.location.search).get('token');
+            try {
+                // Step 1: Get user ID
+                const userResponse = await fetch('https://api.cac1.pure.cloud/api/v2/users/me', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!userResponse.ok) {
+                    throw new Error(`Failed to fetch user info: ${userResponse.statusText}`);
+                }
+
+                const userData = await userResponse.json();
+                const userId = userData.id;
+
+                // Step 2: Delete token
+                const deleteResponse = await fetch(`https://api.cac1.pure.cloud/api/v2/tokens/${userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!deleteResponse.ok) {
+                    throw new Error(`Failed to delete token: ${deleteResponse.statusText}`);
+                }
+
+                // Step 3: Clear the token from the URL and redirect to index.html
+                const url = new URL(window.location.href);
+                url.searchParams.delete('token');
+                window.location.href = url.toString();
+                window.location.href = 'index.html';
+            } catch (error) {
+                console.error('Logout failed:', error);
+                window.location.href = 'index.html'; // Redirect to index.html on error
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = new URLSearchParams(window.location.search).get('token');
+            const versionLink = document.getElementById('versionLink');
+            versionLink.href = `timeoff_NoUTCConversion.html?token=${token}`;
+        });
     </script>
 </body>
 </html>
