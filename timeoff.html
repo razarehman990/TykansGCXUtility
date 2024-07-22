@@ -490,12 +490,6 @@
                 let validationErrors = [];
                 for (const row of rows) {
                     if (row['UPDATES'] === true) {
-                        if (row['Type'] !== 'F' && row['Type'] !!== 'P') {
-                            validationErrors.push(`Invalid value in "Type" column for Agent ${row.AgentName}. Valid values are 'F' or 'P'.`);
-                        }
-						if (row['UPDATES'] !== 'TRUE' && row['UPDATES'] !!== 'FALSE') {
-                            validationErrors.push(`Invalid value in "UPDATES" column for Agent ${row.AgentName}. Valid values are 'TRUE' or 'FALSE'.`);
-                        }
                         if (row['Use Estimated Payable Mins'] !== true && row['Use Estimated Payable Mins'] !== false) {
                             validationErrors.push(`Invalid value in "Use Estimated Payable Mins" column for Agent ${row.AgentName}.`);
                         }
