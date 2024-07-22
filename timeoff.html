@@ -571,6 +571,26 @@
                                 }));
                             }
 
+                            // Fetch countsAsPaidTime from the activity code API
+                            const activityCodeResponse = await fetch(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits/${row.BusinessUnitId}/activitycodes/${row.ActivityCodeId}`, {
+                                method: 'GET',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                }
+                            });
+
+                            if (!activityCodeResponse.ok) {
+                                const errorResponse = await activityCodeResponse.json();
+                                const errorMessage = `Error fetching activity code details for agent ${row.AgentName}: ${activityCodeResponse.statusText}: ${errorResponse.message}`;
+                                console.error(errorMessage);
+                                outputTextArea.value += `❌ ${errorMessage}\n`;
+                                continue;
+                            }
+
+                            const activityCodeData = await activityCodeResponse.json();
+                            estimateRequestBody.paid = activityCodeData.countsAsPaidTime;
+
                             const estimateResponse = await fetch(`https://apps.cac1.pure.cloud/platform/api/v2/workforcemanagement/managementunits/${row.ManagementUnitId}/users/${row.AgentId}/timeoffrequests/estimate`, {
                                 method: 'POST',
                                 headers: {
