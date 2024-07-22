@@ -351,6 +351,7 @@
                             Duration: "",
                             "Use Estimated Payable Mins": true, // Default value TRUE
                             "Payable Minutes": "", // Empty by default
+                            Status: "APPROVED", // Default value APPROVED
                             UPDATES: "FALSE"
                         })));
 
@@ -418,7 +419,7 @@
                     users = users.filter(user => user.ManagementUnitId || user.BusinessUnitId);
 
                     const wb = XLSX.utils.book_new();
-                    const ws = XLSX.utils.json_to_sheet(users, { header: ["AgentName", "AgentEmail", "AgentId", "BusinessUnitName", "BusinessUnitId", "ManagementUnitName", "ManagementUnitId", "ActivityCodeName", "ActivityCodeId", "Type", "Date", "Timezone", "Duration", "Use Estimated Payable Mins", "Payable Minutes", "UPDATES"] });
+                    const ws = XLSX.utils.json_to_sheet(users, { header: ["AgentName", "AgentEmail", "AgentId", "BusinessUnitName", "BusinessUnitId", "ManagementUnitName", "ManagementUnitId", "ActivityCodeName", "ActivityCodeId", "Type", "Date", "Timezone", "Use Estimated Payable Mins", "Payable Minutes", "Duration", "Status", "UPDATES"] });
 
                     XLSX.utils.book_append_sheet(wb, ws, 'Time-off Request');
 
@@ -517,6 +518,9 @@
                     if (row['Use Estimated Payable Mins'] === false && row['Payable Minutes'] === '') {
                         validationErrors.push(`"Payable Minutes" should not be empty when "Use Estimated Payable Mins" is FALSE for Agent ${row.AgentName}.`);
                     }
+                    if (row['Status'] !== 'APPROVED' && row['Status'] !== 'PENDING') {
+                        validationErrors.push(`Invalid value in "Status" column for Agent ${row.AgentName}.`);
+                    }
                 }
 
                 if (validationErrors.length > 0) {
@@ -545,7 +549,7 @@
 
                     if (row.Type === 'F') {
                         requestBody = {
-                            status: 'APPROVED',
+                            status: row.Status,
                             users: [{ id: row.AgentId }],
                             activityCodeId: row.ActivityCodeId,
                             notes: 'Initial time-off load',
@@ -556,7 +560,7 @@
                         const utcDates = dates.map(date => convertToUTC(date, row.Timezone));
 
                         requestBody = {
-                            status: 'APPROVED',
+                            status: row.Status,
                             users: [{ id: row.AgentId }],
                             activityCodeId: row.ActivityCodeId,
                             notes: 'Initial time-off load',
@@ -569,13 +573,29 @@
 
                     try {
                         if (row['Use Estimated Payable Mins'] === true) {
+                            let estimateRequestBody = {
+                                activityCodeId: row.ActivityCodeId
+                            };
+
+                            if (row.Type === 'F') {
+                                estimateRequestBody.fullDayDates = dates.map(date => ({
+                                    date: date,
+                                    requestedDurationMinutes: 0
+                                }));
+                            } else if (row.Type === 'P') {
+                                estimateRequestBody.partialDayDates = dates.map(date => ({
+                                    date: date,
+                                    requestedDurationMinutes: row.Duration
+                                }));
+                            }
+
                             const estimateResponse = await fetch(`https://apps.cac1.pure.cloud/platform/api/v2/workforcemanagement/managementunits/${row.ManagementUnitId}/users/${row.AgentId}/timeoffrequests/estimate`, {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',
                                     'Authorization': `Bearer ${token}`
                                 },
-                                body: JSON.stringify({ dates })
+                                body: JSON.stringify(estimateRequestBody)
                             });
 
                             if (estimateResponse.ok) {
