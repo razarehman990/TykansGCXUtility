@@ -602,7 +602,7 @@
 
                             if (estimateResponse.ok) {
                                 const estimateData = await estimateResponse.json();
-                                requestBody.payableMinutes = estimateData.partialDayDates.reduce((total, date) => total + date.payableMinutes, 0);
+                                requestBody.payableMinutes = [estimateData.partialDayDates.reduce((total, date) => total + date.payableMinutes, 0)];
                             } else {
                                 const errorResponse = await estimateResponse.json();
                                 const errorMessage = `Error estimating payable minutes for agent ${row.AgentName}: ${estimateResponse.statusText}: ${errorResponse.message}`;
