@@ -485,21 +485,23 @@
                 const rows = XLSX.utils.sheet_to_json(firstSheet);
                 console.log('Excel data parsed:', rows);
 
-                // Validate rows
+                // Validate rows where UPDATES is TRUE
                 const outputTextArea = document.getElementById('output');
                 let validationErrors = [];
                 for (const row of rows) {
-                    if (row['Use Estimated Payable Mins'] !== true && row['Use Estimated Payable Mins'] !== false) {
-                        validationErrors.push(`Invalid value in "Use Estimated Payable Mins" column for Agent ${row.AgentName}.`);
-                    }
-                    if (row['Use Estimated Payable Mins'] === true && row['Payable Minutes'] !== '') {
-                        validationErrors.push(`"Payable Minutes" should be empty when "Use Estimated Payable Mins" is TRUE for Agent ${row.AgentName}.`);
-                    }
-                    if (row['Use Estimated Payable Mins'] === false && row['Payable Minutes'] === '') {
-                        validationErrors.push(`"Payable Minutes" should not be empty when "Use Estimated Payable Mins" is FALSE for Agent ${row.AgentName}.`);
-                    }
-                    if (row['Status'] !== 'APPROVED' && row['Status'] !== 'PENDING') {
-                        validationErrors.push(`Invalid value in "Status" column for Agent ${row.AgentName}.`);
+                    if (row['UPDATES'] === true) {
+                        if (row['Use Estimated Payable Mins'] !== true && row['Use Estimated Payable Mins'] !== false) {
+                            validationErrors.push(`Invalid value in "Use Estimated Payable Mins" column for Agent ${row.AgentName}.`);
+                        }
+                        if (row['Use Estimated Payable Mins'] === true && row['Payable Minutes'] !== '') {
+                            validationErrors.push(`"Payable Minutes" should be empty when "Use Estimated Payable Mins" is TRUE for Agent ${row.AgentName}.`);
+                        }
+                        if (row['Use Estimated Payable Mins'] === false && row['Payable Minutes'] === '') {
+                            validationErrors.push(`"Payable Minutes" should not be empty when "Use Estimated Payable Mins" is FALSE for Agent ${row.AgentName}.`);
+                        }
+                        if (row['Status'] !== 'APPROVED' && row['Status'] !== 'PENDING') {
+                            validationErrors.push(`Invalid value in "Status" column for Agent ${row.AgentName}.`);
+                        }
                     }
                 }
 
