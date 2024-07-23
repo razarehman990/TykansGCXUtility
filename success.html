@@ -22,12 +22,7 @@
 
         /* Logo styles */
         .logo {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            width: auto; /* Allow the height to adjust according to the logo's aspect ratio */
             height: 80px; /* Set logo height to 80px */
-            z-index: 1000; /* Ensure the logo appears above the grey bar */
         }
 
         /* Top bar styles */
@@ -39,6 +34,10 @@
             top: 0;
             left: 0;
             z-index: 999; /* Ensure top layer */
+            display: flex;
+            align-items: center;
+            justify-content: space-between; /* Align items to left and right */
+            padding: 0 20px;
         }
 
         /* Main heading styles */
@@ -96,9 +95,6 @@
 
         /* Logout button styles */
         .logout-button {
-            position: absolute;
-            top: 20px;
-            right: 20px;
             width: 40px;
             height: 40px;
             background-color: #0F3057;
@@ -138,13 +134,10 @@
 </head>
 <body>
     <!-- Top bar -->
-    <div class="top-bar"></div>
-
-    <!-- Tykans logo -->
-    <img class="logo" src="https://www.tykans.com/hs-fs/hubfs/Tykans_June2023/Images/Tykans%20-header-logo.png" alt="Tykans Logo">
-
-    <!-- Logout button -->
-    <button class="logout-button" onclick="logout()">&#x2715;</button>
+    <div class="top-bar">
+        <img class="logo" src="https://www.tykans.com/hs-fs/hubfs/Tykans_June2023/Images/Tykans%20-header-logo.png" alt="Tykans Logo">
+        <button class="logout-button" onclick="logout()">&#x2715;</button>
+    </div>
 
     <div class="container">
         <h2>What would you like to do today?</h2>
