@@ -111,10 +111,26 @@
 
             <div class="error-message" id="redirectUriError">Please enter a valid Redirect URI.</div>
 
-            <label for="environment">Genesys Cloud Environment:</label>
-            <input type="text" id="environment" placeholder="Enter Genesys Cloud environment" value="cac1.pure.cloud" autocomplete="off">
+            <label for="region">Region:</label>
+            <select id="region">
+                <option value="aps1.pure.cloud">Asia Pacific (Mumbai)</option>
+                <option value="apne3.pure.cloud">Asia Pacific (Osaka)</option>
+                <option value="apne2.pure.cloud">Asia Pacific (Seoul)</option>
+                <option value="mypurecloud.com.au">Asia Pacific (Sydney)</option>
+                <option value="mypurecloud.jp">Asia Pacific (Tokyo)</option>
+                <option value="cac1.pure.cloud" selected>Canada (Central)</option>
+                <option value="mypurecloud.de">Europe (Frankfurt)</option>
+                <option value="mypurecloud.ie">Europe (Ireland)</option>
+                <option value="euw2.pure.cloud">Europe (London)</option>
+                <option value="euc2.pure.cloud">Europe (Zurich)</option>
+                <option value="mec1.pure.cloud">Middle East (UAE)</option>
+                <option value="sae1.pure.cloud">South America (São Paulo)</option>
+                <option value="use2.us-gov-pure.cloud">US East 2 (Ohio)</option>
+                <option value="mypurecloud.com">US East (Virginia)</option>
+                <option value="usw2.pure.cloud">US West (Oregon)</option>
+            </select>
 
-            <div class="error-message" id="environmentError">Please enter a valid Genesys Cloud Environment.</div>
+            <div class="error-message" id="regionError">Please select a valid Region.</div>
 
             <button type="submit">Authenticate</button>
         </form>
@@ -144,7 +160,7 @@
             const clientIdInput = document.getElementById('clientId');
             const clientId = clientIdInput.getAttribute('data-id') || clientIdInput.value.trim();
             const redirectUri = document.getElementById('redirectUri').value.trim();
-            const environment = document.getElementById('environment').value.trim();
+            const region = document.getElementById('region').value.trim();
 
             // Validate inputs
             let isValid = true;
@@ -162,11 +178,11 @@
                 document.getElementById('redirectUriError').style.display = 'none';
             }
 
-            if (!environment) {
+            if (!region) {
                 isValid = false;
-                document.getElementById('environmentError').style.display = 'block';
+                document.getElementById('regionError').style.display = 'block';
             } else {
-                document.getElementById('environmentError').style.display = 'none';
+                document.getElementById('regionError').style.display = 'none';
             }
 
             // Proceed if all inputs are valid
@@ -178,7 +194,7 @@
                 }
 
                 // Redirect to Genesys Cloud for authentication
-                window.location.replace(`https://login.${environment}/oauth/authorize?` + new URLSearchParams(queryStringData));
+                window.location.replace(`https://login.${region}/oauth/authorize?` + new URLSearchParams(queryStringData));
             }
         });
     </script>
