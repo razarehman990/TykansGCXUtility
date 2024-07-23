@@ -145,12 +145,11 @@
                 const queryStringData = {
                     response_type: "token",
                     client_id: clientId,
-                    redirect_uri: redirectUri,
-					region=region
+                    redirect_uri: redirectUri
                 }
 
                 // Redirect to Genesys Cloud for authentication
-                window.location.replace(`https://login.${region}/oauth/authorize?` + new URLSearchParams(queryStringData));
+                window.location.replace(`https://login.${region}/oauth/authorize?` + new URLSearchParams(queryStringData) + `&region=${region}`);
             }
         });
     </script>
