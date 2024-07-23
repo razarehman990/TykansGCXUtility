@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -490,8 +491,11 @@
                 let validationErrors = [];
                 for (const row of rows) {
                     if (row['UPDATES'] === true) {
+						if (row['Type'] !== true && row['Type'] !== false) {
+                            validationErrors.push(`Invalid value in "Type" column for Agent ${row.AgentName}. Accepted values are TRUE or FALSE.`);
+                        }
                         if (row['Use Estimated Payable Mins'] !== true && row['Use Estimated Payable Mins'] !== false) {
-                            validationErrors.push(`Invalid value in "Use Estimated Payable Mins" column for Agent ${row.AgentName}.`);
+                            validationErrors.push(`Invalid value in "Use Estimated Payable Mins" column for Agent ${row.AgentName}.  Accepted values are TRUE or FALSE.`);
                         }
                         if (row['Use Estimated Payable Mins'] === true && row['Payable Minutes'] !== '') {
                             validationErrors.push(`"Payable Minutes" should be empty when "Use Estimated Payable Mins" is TRUE for Agent ${row.AgentName}.`);
@@ -501,6 +505,9 @@
                         }
                         if (row['Status'] !== 'APPROVED' && row['Status'] !== 'PENDING') {
                             validationErrors.push(`Invalid value in "Status" column for Agent ${row.AgentName}.`);
+                        }
+						if (row['UPDATES'] !== true && row['UPDATES'] !== false) {
+                            validationErrors.push(`Invalid value in "UPDATES" column for Agent ${row.AgentName}. Accepted values are TRUE or FALSE.`);
                         }
                     }
                 }
@@ -562,7 +569,7 @@
                             if (row.Type === 'F') {
                                 estimateRequestBody.fullDayDates = dates.map(date => ({
                                     date: convertToUTCIfNeeded(date, row.Timezone),
-                                    requestedDurationMinutes: 0
+                                    requestedDurationMinutes: row.Duration
                                 }));
                             } else if (row.Type === 'P') {
                                 estimateRequestBody.partialDayDates = dates.map(date => ({
