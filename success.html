@@ -93,6 +93,47 @@
             color: #0F3057; /* Dark navy blue text color on hover */
             border-color: #0F3057; /* Dark navy blue border on hover */
         }
+
+        /* Logout button styles */
+        .logout-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background-color: #0F3057;
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logout-button:hover {
+            background-color: red;
+            color: #fff;
+        }
+
+        .logout-button::after {
+            content: "Logout";
+            display: none;
+            position: absolute;
+            top: 50px;
+            right: -10px;
+            background-color: red;
+            color: #fff;
+            padding: 2px 5px;
+            border-radius: 5px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .logout-button:hover::after {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -102,12 +143,21 @@
     <!-- Tykans logo -->
     <img class="logo" src="https://www.tykans.com/hs-fs/hubfs/Tykans_June2023/Images/Tykans%20-header-logo.png" alt="Tykans Logo">
 
+    <!-- Logout button -->
+    <button class="logout-button" onclick="logout()">&#x2715;</button>
+
     <div class="container">
         <h2>What would you like to do today?</h2>
         <!-- Search bar -->
         <input type="text" class="search-bar" id="searchInput" placeholder="Search...">
         <!-- Button list -->
         <ul class="button-list">
+            <li><button onclick="window.location.href='oauth.html'">OAuth</button></li>
+            <li><button onclick="window.location.href='division.html'">Division</button></li>
+            <li><button onclick="window.location.href='flow.html'">Flow Outcome/Milestones</button></li>
+            <li><button onclick="window.location.href='wrapupup.html'">Wrap-up Codes</button></li>
+            <li><button onclick="window.location.href='schedules.html'">Schedule Groups/Schedules</button></li>
+            <li><button onclick="window.location.href='callrouting.html'">Call Routing</button></li>
             <li><button>Architect Flows</button></li>
             <li><button>Data Actions</button></li>
             <li><button>Data Tables</button></li>
@@ -169,6 +219,49 @@
             const token = new URLSearchParams(window.location.search).get('token');
             window.location.href = `techdd.html?token=${token}`;
         });
+
+        async function logout() {
+            const token = new URLSearchParams(window.location.search).get('token');
+            try {
+                // Step 1: Get user ID
+                const userResponse = await fetch('https://api.cac1.pure.cloud/api/v2/users/me', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!userResponse.ok) {
+                    throw new Error(`Failed to fetch user info: ${userResponse.statusText}`);
+                }
+
+                const userData = await userResponse.json();
+                const userId = userData.id;
+
+                // Step 2: Delete token
+                const deleteResponse = await fetch(`https://api.cac1.pure.cloud/api/v2/tokens/${userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!deleteResponse.ok) {
+                    throw new Error(`Failed to delete token: ${deleteResponse.statusText}`);
+                }
+
+                // Step 3: Clear the token from the URL and redirect to index.html
+                const url = new URL(window.location.href);
+                url.searchParams.delete('token');
+                window.location.href = url.toString();
+                window.location.href = 'index.html';
+            } catch (error) {
+                console.error('Logout failed:', error);
+                window.location.href = 'index.html'; // Redirect to index.html on error
+            }
+        }
     </script>
 </body>
 </html>
