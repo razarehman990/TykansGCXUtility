@@ -145,12 +145,11 @@
                 const queryStringData = {
                     response_type: "token",
                     client_id: clientId,
-                    redirect_uri: redirectUri
-                }
+                    redirect_uri: encodeURIComponent(redirectUri + "?region=" + region)
+                };
 
-                // Redirect to Genesys Cloud for authentication with region parameter appended to redirect URI
-                const fullRedirectUri = `${redirectUri}?region=${region}`;
-                window.location.replace(`https://login.${region}/oauth/authorize?` + new URLSearchParams(queryStringData) + `&redirect_uri=${encodeURIComponent(fullRedirectUri)}`);
+                // Redirect to Genesys Cloud for authentication
+                window.location.replace(`https://login.${region}/oauth/authorize?` + new URLSearchParams(queryStringData));
             }
         });
     </script>
