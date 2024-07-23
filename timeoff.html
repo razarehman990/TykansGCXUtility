@@ -330,7 +330,7 @@
                             Timezone: "", // Timezone column added
                             "Use Estimated Payable Mins": true, // Default value TRUE
                             "Payable Minutes": "", // Empty by default
-                            Duration: "",
+                            Duration: "", // Empty by default
                             Status: "", // Empty by default
                             UPDATES: "FALSE"
                         })));
@@ -550,7 +550,7 @@
                             activityCodeId: row.ActivityCodeId,
                             notes: 'Initial time-off load',
                             fullDayManagementUnitDates: dates.map(date => handleDateFormat(date)),
-                            durationMinutes: JSON.parse(row.Duration) // Expecting array
+                            durationMinutes: parseDuration(row.Duration) // Expecting array
                         };
                     } else if (row.Type === 'P') {
                         const utcDates = dates.map(date => {
@@ -567,7 +567,7 @@
                             activityCodeId: row.ActivityCodeId,
                             notes: 'Initial time-off load',
                             partialDayStartDateTimes: utcDates, // Use UTC dates
-                            durationMinutes: JSON.parse(row.Duration) // Expecting array
+                            durationMinutes: parseDuration(row.Duration) // Expecting array
                         };
                     }
 
@@ -582,12 +582,12 @@
                             if (row.Type === 'F') {
                                 estimateRequestBody.fullDayDates = dates.map(date => ({
                                     date: handleDateFormat(date),
-                                    requestedDurationMinutes: row.Duration
+                                    requestedDurationMinutes: parseDuration(row.Duration)
                                 }));
                             } else if (row.Type === 'P') {
                                 estimateRequestBody.partialDayDates = dates.map(date => ({
                                     date: date.endsWith('Z') ? date : convertToUTC(date, row.Timezone),
-                                    requestedDurationMinutes: row.Duration
+                                    requestedDurationMinutes: parseDuration(row.Duration)
                                 }));
                             }
 
@@ -698,6 +698,15 @@
             const utcDate = local.utc().format();
             console.log(`Converted local date/time ${localDateTime} (${timezone}) to UTC ${utcDate}`);
             return utcDate;
+        }
+
+        function parseDuration(duration) {
+            try {
+                return JSON.parse(`[${duration}]`);
+            } catch (error) {
+                console.error(`Error parsing duration: ${error}`);
+                return [];
+            }
         }
 
         function s2ab(s) {
