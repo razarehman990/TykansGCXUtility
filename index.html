@@ -142,15 +142,16 @@
 
             // Proceed if all inputs are valid
             if (isValid) {
-                const encodedRedirectUri = encodeURIComponent(`${redirectUri}?region=${region}`);
-                const queryStringData = {
+                const redirectUriWithRegion = `${redirectUri}?region=${region}`;
+                const encodedRedirectUri = encodeURIComponent(redirectUriWithRegion);
+                const queryStringData = new URLSearchParams({
                     response_type: "token",
                     client_id: clientId,
                     redirect_uri: encodedRedirectUri
-                };
+                });
 
                 // Redirect to Genesys Cloud for authentication
-                window.location.replace(`https://login.${region}/oauth/authorize?` + new URLSearchParams(queryStringData));
+                window.location.replace(`https://login.${region}/oauth/authorize?${queryStringData}`);
             }
         });
     </script>
