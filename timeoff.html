@@ -539,7 +539,7 @@
 
             for (const row of rows) {
                 if (row.UPDATES === true) {
-                    const dates = row.Date.split(',').map(date => handleDateFormat(date)); // Split and clean date values
+                    const dates = row.Date.split(',').map(date => date.trim().replace(/^"|"$/g, '')); // Split and clean date values
                     let requestBody;
 
                     if (row.Type === 'F') {
@@ -548,11 +548,17 @@
                             users: [{ id: row.AgentId }],
                             activityCodeId: row.ActivityCodeId,
                             notes: 'Initial time-off load',
-                            fullDayManagementUnitDates: dates,
+                            fullDayManagementUnitDates: dates.map(date => handleDateFormat(date)),
                             durationMinutes: [row.Duration]
                         };
                     } else if (row.Type === 'P') {
-                        const utcDates = dates.map(date => convertToUTCIfNeeded(date, row.Timezone));
+                        const utcDates = dates.map(date => {
+                            if (date.endsWith('Z')) {
+                                return date;
+                            } else {
+                                return convertToUTC(date, row.Timezone);
+                            }
+                        });
 
                         requestBody = {
                             status: row.Status,
@@ -579,7 +585,7 @@
                                 }));
                             } else if (row.Type === 'P') {
                                 estimateRequestBody.partialDayDates = dates.map(date => ({
-                                    date: convertToUTCIfNeeded(date, row.Timezone),
+                                    date: date.endsWith('Z') ? date : convertToUTC(date, row.Timezone),
                                     requestedDurationMinutes: row.Duration
                                 }));
                             }
