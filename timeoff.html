@@ -549,9 +549,8 @@ async function executeImport(rows) {
                     users: [{ id: row.AgentId }],
                     activityCodeId: row.ActivityCodeId,
                     notes: 'Initial time-off load',
-                    fullDayManagementUnitDates: dates.map((date, index) => ({
-                        date: handleDateFormat(date),
-                        durationMinutes: parseDuration(row.Duration)[index]
+                    fullDayManagementUnitDates: dates.map((date, index) => handleDateFormat(date)), // Send dates as an array of strings
+                    durationMinutes: parseDuration(row.Duration)[index] // Send durations as an array of numbers
                     }))
                 };
             } else if (row.Type === 'P') {
@@ -568,11 +567,8 @@ async function executeImport(rows) {
                     users: [{ id: row.AgentId }],
                     activityCodeId: row.ActivityCodeId,
                     notes: 'Initial time-off load',
-                    partialDayStartDateTimes: utcDates.map((date, index) => ({
-                        date: date,
-                        
-                    }
-					))
+					partialDayStartDateTimes: utcDates, // Send dates as an array of strings
+                    durationMinutes: parseDuration(row.Duration)[index] // Send durations as an array of numbers
                 };
             }
 
