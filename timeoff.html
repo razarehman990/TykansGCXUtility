@@ -551,7 +551,7 @@ async function executeImport(rows) {
                     notes: 'Initial time-off load',
                     fullDayManagementUnitDates: dates.map(date => ({
                         date: handleDateFormat(date),
-                        requestedDurationMinutes: parseDuration(row.Duration)
+                        requestedDurationMinutes: parseDuration(row.Duration)[index] ? [parseDuration(row.Duration)[index]] : []
                     }))
                 };
             } else if (row.Type === 'P') {
@@ -586,12 +586,12 @@ async function executeImport(rows) {
                     if (row.Type === 'F') {
                         estimateRequestBody.fullDayDates = dates.map((date, index) => ({
                             date: handleDateFormat(date),
-                            requestedDurationMinutes: [parseDuration(row.Duration)[index]]
+                            requestedDurationMinutes: parseDuration(row.Duration)[index]
                         }));
                     } else if (row.Type === 'P') {
                         estimateRequestBody.partialDayDates = dates.map((date, index) => ({
                             date: date.endsWith('Z') ? date : convertToUTC(date, row.Timezone),
-                            requestedDurationMinutes: [parseDuration(row.Duration)[index]]
+                            requestedDurationMinutes: parseDuration(row.Duration)[index]
                         }));
                     }
 
