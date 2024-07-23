@@ -15,7 +15,7 @@
     </div>
 
     <script>
-        // Function to extract access token from URL
+        // Function to extract access token and region from URL
         function getParameterByName(name, url) {
             if (!url) url = window.location.href;
             name = name.replace(/[\[\]]/g, '\\$&');
@@ -26,7 +26,7 @@
             return decodeURIComponent(results[2].replace(/\+/g, ' '));
         }
 
-        // Extract access token and region from URL
+        // Extract access token from URL
         var token = getParameterByName('access_token', window.location.hash);
         var region = getParameterByName('region', window.location.search);
 
