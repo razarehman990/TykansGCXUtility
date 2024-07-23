@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -491,11 +490,11 @@
                 let validationErrors = [];
                 for (const row of rows) {
                     if (row['UPDATES'] === true) {
-			if (row['Type'] !== 'P' && row['Type'] !== 'F') {
+                        if (row['Type'] !== 'P' && row['Type'] !== 'F') {
                             validationErrors.push(`Invalid value in "Type" column for Agent ${row.AgentName}. Accepted values are P or F.`);
                         }
                         if (row['Use Estimated Payable Mins'] !== true && row['Use Estimated Payable Mins'] !== false) {
-                            validationErrors.push(`Invalid value in "Use Estimated Payable Mins" column for Agent ${row.AgentName}.  Accepted values are TRUE or FALSE.`);
+                            validationErrors.push(`Invalid value in "Use Estimated Payable Mins" column for Agent ${row.AgentName}. Accepted values are TRUE or FALSE.`);
                         }
                         if (row['Use Estimated Payable Mins'] === true && row['Payable Minutes'] !== '') {
                             validationErrors.push(`"Payable Minutes" should be empty when "Use Estimated Payable Mins" is TRUE for Agent ${row.AgentName}.`);
@@ -506,8 +505,15 @@
                         if (row['Status'] !== 'APPROVED' && row['Status'] !== 'PENDING') {
                             validationErrors.push(`Invalid value in "Status" column for Agent ${row.AgentName}. Accepted values are APPROVED or PENDING.`);
                         }
-			if (row['UPDATES'] !== true && row['UPDATES'] !== false) {
+                        if (row['UPDATES'] !== true && row['UPDATES'] !== false) {
                             validationErrors.push(`Invalid value in "UPDATES" column for Agent ${row.AgentName}. Accepted values are TRUE or FALSE.`);
+                        }
+                        if (row['Type'] === 'F') {
+                            // Validate and format fullDayManagementUnitDates
+                            if (row['Date']) {
+                                let dates = row['Date'].split(',').map(date => date.trim().replace(/^"|"$/g, ''));
+                                row['fullDayManagementUnitDates'] = dates.map(date => handleDateFormat(date));
+                            }
                         }
                     }
                 }
@@ -537,18 +543,22 @@
                     let requestBody;
 
                     if (row.Type === 'F') {
-						const utcDates = dates.map(date => convertToUTCIfNeeded(date, row.Timezone));
-						
                         requestBody = {
                             status: row.Status,
                             users: [{ id: row.AgentId }],
                             activityCodeId: row.ActivityCodeId,
                             notes: 'Initial time-off load',
-                            fullDayManagementUnitDates: utcDates, // Use UTC dates
+                            fullDayManagementUnitDates: dates.map(date => handleDateFormat(date)),
                             durationMinutes: [row.Duration]
                         };
                     } else if (row.Type === 'P') {
-                        const utcDates = dates.map(date => convertToUTCIfNeeded(date, row.Timezone));
+                        const utcDates = dates.map(date => {
+                            if (date.endsWith('Z')) {
+                                return date;
+                            } else {
+                                return convertToUTC(date, row.Timezone);
+                            }
+                        });
 
                         requestBody = {
                             status: row.Status,
@@ -570,12 +580,12 @@
 
                             if (row.Type === 'F') {
                                 estimateRequestBody.fullDayDates = dates.map(date => ({
-                                    date: convertToUTCIfNeeded(date, row.Timezone),
+                                    date: handleDateFormat(date),
                                     requestedDurationMinutes: row.Duration
                                 }));
                             } else if (row.Type === 'P') {
                                 estimateRequestBody.partialDayDates = dates.map(date => ({
-                                    date: convertToUTCIfNeeded(date, row.Timezone),
+                                    date: date.endsWith('Z') ? date : convertToUTC(date, row.Timezone),
                                     requestedDurationMinutes: row.Duration
                                 }));
                             }
@@ -611,11 +621,11 @@
 
                             if (estimateResponse.ok) {
                                 const estimateData = await estimateResponse.json();
-                                	if (row.Type === 'P') {
-						requestBody.payableMinutes = [estimateData.partialDayDates.reduce((total, date) => total + date.payableMinutes, 0)];
-					} else if (row.Type === 'F') {
-						requestBody.payableMinutes = [estimateData.fullDayDates.reduce((total, date) => total + date.payableMinutes, 0)];
-					}
+                                if (row.Type === 'P') {
+                                    requestBody.payableMinutes = [estimateData.partialDayDates.reduce((total, date) => total + date.payableMinutes, 0)];
+                                } else if (row.Type === 'F') {
+                                    requestBody.payableMinutes = [estimateData.fullDayDates.reduce((total, date) => total + date.payableMinutes, 0)];
+                                }
                             } else {
                                 const errorResponse = await estimateResponse.json();
                                 const errorMessage = `Error estimating payable minutes for agent ${row.AgentName}: ${estimateResponse.statusText}: ${errorResponse.message}`;
@@ -653,6 +663,20 @@
             }
 
             importSpinner.style.display = 'none'; // Hide spinner
+        }
+
+        function handleDateFormat(date) {
+            if (typeof date === 'number') {
+                return XLSX.SSF.format("yyyy-mm-dd", date);
+            } else if (typeof date === 'string') {
+                date = date.replace(/^"|"$/g, '');
+                if (date.includes('T')) {
+                    return date.split('T')[0];
+                } else {
+                    return date;
+                }
+            }
+            return date;
         }
 
         function convertToUTCIfNeeded(dateTime, timezone) {
