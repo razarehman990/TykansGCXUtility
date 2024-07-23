@@ -543,7 +543,7 @@
                             activityCodeId: row.ActivityCodeId,
                             notes: 'Initial time-off load',
                             fullDayManagementUnitDates: dates, // Use cleaned dates
-                            dailyDurationMinutes: row.Duration
+                            dailyDurationMinutes: [row.Duration]
                         };
                     } else if (row.Type === 'P') {
                         const utcDates = dates.map(date => convertToUTCIfNeeded(date, row.Timezone));
@@ -554,7 +554,7 @@
                             activityCodeId: row.ActivityCodeId,
                             notes: 'Initial time-off load',
                             partialDayStartDateTimes: utcDates, // Use UTC dates
-                            dailyDurationMinutes: row.Duration
+                            dailyDurationMinutes: [row.Duration]
                         };
                     }
 
@@ -610,9 +610,9 @@
                             if (estimateResponse.ok) {
                                 const estimateData = await estimateResponse.json();
                                 	if (row.Type === 'P') {
-						requestBody.payableMinutes = estimateData.partialDayDates.reduce((total, date) => total + date.payableMinutes, 0);
+						requestBody.payableMinutes = [estimateData.partialDayDates.reduce((total, date) => total + date.payableMinutes, 0)];
 					} else if (row.Type === 'F') {
-						requestBody.payableMinutes = estimateData.fullDayDates.reduce((total, date) => total + date.payableMinutes, 0);
+						requestBody.payableMinutes = [estimateData.fullDayDates.reduce((total, date) => total + date.payableMinutes, 0)];
 					}
                             } else {
                                 const errorResponse = await estimateResponse.json();
