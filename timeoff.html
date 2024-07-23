@@ -39,16 +39,16 @@
             position: relative;
             width: 80%;
             margin: 20px auto;
-            text-align: left;
+            text-align: left.
         }
 
         #output {
             width: 100%;
             min-height: 300px;
-            display: block;
+            display: block.
             overflow-x: auto;
             border: 1px solid #ccc;
-            border-radius: 5px;
+            border-radius: 5px.
             padding: 10px;
         }
 
@@ -60,20 +60,20 @@
             border-radius: 50%;
             border-top-color: #0F3057;
             animation: spin 1s ease-in-out infinite;
-            position: relative;
+            position: relative.
             margin-left: 10px;
-            vertical-align: middle;
+            vertical-align: middle.
         }
 
         @keyframes spin {
             to {
-                transform: rotate(360deg);
+                transform: rotate(360deg).
             }
         }
 
         #fileInput {
             display: none;
-            margin: 20px auto;
+            margin: 20px auto.
         }
 
         #importSpinner {
@@ -84,21 +84,21 @@
             border-radius: 50%;
             border-top-color: #0F3057;
             animation: spin 1s ease-in-out infinite;
-            position: relative;
+            position: relative.
             margin-left: 10px;
-            vertical-align: middle;
+            vertical-align: middle.
         }
 
         .button-container {
             display: flex;
             justify-content: center;
             align-items: center;
-            margin-top: 20px;
+            margin-top: 20px.
         }
 
         .button-container div {
             margin: 0 10px;
-            position: relative;
+            position: relative.
         }
 
         .back-button, .logout-button {
@@ -112,70 +112,70 @@
             border-radius: 20px;
             cursor: pointer;
             font-size: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex.
+            align-items: center.
+            justify-content: center.
         }
 
         .back-button {
-            left: 10px;
+            left: 10px.
         }
 
         .back-button:hover {
             background-color: #fff;
             color: #0F3057;
-            border: 2px solid #0F3057;
+            border: 2px solid #0F3057.
         }
 
         .back-button::after {
             content: "Go Back";
             display: none;
-            position: absolute;
-            top: 50px;
-            left: -10px;
+            position: absolute.
+            top: 50px.
+            left: -10px.
             background-color: #0F3057;
-            color: #fff;
-            padding: 2px 5px;
-            border-radius: 5px;
-            font-size: 12px;
-            white-space: nowrap;
+            color: #fff.
+            padding: 2px 5px.
+            border-radius: 5px.
+            font-size: 12px.
+            white-space: nowrap.
         }
 
         .back-button:hover::after {
-            display: block;
+            display: block.
         }
 
         .logout-button {
-            right: 10px;
+            right: 10px.
         }
 
         .logout-button:hover {
             background-color: red;
-            color: #fff;
+            color: #fff.
         }
 
         .logout-button::after {
             content: "Logout";
             display: none;
-            position: absolute;
-            top: 50px;
-            right: -10px;
+            position: absolute.
+            top: 50px.
+            right: -10px.
             background-color: red;
-            color: #fff;
-            padding: 2px 5px;
-            border-radius: 5px;
-            font-size: 12px;
-            white-space: nowrap;
+            color: #fff.
+            padding: 2px 5px.
+            border-radius: 5px.
+            font-size: 12px.
+            white-space: nowrap.
         }
 
         .logout-button:hover::after {
-            display: block;
+            display: block.
         }
 
         #instructions {
-            margin-top: 10px;
-            text-align: left;
-            display: inline-block;
+            margin-top: 10px.
+            text-align: left.
+            display: inline-block.
         }
     </style>
 </head>
@@ -511,14 +511,8 @@
                         if (row['Type'] === 'F') {
                             // Validate and format fullDayManagementUnitDates
                             if (row['Date']) {
-                                let date = row['Date'];
-                                // Handle date values as integers
-                                if (typeof date === 'number') {
-                                    date = XLSX.SSF.format("yyyy-mm-dd", date);
-                                } else if (date.includes('T')) {
-                                    date = date.split('T')[0];
-                                }
-                                row['fullDayManagementUnitDates'] = date;
+                                let dates = row['Date'].split(',').map(date => date.trim().replace(/^"|"$/g, ''));
+                                row['fullDayManagementUnitDates'] = dates.map(date => handleDateFormat(date));
                             }
                         }
                     }
@@ -545,7 +539,7 @@
 
             for (const row of rows) {
                 if (row.UPDATES === true) {
-                    const dates = Array.isArray(row.Date) ? row.Date : [row.Date]; // Ensure dates is always an array
+                    const dates = row.Date.split(',').map(date => handleDateFormat(date)); // Split and clean date values
                     let requestBody;
 
                     if (row.Type === 'F') {
@@ -554,16 +548,7 @@
                             users: [{ id: row.AgentId }],
                             activityCodeId: row.ActivityCodeId,
                             notes: 'Initial time-off load',
-                            fullDayManagementUnitDates: dates.map(date => {
-                                // Handle date values as integers
-                                if (typeof date === 'number') {
-                                    return XLSX.SSF.format("yyyy-mm-dd", date);
-                                } else if (date.includes('T')) {
-                                    return date.split('T')[0];
-                                } else {
-                                    return date;
-                                }
-                            }),
+                            fullDayManagementUnitDates: dates,
                             durationMinutes: [row.Duration]
                         };
                     } else if (row.Type === 'P') {
@@ -677,11 +662,15 @@
         function handleDateFormat(date) {
             if (typeof date === 'number') {
                 return XLSX.SSF.format("yyyy-mm-dd", date);
-            } else if (date.includes('T')) {
-                return date.split('T')[0];
-            } else {
-                return date;
+            } else if (typeof date === 'string') {
+                date = date.replace(/^"|"$/g, '');
+                if (date.includes('T')) {
+                    return date.split('T')[0];
+                } else {
+                    return date;
+                }
             }
+            return date;
         }
 
         function convertToUTCIfNeeded(dateTime, timezone) {
