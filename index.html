@@ -57,6 +57,33 @@
             border-radius: 5px;
             cursor: pointer;
         }
+
+        /* Custom styles for the datalist dropdown */
+        #clientId {
+            width: 100%;
+            position: relative;
+        }
+
+        datalist {
+            width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            max-height: 200px; /* Adjust height as needed */
+            overflow-y: auto;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            position: absolute;
+            z-index: 1000;
+        }
+
+        datalist option {
+            padding: 5px;
+            cursor: pointer;
+            font-size: 14px; /* Smaller font size for better fit */
+        }
+
+        datalist option:hover {
+            background-color: #f0f0f0;
+        }
     </style>
 </head>
 <body>
@@ -68,13 +95,14 @@
         <h3>Tykans Genesys Cloud Configuration Utility</h3>
         <form id="authForm" autocomplete="off">
             <label for="clientId">Client ID:</label>
-            <select id="clientId">
-                <option value="f7015055-9e4a-457b-a753-429fbdc00877">Tykans Lab (f7015055-9e4a-457b-a753-429fbdc00877)</option>
-                <option value="31d9d71d-1239-455c-aeb9-bf59efd5f21a">EComm Production (31d9d71d-1239-455c-aeb9-bf59efd5f21a)</option>
-                <option value="dcb5033f-40ee-47ce-b840-5ef1f6498d9b">EComm Development (dcb5033f-40ee-47ce-b840-5ef1f6498d9b)</option>
-                <option value="827e2fe5-f2dd-432b-a73b-619349b2bf7e">HLBC Production (827e2fe5-f2dd-432b-a73b-619349b2bf7e)</option>
-                <option value="de838003-60a8-44a6-9380-ad300f857c6d">HLBC Training (de838003-60a8-44a6-9380-ad300f857c6d)</option>
-            </select>
+            <input list="clientIds" id="clientId" placeholder="Enter or select your client ID" autocomplete="off" onfocus="resetClientId()" onclick="resetClientId()" oninput="updateClientId()">
+            <datalist id="clientIds">
+                <option data-id="f7015055-9e4a-457b-a753-429fbdc00877" value="Tykans Lab (f7015055-9e4a-457b-a753-429fbdc00877)">Tykans Lab (f7015055-9e4a-457b-a753-429fbdc00877)</option>
+                <option data-id="31d9d71d-1239-455c-aeb9-bf59efd5f21a" value="EComm Production (31d9d71d-1239-455c-aeb9-bf59efd5f21a)">EComm Production (31d9d71d-1239-455c-aeb9-bf59efd5f21a)</option>
+                <option data-id="dcb5033f-40ee-47ce-b840-5ef1f6498d9b" value="EComm Development (dcb5033f-40ee-47ce-b840-5ef1f6498d9b)">EComm Development (dcb5033f-40ee-47ce-b840-5ef1f6498d9b)</option>
+                <option data-id="827e2fe5-f2dd-432b-a73b-619349b2bf7e" value="HLBC Production (827e2fe5-f2dd-432b-a73b-619349b2bf7e)">HLBC Production (827e2fe5-f2dd-432b-a73b-619349b2bf7e)</option>
+                <option data-id="de838003-60a8-44a6-9380-ad300f857c6d" value="HLBC Training (de838003-60a8-44a6-9380-ad300f857c6d)">HLBC Training (de838003-60a8-44a6-9380-ad300f857c6d)</option>                <!-- Add more options here as needed -->
+            </datalist>
 
             <div class="error-message" id="clientIdError">Please enter a valid Client ID.</div>
 
@@ -83,39 +111,40 @@
 
             <div class="error-message" id="redirectUriError">Please enter a valid Redirect URI.</div>
 
-            <label for="region">Region:</label>
-            <select id="region">
-                <option value="aps1.pure.cloud">Asia Pacific (Mumbai)</option>
-                <option value="apne3.pure.cloud">Asia Pacific (Osaka)</option>
-                <option value="apne2.pure.cloud">Asia Pacific (Seoul)</option>
-                <option value="mypurecloud.com.au">Asia Pacific (Sydney)</option>
-                <option value="mypurecloud.jp">Asia Pacific (Tokyo)</option>
-                <option value="cac1.pure.cloud" selected>Canada (Central)</option>
-                <option value="mypurecloud.de">Europe (Frankfurt)</option>
-                <option value="mypurecloud.ie">Europe (Ireland)</option>
-                <option value="euw2.pure.cloud">Europe (London)</option>
-                <option value="euc2.pure.cloud">Europe (Zurich)</option>
-                <option value="mec1.pure.cloud">Middle East (UAE)</option>
-                <option value="sae1.pure.cloud">South America (São Paulo)</option>
-                <option value="use2.us-gov-pure.cloud">US East 2 (Ohio)</option>
-                <option value="mypurecloud.com">US East (Virginia)</option>
-                <option value="usw2.pure.cloud">US West (Oregon)</option>
-            </select>
+            <label for="environment">Genesys Cloud Environment:</label>
+            <input type="text" id="environment" placeholder="Enter Genesys Cloud environment" value="cac1.pure.cloud" autocomplete="off">
 
-            <div class="error-message" id="regionError">Please select a valid Region.</div>
+            <div class="error-message" id="environmentError">Please enter a valid Genesys Cloud Environment.</div>
 
             <button type="submit">Authenticate</button>
         </form>
     </div>
 
     <script>
+        function resetClientId() {
+            const clientIdInput = document.getElementById('clientId');
+            clientIdInput.value = ''; // Clear the input to show all options
+            clientIdInput.removeAttribute('data-id'); // Remove data-id to clear selection
+        }
+
+        function updateClientId() {
+            const clientIdInput = document.getElementById('clientId');
+            const selectedOption = document.querySelector(`#clientIds option[value="${clientIdInput.value}"]`);
+            if (selectedOption) {
+                clientIdInput.setAttribute('data-id', selectedOption.getAttribute('data-id'));
+            } else {
+                clientIdInput.removeAttribute('data-id');
+            }
+        }
+
         document.getElementById('authForm').addEventListener('submit', function(event) {
             event.preventDefault(); // Prevent default form submission
 
             // Get input values
-            const clientId = document.getElementById('clientId').value.trim();
+            const clientIdInput = document.getElementById('clientId');
+            const clientId = clientIdInput.getAttribute('data-id') || clientIdInput.value.trim();
             const redirectUri = document.getElementById('redirectUri').value.trim();
-            const region = document.getElementById('region').value.trim();
+            const environment = document.getElementById('environment').value.trim();
 
             // Validate inputs
             let isValid = true;
@@ -133,25 +162,23 @@
                 document.getElementById('redirectUriError').style.display = 'none';
             }
 
-            if (!region) {
+            if (!environment) {
                 isValid = false;
-                document.getElementById('regionError').style.display = 'block';
+                document.getElementById('environmentError').style.display = 'block';
             } else {
-                document.getElementById('regionError').style.display = 'none';
+                document.getElementById('environmentError').style.display = 'none';
             }
 
             // Proceed if all inputs are valid
             if (isValid) {
-                const redirectUriWithRegion = `${redirectUri}?region=${region}`;
-                const encodedRedirectUri = encodeURIComponent(redirectUriWithRegion);
-                const queryStringData = new URLSearchParams({
+                const queryStringData = {
                     response_type: "token",
                     client_id: clientId,
-                    redirect_uri: encodedRedirectUri
-                });
+                    redirect_uri: redirectUri
+                }
 
                 // Redirect to Genesys Cloud for authentication
-                window.location.replace(`https://login.${region}/oauth/authorize?${queryStringData}`);
+                window.location.replace(`https://login.${environment}/oauth/authorize?` + new URLSearchParams(queryStringData));
             }
         });
     </script>
