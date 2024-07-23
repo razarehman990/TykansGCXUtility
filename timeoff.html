@@ -354,6 +354,7 @@
                                 const muData = await muResponse.json();
                                 user.ManagementUnitId = muData.managementUnit.id;
                                 user.BusinessUnitId = muData.businessUnit.id;
+                                user.Timezone = muData.managementUnit.timeZone; // Populate timezone
 
                                 const buResponse = await fetchWithRetry(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits/${user.BusinessUnitId}`, token);
                                 if (buResponse.ok) {
@@ -549,7 +550,7 @@
                             activityCodeId: row.ActivityCodeId,
                             notes: 'Initial time-off load',
                             fullDayManagementUnitDates: dates.map(date => handleDateFormat(date)),
-                            durationMinutes: [row.Duration]
+                            durationMinutes: JSON.parse(row.Duration) // Expecting array
                         };
                     } else if (row.Type === 'P') {
                         const utcDates = dates.map(date => {
@@ -566,7 +567,7 @@
                             activityCodeId: row.ActivityCodeId,
                             notes: 'Initial time-off load',
                             partialDayStartDateTimes: utcDates, // Use UTC dates
-                            durationMinutes: [row.Duration]
+                            durationMinutes: JSON.parse(row.Duration) // Expecting array
                         };
                     }
 
