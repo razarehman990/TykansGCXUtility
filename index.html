@@ -145,8 +145,7 @@
                 const queryStringData = {
                     response_type: "token",
                     client_id: clientId,
-                    redirect_uri: redirectUri,
-                    region: region
+                    redirect_uri: `${redirectUri}?region=${region}`
                 }
 
                 // Redirect to Genesys Cloud for authentication
