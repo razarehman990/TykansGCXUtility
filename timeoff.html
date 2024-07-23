@@ -549,8 +549,10 @@
                             users: [{ id: row.AgentId }],
                             activityCodeId: row.ActivityCodeId,
                             notes: 'Initial time-off load',
-                            fullDayManagementUnitDates: dates.map(date => handleDateFormat(date)),
-                            durationMinutes: parseDuration(row.Duration) // Expecting array
+                            fullDayManagementUnitDates: dates.map(date => ({
+                                date: handleDateFormat(date),
+                                requestedDurationMinutes: parseDuration(row.Duration)[index] ? [parseDuration(row.Duration)[index]] : []
+                            }))
                         };
                     } else if (row.Type === 'P') {
                         const utcDates = dates.map(date => {
@@ -566,8 +568,10 @@
                             users: [{ id: row.AgentId }],
                             activityCodeId: row.ActivityCodeId,
                             notes: 'Initial time-off load',
-                            partialDayStartDateTimes: utcDates, // Use UTC dates
-                            durationMinutes: parseDuration(row.Duration) // Expecting array
+                            partialDayStartDateTimes: utcDates.map((date, index) => ({
+                                date: date,
+                                requestedDurationMinutes: parseDuration(row.Duration)[index] ? [parseDuration(row.Duration)[index]] : []
+                            }))
                         };
                     }
 
@@ -580,14 +584,14 @@
                             };
 
                             if (row.Type === 'F') {
-                                estimateRequestBody.fullDayDates = dates.map(date => ({
+                                estimateRequestBody.fullDayDates = dates.map((date, index) => ({
                                     date: handleDateFormat(date),
-                                    requestedDurationMinutes: parseDuration(row.Duration)
+                                    requestedDurationMinutes: [parseDuration(row.Duration)[index]]
                                 }));
                             } else if (row.Type === 'P') {
-                                estimateRequestBody.partialDayDates = dates.map(date => ({
+                                estimateRequestBody.partialDayDates = dates.map((date, index) => ({
                                     date: date.endsWith('Z') ? date : convertToUTC(date, row.Timezone),
-                                    requestedDurationMinutes: parseDuration(row.Duration)
+                                    requestedDurationMinutes: [parseDuration(row.Duration)[index]]
                                 }));
                             }
 
@@ -623,9 +627,9 @@
                             if (estimateResponse.ok) {
                                 const estimateData = await estimateResponse.json();
                                 if (row.Type === 'P') {
-                                    requestBody.payableMinutes = [estimateData.partialDayDates.reduce((total, date) => total + date.payableMinutes, 0)];
+                                    requestBody.payableMinutes = estimateData.partialDayDates.map(date => date.payableMinutes);
                                 } else if (row.Type === 'F') {
-                                    requestBody.payableMinutes = [estimateData.fullDayDates.reduce((total, date) => total + date.payableMinutes, 0)];
+                                    requestBody.payableMinutes = estimateData.fullDayDates.map(date => date.payableMinutes);
                                 }
                             } else {
                                 const errorResponse = await estimateResponse.json();
