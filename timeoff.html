@@ -549,9 +549,9 @@ async function executeImport(rows) {
                     users: [{ id: row.AgentId }],
                     activityCodeId: row.ActivityCodeId,
                     notes: 'Initial time-off load',
-                    fullDayManagementUnitDates: dates.map(date => ({
+                    fullDayManagementUnitDates: dates.map((date, index) => ({
                         date: handleDateFormat(date),
-                        requestedDurationMinutes: parseDuration(row.Duration)[index] ? [parseDuration(row.Duration)[index]] : []
+                        requestedDurationMinutes: parseDuration(row.Duration)[index]
                     }))
                 };
             } else if (row.Type === 'P') {
