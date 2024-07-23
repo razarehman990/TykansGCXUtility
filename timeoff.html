@@ -541,8 +541,7 @@ async function executeImport(rows) {
     for (const row of rows) {
         if (row.UPDATES === true) {
             const dates = row.Date.split(',').map(date => date.trim().replace(/^"|"$/g, '')); // Split and clean date values
-			const durations = row.Duration.split(',').map(duration => parseInt(duration.trim()));
-        let requestBody;
+            let requestBody;
 
             if (row.Type === 'F') {
                 requestBody = {
@@ -569,9 +568,11 @@ async function executeImport(rows) {
                     users: [{ id: row.AgentId }],
                     activityCodeId: row.ActivityCodeId,
                     notes: 'Initial time-off load',
-                    partialDayStartDateTimes: utcDates,
-					durationMinutes: durations
-                    }))
+                    partialDayStartDateTimes: utcDates.map((date, index) => ({
+                        date: date,
+                        
+                    }
+					))
                 };
             }
 
