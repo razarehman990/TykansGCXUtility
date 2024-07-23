@@ -543,7 +543,7 @@
                             activityCodeId: row.ActivityCodeId,
                             notes: 'Initial time-off load',
                             fullDayManagementUnitDates: dates, // Use cleaned dates
-                            dailyDurationMinutes: [row.Duration]
+                            durationMinutes: [row.Duration]
                         };
                     } else if (row.Type === 'P') {
                         const utcDates = dates.map(date => convertToUTCIfNeeded(date, row.Timezone));
@@ -554,7 +554,7 @@
                             activityCodeId: row.ActivityCodeId,
                             notes: 'Initial time-off load',
                             partialDayStartDateTimes: utcDates, // Use UTC dates
-                            dailyDurationMinutes: [row.Duration]
+                            durationMinutes: [row.Duration]
                         };
                     }
 
