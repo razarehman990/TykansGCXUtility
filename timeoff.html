@@ -545,7 +545,7 @@
 
             for (const row of rows) {
                 if (row.UPDATES === true) {
-                    const dates = row.Date.split(',').map(date => date.trim().replace(/^"|"$/g, '')); // Split and clean date values
+                    const dates = Array.isArray(row.Date) ? row.Date : [row.Date]; // Ensure dates is always an array
                     let requestBody;
 
                     if (row.Type === 'F') {
@@ -589,7 +589,7 @@
 
                             if (row.Type === 'F') {
                                 estimateRequestBody.fullDayDates = dates.map(date => ({
-                                    date: convertToUTCIfNeeded(handleDateFormat(date), row.Timezone),
+                                    date: handleDateFormat(date),
                                     requestedDurationMinutes: row.Duration
                                 }));
                             } else if (row.Type === 'P') {
