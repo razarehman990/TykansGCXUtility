@@ -634,6 +634,9 @@ async function executeImport(rows) {
                         outputTextArea.value += `❌ ${errorMessage}\n`;
                         continue;
                     }
+		} else {
+                    // Directly set payableMinutes from the "Payable Minutes" column if "Use Estimated Payable Mins" is false
+                    requestBody.payableMinutes = parseDuration(row['Payable Minutes']);
                 }
 
                 const response = await fetch(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/managementunits/${row.ManagementUnitId}/timeoffrequests`, {
