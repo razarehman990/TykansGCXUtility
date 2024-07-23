@@ -118,6 +118,7 @@
             <li><button>Queues</button></li>
             <li><button>Roles</button></li>
             <li><button>Scripts</button></li>
+            <li><button id="rolesPermissionsBtn">Roles/Permissions</button></li>
             <li><button id="workplanBtn">Workplan</button></li>
             <li><button id="timeOffBtn">Time-Off</button></li>
             <li><button id="documentationBtn">Documentation</button></li>
@@ -143,6 +144,12 @@
         document.querySelector('.button-list li:nth-child(7) button').addEventListener('click', function() {
             const token = new URLSearchParams(window.location.search).get('token');
             window.location.href = `prompts.html?token=${token}`;
+        });
+
+        // Redirect to roles.html with token when Roles/Permissions button is clicked
+        document.getElementById('rolesPermissionsBtn').addEventListener('click', function() {
+            const token = new URLSearchParams(window.location.search).get('token');
+            window.location.href = `roles.html?token=${token}`;
         });
 
         // Redirect to workplan.html with token when Workplan button is clicked
