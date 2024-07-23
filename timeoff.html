@@ -544,7 +544,7 @@
                             users: [{ id: row.AgentId }],
                             activityCodeId: row.ActivityCodeId,
                             notes: 'Initial time-off load',
-                            fullDayManagementUnitDates: dates, // Use cleaned dates
+                            fullDayManagementUnitDates: utcDates, // Use UTC dates
                             durationMinutes: [row.Duration]
                         };
                     } else if (row.Type === 'P') {
