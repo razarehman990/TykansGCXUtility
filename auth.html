@@ -15,24 +15,20 @@
     </div>
 
     <script>
-        // Function to extract access token and region from URL
-        function getParameterByName(name) {
-            name = name.replace(/[\\[]/, "\\[").replace(/[\]]/, "\\]");
-            var regex = new RegExp("[\\#&]" + name + "=([^&#]*)"),
-                results = regex.exec(location.hash);
-            return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+        // Function to extract access token from URL
+        function getParameterByName(name, url) {
+            if (!url) url = window.location.href;
+            name = name.replace(/[\[\]]/g, '\\$&');
+            var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
+                results = regex.exec(url);
+            if (!results) return null;
+            if (!results[2]) return '';
+            return decodeURIComponent(results[2].replace(/\+/g, ' '));
         }
 
-        function getQueryParam(name) {
-            name = name.replace(/[\\[]/, "\\[").replace(/[\]]/, "\\]");
-            var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
-                results = regex.exec(location.search);
-            return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
-        }
-
-        // Extract access token from URL
-        var token = getParameterByName('access_token');
-        var region = getQueryParam('region');
+        // Extract access token and region from URL
+        var token = getParameterByName('access_token', window.location.hash);
+        var region = getParameterByName('region', window.location.search);
 
         if (!token) {
             console.error('Access token not found!');
