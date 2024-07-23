@@ -142,10 +142,11 @@
 
             // Proceed if all inputs are valid
             if (isValid) {
+                const encodedRedirectUri = encodeURIComponent(`${redirectUri}?region=${region}`);
                 const queryStringData = {
                     response_type: "token",
                     client_id: clientId,
-                    redirect_uri: encodeURIComponent(redirectUri + "?region=" + region)
+                    redirect_uri: encodedRedirectUri
                 };
 
                 // Redirect to Genesys Cloud for authentication
