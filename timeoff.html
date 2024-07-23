@@ -541,7 +541,8 @@ async function executeImport(rows) {
     for (const row of rows) {
         if (row.UPDATES === true) {
             const dates = row.Date.split(',').map(date => date.trim().replace(/^"|"$/g, '')); // Split and clean date values
-            let requestBody;
+			const durations = row.Duration.split(',').map(duration => parseInt(duration.trim()));
+        let requestBody;
 
             if (row.Type === 'F') {
                 requestBody = {
@@ -569,7 +570,8 @@ async function executeImport(rows) {
                     activityCodeId: row.ActivityCodeId,
                     notes: 'Initial time-off load',
                     partialDayStartDateTimes: utcDates,
-                    durationMinutes: parseDuration(row.Duration)
+					durationMinutes: durations
+                    }))
                 };
             }
 
@@ -584,12 +586,12 @@ async function executeImport(rows) {
                     if (row.Type === 'F') {
                         estimateRequestBody.fullDayDates = dates.map((date, index) => ({
                             date: handleDateFormat(date),
-                            durationMinutes: parseDuration(row.Duration)[index]
+                            requestedDurationMinutes: parseDuration(row.Duration)[index]
                         }));
                     } else if (row.Type === 'P') {
                         estimateRequestBody.partialDayDates = dates.map((date, index) => ({
                             date: date.endsWith('Z') ? date : convertToUTC(date, row.Timezone),
-                            durationMinutes: parseDuration(row.Duration)[index]
+                            requestedDurationMinutes: parseDuration(row.Duration)[index]
                         }));
                     }
 
@@ -668,48 +670,49 @@ async function executeImport(rows) {
     importSpinner.style.display = 'none'; // Hide spinner
 }
 
-function handleDateFormat(date) {
-    if (typeof date === 'number') {
-        return XLSX.SSF.format("yyyy-mm-dd", date);
-    } else if (typeof date === 'string') {
-        date = date.replace(/^"|"$/g, '');
-        if (date.includes('T')) {
-            return date.split('T')[0];
-        } else {
+        function handleDateFormat(date) {
+            if (typeof date === 'number') {
+                return XLSX.SSF.format("yyyy-mm-dd", date);
+            } else if (typeof date === 'string') {
+                date = date.replace(/^"|"$/g, '');
+                if (date.includes('T')) {
+                    return date.split('T')[0];
+                } else {
+                    return date;
+                }
+            }
             return date;
         }
-    }
-    return date;
-}
 
-function convertToUTCIfNeeded(dateTime, timezone) {
-    if (dateTime.endsWith("Z")) {
-        return dateTime;
-    } else {
-        return convertToUTC(dateTime, timezone);
-    }
-}
+        function convertToUTCIfNeeded(dateTime, timezone) {
+            if (dateTime.endsWith("Z")) {
+                return dateTime;
+            } else {
+                return convertToUTC(dateTime, timezone);
+            }
+        }
 
-// Converts local date/time to UTC, considering DST and specified timezone
-function convertToUTC(localDateTime, timezone) {
-    if (!timezone || !moment.tz.zone(timezone)) {
-        console.error(`Invalid timezone: ${timezone}`);
-        return localDateTime;
-    }
-    const local = moment.tz(localDateTime, timezone);
-    const utcDate = local.utc().format();
-    console.log(`Converted local date/time ${localDateTime} (${timezone}) to UTC ${utcDate}`);
-    return utcDate;
-}
+        // Converts local date/time to UTC, considering DST and specified timezone
+        function convertToUTC(localDateTime, timezone) {
+            if (!timezone || !moment.tz.zone(timezone)) {
+                console.error(`Invalid timezone: ${timezone}`);
+                return localDateTime;
+            }
+            const local = moment.tz(localDateTime, timezone);
+            const utcDate = local.utc().format();
+            console.log(`Converted local date/time ${localDateTime} (${timezone}) to UTC ${utcDate}`);
+            return utcDate;
+        }
 
-function parseDuration(duration) {
-    try {
-        return JSON.parse(`[${duration}]`).map(Number);
-    } catch (error) {
-        console.error(`Error parsing duration: ${error}`);
-        return [];
-    }
-}
+		function parseDuration(duration) {
+			try {
+				return JSON.parse(`[${duration}]`).map(Number);
+			} catch (error) {
+				console.error(`Error parsing duration: ${error}`);
+				return [];
+			}
+		}
+
 
         function s2ab(s) {
             const buf = new ArrayBuffer(s.length);
