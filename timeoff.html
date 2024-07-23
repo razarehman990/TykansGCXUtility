@@ -537,6 +537,8 @@
                     let requestBody;
 
                     if (row.Type === 'F') {
+						const utcDates = dates.map(date => convertToUTCIfNeeded(date, row.Timezone));
+						
                         requestBody = {
                             status: row.Status,
                             users: [{ id: row.AgentId }],
