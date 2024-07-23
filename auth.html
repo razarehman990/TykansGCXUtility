@@ -15,7 +15,7 @@
     </div>
 
     <script>
-        // Function to extract access token from URL
+        // Function to extract access token and region from URL
         function getParameterByName(name) {
             name = name.replace(/[\\[]/, "\\[").replace(/[\]]/, "\\]");
             var regex = new RegExp("[\\#&]" + name + "=([^&#]*)"),
@@ -23,8 +23,16 @@
             return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
         }
 
+        function getQueryParam(name) {
+            name = name.replace(/[\\[]/, "\\[").replace(/[\]]/, "\\]");
+            var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+                results = regex.exec(location.search);
+            return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+        }
+
         // Extract access token from URL
         var token = getParameterByName('access_token');
+        var region = getQueryParam('region');
 
         if (!token) {
             console.error('Access token not found!');
@@ -34,8 +42,8 @@
                 window.location.href = 'error.html';
             }, 5000);
         } else {
-            // Redirect to success.html with token as query parameter
-            window.location.href = `success.html?token=${token}`;
+            // Redirect to success.html with token and region as query parameters
+            window.location.href = `success.html?token=${token}&region=${region}`;
         }
     </script>
 </body>
