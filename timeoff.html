@@ -491,8 +491,8 @@
                 let validationErrors = [];
                 for (const row of rows) {
                     if (row['UPDATES'] === true) {
-						if (row['Type'] !== true && row['Type'] !== false) {
-                            validationErrors.push(`Invalid value in "Type" column for Agent ${row.AgentName}. Accepted values are TRUE or FALSE.`);
+			if (row['Type'] !== 'P' && row['Type'] !== 'F') {
+                            validationErrors.push(`Invalid value in "Type" column for Agent ${row.AgentName}. Accepted values are P or F.`);
                         }
                         if (row['Use Estimated Payable Mins'] !== true && row['Use Estimated Payable Mins'] !== false) {
                             validationErrors.push(`Invalid value in "Use Estimated Payable Mins" column for Agent ${row.AgentName}.  Accepted values are TRUE or FALSE.`);
@@ -504,9 +504,9 @@
                             validationErrors.push(`"Payable Minutes" should not be empty when "Use Estimated Payable Mins" is FALSE for Agent ${row.AgentName}.`);
                         }
                         if (row['Status'] !== 'APPROVED' && row['Status'] !== 'PENDING') {
-                            validationErrors.push(`Invalid value in "Status" column for Agent ${row.AgentName}.`);
+                            validationErrors.push(`Invalid value in "Status" column for Agent ${row.AgentName}. Accepted values are APPROVED or PENDING.`);
                         }
-						if (row['UPDATES'] !== true && row['UPDATES'] !== false) {
+			if (row['UPDATES'] !== true && row['UPDATES'] !== false) {
                             validationErrors.push(`Invalid value in "UPDATES" column for Agent ${row.AgentName}. Accepted values are TRUE or FALSE.`);
                         }
                     }
