@@ -28,7 +28,7 @@
 
         // Extract access token from URL
         var token = getParameterByName('access_token', window.location.hash);
-        var region = getParameterByName('region', window.location.search);
+        var region = getParameterByName('region', window.location.href);
 
         if (!token) {
             console.error('Access token not found!');
