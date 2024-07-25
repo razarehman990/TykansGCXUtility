@@ -243,9 +243,11 @@
             console.log('Import button clicked');
             if (uploadedRows && uploadedRows.length > 0) {
                 logMessage('Executing import with uploaded rows:', uploadedRows);
+                console.log('Executing import with uploaded rows:', uploadedRows);
                 executeImport(uploadedRows);
             } else {
                 logMessage('No uploaded rows found');
+                console.log('No uploaded rows found');
                 alert('Please upload a valid Excel file first.');
             }
         });
@@ -359,15 +361,20 @@
                         if (response.ok) {
                             const successMessage = `✅ Successfully updated role ${row.Name}.`;
                             logMessage(successMessage);
+                            console.log(successMessage);
                         } else {
                             const errorResponse = await response.json();
                             const errorMessage = `Error updating role ${row.Name}: ${response.statusText}: ${errorResponse.message}`;
                             logMessage(`❌ ${errorMessage}`);
+                            console.log(`❌ ${errorMessage}`);
                         }
                     } catch (error) {
                         const errorMessage = `Error: ${error.message}`;
                         logMessage(`❌ ${errorMessage}`);
+                        console.log(`❌ ${errorMessage}`);
                     }
+                } else {
+                    console.log(`Role ${row.Name} not marked for update.`);
                 }
             }
 
