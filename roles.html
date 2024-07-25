@@ -343,7 +343,7 @@
             for (const row of rows) {
                 if (String(row.UPDATE).toUpperCase() === "TRUE") {
                     try {
-                        const response = await fetch(`https://api.cac1.pure.cloud/api/v2/authorization/roles/${row.ID}`, {
+                        const response = await fetch(`https://api.cac1.pure.cloud/platform/api/v2/authorization/roles/${row.ID}`, {
                             method: 'PUT',
                             headers: {
                                 'Content-Type': 'application/json',
