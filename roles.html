@@ -240,6 +240,7 @@
 
         document.getElementById('importBtn').addEventListener('click', () => {
             logMessage('Import button clicked');
+            console.log('Import button clicked');
             if (uploadedRows && uploadedRows.length > 0) {
                 logMessage('Executing import with uploaded rows:', uploadedRows);
                 executeImport(uploadedRows);
@@ -323,6 +324,7 @@
                 const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                 const rows = XLSX.utils.sheet_to_json(firstSheet);
                 logMessage('Excel data parsed:', rows);
+                console.log('Excel data parsed:', rows);
                 uploadedRows = rows;
                 document.getElementById('importBtn').style.display = 'inline-block';
             };
