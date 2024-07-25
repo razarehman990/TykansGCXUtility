@@ -348,7 +348,7 @@
                             body: JSON.stringify({
                                 id: row.ID,
                                 name: row.Name,
-                                description: "This temporary role has been created to grant the data team access to the Genesys system. It will be replaced with the appropriate permissions later.",
+                                description: row.Description,
                                 permissions: row.Permissions.split(', '),
                                 permissionPolicies: JSON.parse(row['Permission Policies'])
                             })
