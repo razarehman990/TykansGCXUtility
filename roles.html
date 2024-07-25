@@ -341,7 +341,7 @@
             importSpinner.style.display = 'inline-block';
 
             for (const row of rows) {
-                if (row.UPDATE === "TRUE") {
+                if (String(row.UPDATE).toUpperCase() === "TRUE") {
                     try {
                         const response = await fetch(`https://api.cac1.pure.cloud/api/v2/authorization/roles/${row.ID}`, {
                             method: 'PUT',
@@ -374,7 +374,9 @@
                         console.log(`❌ ${errorMessage}`);
                     }
                 } else {
-                    console.log(`Role ${row.Name} not marked for update.`);
+                    const roleName = row.Name || 'Unknown Role';
+                    logMessage(`Role ${roleName} not marked for update.`);
+                    console.log(`Role ${roleName} not marked for update.`);
                 }
             }
 
