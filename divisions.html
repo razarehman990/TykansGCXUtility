@@ -161,6 +161,8 @@
             display: inline-block;
         }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js" integrity="sha384-KyZXEAg3QhqLMpG8r+Knujsl7/7+XlQ4WWfiDPKOfdrh6cnK8h71NJhN/ZvVfJ9N" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js" integrity="sha384-H5oT8b/YSi7lASsw+cD+cmU/wm5vXzk9XNz/2frMLDRXb1EQKID5EbNsU+niayDk" crossorigin="anonymous"></script>
 </head>
 <body>
     <div id="header">
@@ -198,9 +200,6 @@
 
     <button class="back-button" id="goBackBtn" aria-label="Go back">&#8592;</button>
     <button class="logout-button" id="logoutBtn" aria-label="Logout">&#x2715;</button>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js" integrity="sha384-KyZXEAg3QhqLMpG8r+Knujsl7/7+XlQ4WWfiDPKOfdrh6cnK8h71NJhN/ZvVfJ9N" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js" integrity="sha384-H5oT8b/YSi7lASsw+cD+cmU/wm5vXzk9XNz/2frMLDRXb1EQKID5EbNsU+niayDk" crossorigin="anonymous"></script>
     
     <script>
         const urlParams = new URLSearchParams(window.location.search);
@@ -227,7 +226,7 @@
         document.getElementById('goBackBtn').addEventListener('click', goBack);
         document.getElementById('logoutBtn').addEventListener('click', logout);
 
-        /**
+/**
  * Exports division data to an Excel file.
  * Shows spinner during the process and modal with a message on error.
  */
@@ -285,7 +284,7 @@ function s2ab(s) {
     }
     return buf;
 }
-
+        
         /**
          * Parses the uploaded Excel file.
          * Validates the data and shows appropriate feedback messages.
