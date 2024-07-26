@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Genesys Divisions Management</title>
+    <title>Division Management</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -69,24 +69,6 @@
             to {
                 transform: rotate(360deg);
             }
-        }
-
-        #fileInput {
-            display: none;
-            margin: 20px auto;
-        }
-
-        #importSpinner {
-            display: none;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(15, 48, 87, 0.3);
-            border-radius: 50%;
-            border-top-color: #0F3057;
-            animation: spin 1s ease-in-out infinite;
-            position: relative;
-            margin-left: 10px;
-            vertical-align: middle;
         }
 
         .button-container {
@@ -177,6 +159,42 @@
             text-align: left;
             display: inline-block;
         }
+
+        /* Modal styles for non-blocking alerts */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+            padding-top: 60px;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -198,52 +216,69 @@
         </div>
         <div class="button-container">
             <div>
-                <button class="button" id="exportBtn">Export</button>
-                <div class="spinner" id="spinner"></div>
+                <button class="button" id="exportBtn" aria-label="Export">Export</button>
+                <div class="spinner" id="exportSpinner" aria-hidden="true"></div>
             </div>
             <div>
-                <button class="button" id="uploadBtn">Upload</button>
-                <div class="spinner" id="uploadSpinner"></div>
+                <button class="button" id="uploadBtn" aria-label="Upload">Upload</button>
+                <div class="spinner" id="uploadSpinner" aria-hidden="true"></div>
             </div>
             <div>
-                <button class="button" id="importBtn" style="display:none;">Import</button>
-                <div class="spinner" id="importSpinner"></div>
+                <button class="button" id="importBtn" aria-label="Import" style="display:none;">Import</button>
+                <div class="spinner" id="importSpinner" aria-hidden="true"></div>
             </div>
         </div>
         <input type="file" id="fileInput" accept=".xlsx">
     </div>
 
-    <button class="back-button" onclick="goBack()">&#8592;</button>
-    <button class="logout-button" onclick="logout()">&#x2715;</button>
+    <button class="back-button" id="goBackBtn" aria-label="Go back">&#8592;</button>
+    <button class="logout-button" id="logoutBtn" aria-label="Logout">&#x2715;</button>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <!-- Modal for non-blocking alerts -->
+    <div id="alertModal" class="modal" role="dialog" aria-labelledby="alertModalTitle" aria-describedby="alertModalDescription">
+        <div class="modal-content">
+            <span class="close" id="closeModalBtn" aria-label="Close modal">&times;</span>
+            <p id="modalMessage" aria-live="assertive"></p>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js" integrity="sha384-KyZXEAg3QhqLMpG8r+Knujsl7/7+XlQ4WWfiDPKOfdrh6cnK8h71NJhN/ZvVfJ9N" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js" integrity="sha384-H5oT8b/YSi7lASsw+cD+cmU/wm5vXzk9XNz/2frMLDRXb1EQKID5EbNsU+niayDk" crossorigin="anonymous"></script>
     <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const region = urlParams.get('region');
+        const baseUrl = `https://api.${region}/api/v2`;
+
         document.getElementById('exportBtn').addEventListener('click', exportData);
         document.getElementById('uploadBtn').addEventListener('click', () => {
             document.getElementById('fileInput').click();
         });
 
         document.getElementById('fileInput').addEventListener('change', () => {
-            const fileInput = document.getElementById('fileInput');
-            if (fileInput.files.length > 0) {
-                const file = fileInput.files[0];
+            if (document.getElementById('fileInput').files.length > 0) {
+                const file = document.getElementById('fileInput').files[0];
                 console.log(`File uploaded: ${file.name} (${file.size} bytes, ${file.type})`);
-                parseExcel(file);
-                fileInput.value = ''; // Reset the file input value to allow re-upload of the same file
+                parseExcel(file).then(() => {
+                    document.getElementById('fileInput').value = ''; // Reset the file input value to allow re-upload of the same file
+                });
             }
         });
 
         document.getElementById('importBtn').addEventListener('click', importData);
+        document.getElementById('goBackBtn').addEventListener('click', goBack);
+        document.getElementById('logoutBtn').addEventListener('click', logout);
+        document.getElementById('closeModalBtn').addEventListener('click', closeModal);
 
+        /**
+         * Exports division data to an Excel file.
+         * Shows spinner during the process and modal with a message on error.
+         */
         async function exportData() {
-            const exportBtn = document.getElementById('exportBtn');
-            const spinner = document.getElementById('spinner');
+            const spinner = document.getElementById('exportSpinner');
             spinner.style.display = 'inline-block'; // Show spinner
 
             try {
-                const region = new URL(window.location.href).hostname.split('.')[0];
-                const response = await fetch(`https://api.${region}/api/v2/authorization/divisions?pageSize=500`, {
+                const response = await fetch(`${baseUrl}/authorization/divisions?pageSize=500`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json'
@@ -266,111 +301,200 @@
                 XLSX.utils.book_append_sheet(wb, ws, 'Divisions');
 
                 const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
-                const blob = new Blob([s2ab(wbout)], { type: 'application/octet-stream' });
+                const blob = new Blob([wbout], { type: 'application/octet-stream' });
                 saveAs(blob, 'Divisions.xlsx');
             } catch (error) {
                 console.error('Export failed:', error);
+                showModal('Export failed. Please try again.');
             } finally {
                 spinner.style.display = 'none'; // Hide spinner
             }
         }
 
-function parseExcel(file) {
+        /**
+         * Parses the uploaded Excel file.
+         * Validates the data and shows appropriate feedback messages.
+         * @param {File} file - The uploaded file.
+         */
+        async function parseExcel(file) {
             const reader = new FileReader();
-            reader.onload = function (e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const rows = XLSX.utils.sheet_to_json(firstSheet);
-                console.log('Excel data parsed:', rows);
+            reader.onload = async function (e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(firstSheet);
+                    console.log('Excel data parsed:', rows);
 
-                let isValid = true;
-                const outputTextArea = document.getElementById('output');
-                const validationErrors = [];
+                    let isValid = true;
+                    const outputTextArea = document.getElementById('output');
+                    const validationErrors = [];
 
-                for (const [index, row] of rows.entries()) {
-                    if (typeof row['Division Name'] !== 'string') {
-                        isValid = false;
-                        validationErrors.push(`Row ${index + 1}: "Division Name" should be a string.`);
+                    rows.forEach((row, index) => {
+                        if (typeof row['Division Name'] !== 'string') {
+                            isValid = false;
+                            validationErrors.push(`Row ${index + 1}: "Division Name" should be a string.`);
+                        }
+                        if (typeof row['Division ID'] !== 'string') {
+                            isValid = false;
+                            validationErrors.push(`Row ${index + 1}: "Division ID" should be a string.`);
+                        }
+                        if (typeof row['Home Division'] !== 'boolean') {
+                            isValid = false;
+                            validationErrors.push(`Row ${index + 1}: "Home Division" should be a boolean (true/false).`);
+                        }
+                    });
+
+                    if (isValid) {
+                        document.getElementById('importBtn').style.display = 'inline-block'; // Show Import button
+                        outputTextArea.value = 'File uploaded and validated successfully.';
+                    } else {
+                        document.getElementById('importBtn').style.display = 'none'; // Hide Import button
+                        outputTextArea.value = `Validation failed. Issues found:\n${validationErrors.join('\n')}`;
                     }
-                    if (typeof row['Division ID'] !== 'string') {
-                        isValid = false;
-                        validationErrors.push(`Row ${index + 1}: "Division ID" should be a string.`);
-                    }
-                    if (typeof row['Home Division'] !== 'boolean') {
-                        isValid = false;
-                        validationErrors.push(`Row ${index + 1}: "Home Division" should be a boolean (true/false).`);
-                    }
+                } catch (error) {
+                    console.error('Error parsing Excel file:', error);
+                    showModal('Error parsing Excel file. Please ensure the file is valid.');
                 }
-
-                if (isValid) {
-                    document.getElementById('importBtn').style.display = 'inline-block'; // Show Import button
-                    outputTextArea.value = 'File uploaded and validated successfully.';
-                } else {
-                    document.getElementById('importBtn').style.display = 'none'; // Hide Import button
-                    outputTextArea.value = `Validation failed. Issues found:\n${validationErrors.join('\n')}`;
-                }
+            };
+            reader.onerror = function (error) {
+                console.error('Error reading file:', error);
+                showModal('Error reading file. Please try again.');
             };
             reader.readAsArrayBuffer(file);
         }
 
+        /**
+         * Imports division data from the parsed Excel file.
+         * Shows spinner during the process and modal with a message on error.
+         */
         async function importData() {
             const fileInput = document.getElementById('fileInput');
             if (fileInput.files.length === 0) {
-                alert('Please upload a file first');
+                showModal('Please upload a file first');
                 return;
             }
 
             const file = fileInput.files[0];
             const reader = new FileReader();
             reader.onload = async function (e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const rows = XLSX.utils.sheet_to_json(firstSheet);
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(firstSheet);
 
-                const region = new URL(window.location.href).hostname.split('.')[0];
-                const importSpinner = document.getElementById('importSpinner');
-                importSpinner.style.display = 'inline-block'; // Show spinner
+                    const importSpinner = document.getElementById('importSpinner');
+                    const outputTextArea = document.getElementById('output');
+                    importSpinner.style.display = 'inline-block'; // Show spinner
 
-                for (const row of rows) {
-                    try {
-                        const response = await fetch(`https://api.${region}/api/v2/authorization/divisions`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({ name: row['Division Name'] })
-                        });
+                    for (const row of rows) {
+                        try {
+                            const response = await fetch(`${baseUrl}/authorization/divisions`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ name: row['Division Name'] })
+                            });
 
-                        if (!response.ok) {
-                            throw new Error('Failed to import division');
+                            if (!response.ok) {
+                                const errorResponse = await response.json();
+                                throw new Error(`Failed to import division: ${errorResponse.message}`);
+                            }
+
+                            outputTextArea.value += `Successfully imported division: ${row['Division Name']}\n`;
+                        } catch (error) {
+                            console.error('Import failed:', error);
+                            outputTextArea.value += `Error importing division ${row['Division Name']}: ${error.message}\n`;
                         }
-                    } catch (error) {
-                        console.error('Import failed:', error);
                     }
-                }
 
-                importSpinner.style.display = 'none'; // Hide spinner
-                alert('Import completed');
+                    importSpinner.style.display = 'none'; // Hide spinner
+                    showModal('Import completed');
+                } catch (error) {
+                    console.error('Error importing data:', error);
+                    showModal('Error importing data. Please ensure the file is valid.');
+                }
+            };
+            reader.onerror = function (error) {
+                console.error('Error reading file:', error);
+                showModal('Error reading file. Please try again.');
             };
             reader.readAsArrayBuffer(file);
         }
 
-        function s2ab(s) {
-            const buf = new ArrayBuffer(s.length);
-            const view = new Uint8Array(buf);
-            for (let i = 0; i < s.length; i++) view[i] = s.charCodeAt(i) & 0xFF;
-            return buf;
-        }
-
+        /**
+         * Navigates back to the previous page.
+         */
         function goBack() {
             window.history.back();
         }
 
-        function logout() {
-            // Add logout functionality here
-            window.location.href = 'index.html';
+        /**
+         * Logs out the user by deleting the authentication token.
+         * Shows feedback messages on success or error.
+         */
+        async function logout() {
+            const token = urlParams.get('token');
+            try {
+                // Step 1: Get user ID
+                const userResponse = await fetch(`${baseUrl}/users/me`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!userResponse.ok) {
+                    throw new Error(`Failed to fetch user info: ${userResponse.statusText}`);
+                }
+
+                const userData = await userResponse.json();
+                const userId = userData.id;
+
+                // Step 2: Delete token
+                const deleteResponse = await fetch(`${baseUrl}/tokens/${userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!deleteResponse.ok) {
+                    throw new Error(`Failed to delete token: ${deleteResponse.statusText}`);
+                }
+
+                // Step 3: Clear the token from the URL and redirect to index.html
+                const url = new URL(window.location.href);
+                url.searchParams.delete('token');
+                window.location.href = url.toString();
+                window.location.href = 'index.html';
+            } catch (error) {
+                console.error('Logout failed:', error);
+                window.location.href = 'index.html'; // Redirect to index.html on error
+            }
+        }
+
+        /**
+         * Shows a modal with a message.
+         * @param {string} message - The message to display.
+         */
+        function showModal(message) {
+            const modal = document.getElementById('alertModal');
+            const modalMessage = document.getElementById('modalMessage');
+            modalMessage.innerText = message;
+            modal.style.display = 'block';
+        }
+
+        /**
+         * Closes the modal.
+         */
+        function closeModal() {
+            const modal = document.getElementById('alertModal');
+            modal.style.display = 'none';
         }
     </script>
 </body>
