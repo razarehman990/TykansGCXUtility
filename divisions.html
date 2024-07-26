@@ -204,6 +204,7 @@
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const region = urlParams.get('region');
+        const token = urlParams.get('token');
         const baseUrl = `https://api.${region}/api/v2`;
 
         document.getElementById('exportBtn').addEventListener('click', exportData);
@@ -237,7 +238,8 @@
                 const response = await fetch(`${baseUrl}/authorization/divisions?pageSize=500`, {
                     method: 'GET',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
                     }
                 });
 
@@ -350,7 +352,7 @@
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${urlParams.get('token')}`
+                                    'Authorization': `Bearer ${token}`
                                 },
                                 body: JSON.stringify({ name: row['Division Name'] })
                             });
