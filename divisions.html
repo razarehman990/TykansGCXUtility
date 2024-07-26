@@ -161,6 +161,8 @@
             display: inline-block;
         }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js" integrity="sha384-KyZXEAg3QhqLMpG8r+Knujsl7/7+XlQ4WWfiDPKOfdrh6cnK8h71NJhN/ZvVfJ9N" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js" integrity="sha384-H5oT8b/YSi7lASsw+cD+cmU/wm5vXzk9XNz/2frMLDRXb1EQKID5EbNsU+niayDk" crossorigin="anonymous"></script>
 </head>
 <body>
     <div id="header">
@@ -230,61 +232,64 @@
          * Exports division data to an Excel file.
          * Shows spinner during the process and modal with a message on error.
          */
-        async function exportData() {
-            const spinner = document.getElementById('exportSpinner');
-            spinner.style.display = 'inline-block'; // Show spinner
-
-            try {
-                const response = await fetch(`${baseUrl}/authorization/divisions?pageSize=500`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (!response.ok) {
-                    const errorResponse = await response.json();
-                    throw new Error(`Failed to fetch divisions: ${errorResponse.message}`);
-                }
-
-                const data = await response.json();
-                const divisions = data.entities.map(division => ({
-                    "Division Name": division.name,
-                    "Division ID": division.id,
-                    "Home Division": division.homeDivision
-                }));
-
-                const ws = XLSX.utils.json_to_sheet(divisions);
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, 'Divisions');
-
-                const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
-                const blob = new Blob([s2ab(wbout)], { type: 'application/octet-stream' });
-                saveAs(blob, 'Divisions.xlsx');
-                showMessage('Export successful. File downloaded.', 'success');
-            } catch (error) {
-                console.error('Export failed:', error);
-                showMessage(`Export failed: ${error.message}`, 'error');
-            } finally {
-                spinner.style.display = 'none'; // Hide spinner
-            }
-        }
-
         /**
-         * Converts a string to an ArrayBuffer.
-         * @param {string} s - The string to convert.
-         * @returns {ArrayBuffer} The resulting ArrayBuffer.
-         */
-        function s2ab(s) {
-            const buf = new ArrayBuffer(s.length);
-            const view = new Uint8Array(buf);
-            for (let i = 0; i < s.length; i++) {
-                view[i] = s.charCodeAt(i) & 0xFF;
+ * Exports division data to an Excel file.
+ * Shows spinner during the process and modal with a message on error.
+ */
+async function exportData() {
+    const spinner = document.getElementById('exportSpinner');
+    spinner.style.display = 'inline-block'; // Show spinner
+
+    try {
+        const response = await fetch(`${baseUrl}/authorization/divisions?pageSize=500`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
             }
-            return buf;
+        });
+
+        if (!response.ok) {
+            const errorResponse = await response.json();
+            throw new Error(`Failed to fetch divisions: ${errorResponse.message}`);
         }
 
+        const data = await response.json();
+        const divisions = data.entities.map(division => ({
+            "Division Name": division.name,
+            "Division ID": division.id,
+            "Home Division": division.homeDivision
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(divisions);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Divisions');
+
+        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
+        const blob = new Blob([s2ab(wbout)], { type: 'application/octet-stream' });
+        saveAs(blob, 'Divisions.xlsx');
+        showMessage('Export successful. File downloaded.', 'success');
+    } catch (error) {
+        console.error('Export failed:', error);
+        showMessage(`Export failed: ${error.message}`, 'error');
+    } finally {
+        spinner.style.display = 'none'; // Hide spinner
+    }
+}
+
+/**
+ * Converts a string to an ArrayBuffer.
+ * @param {string} s - The string to convert.
+ * @returns {ArrayBuffer} The resulting ArrayBuffer.
+ */
+function s2ab(s) {
+    const buf = new ArrayBuffer(s.length);
+    const view = new Uint8Array(buf);
+    for (let i = 0; i < s.length; i++) {
+        view[i] = s.charCodeAt(i) & 0xFF;
+    }
+    return buf;
+}
         /**
          * Parses the uploaded Excel file.
          * Validates the data and shows appropriate feedback messages.
