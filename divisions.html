@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Division Management</title>
+    <title>Genesys Division Management</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -50,6 +50,7 @@
             border: 1px solid #ccc;
             border-radius: 5px;
             padding: 10px;
+            white-space: pre-wrap;
         }
 
         .spinner {
@@ -159,48 +160,12 @@
             text-align: left;
             display: inline-block;
         }
-
-        /* Modal styles for non-blocking alerts */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0, 0, 0, 0.4);
-            padding-top: 60px;
-        }
-
-        .modal-content {
-            background-color: #fefefe;
-            margin: 5% auto;
-            padding: 20px;
-            border: 1px solid #888;
-            width: 80%;
-        }
-
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-        }
-
-        .close:hover,
-        .close:focus {
-            color: black;
-            text-decoration: none;
-            cursor: pointer;
-        }
     </style>
 </head>
 <body>
     <div id="header">
         <img id="logo" src="https://www.tykans.com/hs-fs/hubfs/Tykans_June2023/Images/Tykans%20-header-logo.png" alt="Tykans Logo">
-        <h1 id="title">Division Management</h1>
+        <h1 id="title">Genesys Division Management</h1>
         <div id="instructions">
             <p><strong>INSTRUCTIONS:</strong></p>
             <ol>
@@ -228,19 +193,11 @@
                 <div class="spinner" id="importSpinner" aria-hidden="true"></div>
             </div>
         </div>
-        <input type="file" id="fileInput" accept=".xlsx">
+        <input type="file" id="fileInput" accept=".xlsx" style="display:none;">
     </div>
 
     <button class="back-button" id="goBackBtn" aria-label="Go back">&#8592;</button>
     <button class="logout-button" id="logoutBtn" aria-label="Logout">&#x2715;</button>
-
-    <!-- Modal for non-blocking alerts -->
-    <div id="alertModal" class="modal" role="dialog" aria-labelledby="alertModalTitle" aria-describedby="alertModalDescription">
-        <div class="modal-content">
-            <span class="close" id="closeModalBtn" aria-label="Close modal">&times;</span>
-            <p id="modalMessage" aria-live="assertive"></p>
-        </div>
-    </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js" integrity="sha384-KyZXEAg3QhqLMpG8r+Knujsl7/7+XlQ4WWfiDPKOfdrh6cnK8h71NJhN/ZvVfJ9N" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js" integrity="sha384-H5oT8b/YSi7lASsw+cD+cmU/wm5vXzk9XNz/2frMLDRXb1EQKID5EbNsU+niayDk" crossorigin="anonymous"></script>
@@ -267,7 +224,6 @@
         document.getElementById('importBtn').addEventListener('click', importData);
         document.getElementById('goBackBtn').addEventListener('click', goBack);
         document.getElementById('logoutBtn').addEventListener('click', logout);
-        document.getElementById('closeModalBtn').addEventListener('click', closeModal);
 
         /**
          * Exports division data to an Excel file.
@@ -303,9 +259,10 @@
                 const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
                 const blob = new Blob([wbout], { type: 'application/octet-stream' });
                 saveAs(blob, 'Divisions.xlsx');
+                showMessage('Export successful. File downloaded.', 'success');
             } catch (error) {
                 console.error('Export failed:', error);
-                showModal('Export failed. Please try again.');
+                showMessage('Export failed. Please try again.', 'error');
             } finally {
                 spinner.style.display = 'none'; // Hide spinner
             }
@@ -347,19 +304,19 @@
 
                     if (isValid) {
                         document.getElementById('importBtn').style.display = 'inline-block'; // Show Import button
-                        outputTextArea.value = 'File uploaded and validated successfully.';
+                        showMessage('File uploaded and validated successfully.', 'success');
                     } else {
                         document.getElementById('importBtn').style.display = 'none'; // Hide Import button
-                        outputTextArea.value = `Validation failed. Issues found:\n${validationErrors.join('\n')}`;
+                        showMessage(`Validation failed. Issues found:\n${validationErrors.join('\n')}`, 'error');
                     }
                 } catch (error) {
                     console.error('Error parsing Excel file:', error);
-                    showModal('Error parsing Excel file. Please ensure the file is valid.');
+                    showMessage('Error parsing Excel file. Please ensure the file is valid.', 'error');
                 }
             };
             reader.onerror = function (error) {
                 console.error('Error reading file:', error);
-                showModal('Error reading file. Please try again.');
+                showMessage('Error reading file. Please try again.', 'error');
             };
             reader.readAsArrayBuffer(file);
         }
@@ -371,7 +328,7 @@
         async function importData() {
             const fileInput = document.getElementById('fileInput');
             if (fileInput.files.length === 0) {
-                showModal('Please upload a file first');
+                showMessage('Please upload a file first', 'error');
                 return;
             }
 
@@ -385,7 +342,6 @@
                     const rows = XLSX.utils.sheet_to_json(firstSheet);
 
                     const importSpinner = document.getElementById('importSpinner');
-                    const outputTextArea = document.getElementById('output');
                     importSpinner.style.display = 'inline-block'; // Show spinner
 
                     for (const row of rows) {
@@ -393,7 +349,8 @@
                             const response = await fetch(`${baseUrl}/authorization/divisions`, {
                                 method: 'POST',
                                 headers: {
-                                    'Content-Type': 'application/json'
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${urlParams.get('token')}`
                                 },
                                 body: JSON.stringify({ name: row['Division Name'] })
                             });
@@ -403,23 +360,23 @@
                                 throw new Error(`Failed to import division: ${errorResponse.message}`);
                             }
 
-                            outputTextArea.value += `Successfully imported division: ${row['Division Name']}\n`;
+                            showMessage(`✅ Successfully imported division: ${row['Division Name']}`, 'success');
                         } catch (error) {
                             console.error('Import failed:', error);
-                            outputTextArea.value += `Error importing division ${row['Division Name']}: ${error.message}\n`;
+                            showMessage(`❌ Error importing division ${row['Division Name']}: ${error.message}`, 'error');
                         }
                     }
 
                     importSpinner.style.display = 'none'; // Hide spinner
-                    showModal('Import completed');
+                    showMessage('Import completed', 'success');
                 } catch (error) {
                     console.error('Error importing data:', error);
-                    showModal('Error importing data. Please ensure the file is valid.');
+                    showMessage('Error importing data. Please ensure the file is valid.', 'error');
                 }
             };
             reader.onerror = function (error) {
                 console.error('Error reading file:', error);
-                showModal('Error reading file. Please try again.');
+                showMessage('Error reading file. Please try again.', 'error');
             };
             reader.readAsArrayBuffer(file);
         }
@@ -479,22 +436,14 @@
         }
 
         /**
-         * Shows a modal with a message.
+         * Shows a message in the output text area with a specific message type.
          * @param {string} message - The message to display.
+         * @param {string} type - The type of message (success, error, info).
          */
-        function showModal(message) {
-            const modal = document.getElementById('alertModal');
-            const modalMessage = document.getElementById('modalMessage');
-            modalMessage.innerText = message;
-            modal.style.display = 'block';
-        }
-
-        /**
-         * Closes the modal.
-         */
-        function closeModal() {
-            const modal = document.getElementById('alertModal');
-            modal.style.display = 'none';
+        function showMessage(message, type) {
+            const outputTextArea = document.getElementById('output');
+            const symbol = type === 'success' ? '✅' : '❌';
+            outputTextArea.value += `${symbol} ${message}\n`;
         }
     </script>
 </body>
