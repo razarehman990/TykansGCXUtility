@@ -244,7 +244,8 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error('Failed to fetch divisions');
+                    const errorResponse = await response.json();
+                    throw new Error(`Failed to fetch divisions: ${errorResponse.message}`);
                 }
 
                 const data = await response.json();
@@ -259,15 +260,29 @@
                 XLSX.utils.book_append_sheet(wb, ws, 'Divisions');
 
                 const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
-                const blob = new Blob([wbout], { type: 'application/octet-stream' });
+                const blob = new Blob([s2ab(wbout)], { type: 'application/octet-stream' });
                 saveAs(blob, 'Divisions.xlsx');
                 showMessage('Export successful. File downloaded.', 'success');
             } catch (error) {
                 console.error('Export failed:', error);
-                showMessage('Export failed. Please try again.', 'error');
+                showMessage(`Export failed: ${error.message}`, 'error');
             } finally {
                 spinner.style.display = 'none'; // Hide spinner
             }
+        }
+
+        /**
+         * Converts a string to an ArrayBuffer.
+         * @param {string} s - The string to convert.
+         * @returns {ArrayBuffer} The resulting ArrayBuffer.
+         */
+        function s2ab(s) {
+            const buf = new ArrayBuffer(s.length);
+            const view = new Uint8Array(buf);
+            for (let i = 0; i < s.length; i++) {
+                view[i] = s.charCodeAt(i) & 0xFF;
+            }
+            return buf;
         }
 
         /**
