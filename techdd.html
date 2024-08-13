@@ -296,7 +296,7 @@ function logError(message) {
             return flows;
         }
 
-        async function fetchQueues(token) {
+    async function fetchQueues(token) {
     let queues = [];
     let uri = `${getApiBaseUrl(region)}/api/v2/routing/queues?pageSize=500`;
 
@@ -328,31 +328,23 @@ function logError(message) {
             }
 
             return {
-                'GENERAL': {
-                    'Queue Name': queue.name,
-                    'Division': queue.division?.name || 'N/A', // Handle undefined division
-                    'After Call Work': queue.acwSettings?.wrapupPrompt || 'N/A', // Handle undefined wrapupPrompt
-                    'Enable Manual Assignment': queue.enableManualAssignment || false, // Handle undefined enableManualAssignment
-                },
-                'Routing': {
-                    'Routing Method': queue.skillEvaluationMethod || 'N/A', // Handle undefined skillEvaluationMethod
-                },
-                'Voice': {
-                    'Service Level': `${(queue.mediaSettings?.call?.serviceLevel?.percentage || 0) * 100}%`, // Handle undefined serviceLevel
-                    'Service Level Target (Seconds)': (queue.mediaSettings?.call?.serviceLevel?.durationMs || 0) / 1000, // Handle undefined durationMs
-                    'Calling Party Name': queue.callingPartyName || 'N/A', // Handle undefined callingPartyName
-                    'Calling Party Number': queue.callingPartyNumber || 'N/A', // Handle undefined callingPartyNumber
-                    'Alerting Timeout (Seconds)': queue.mediaSettings?.call?.alertingTimeoutSeconds || 0, // Handle undefined alertingTimeoutSeconds
-                    'In-queue Flow': queue.queueFlow?.name || 'N/A', // Handle undefined queueFlow
-                    'Default Script': scriptName,
-                    'Whisper Audio': queue.autoAnswerOnly ? "Only play whisper audio if agent is configured for auto-answer" : "Play whisper audio for all agents",
-                    'Whisper Prompt': queue.whisperPrompt?.name || 'N/A', // Handle undefined whisperPrompt
-                    'Voice Transcription': queue.enableTranscription || false, // Handle undefined enableTranscription
-                    'Continue Voice Recording during Queue Wait': queue.suppressInQueueCallRecording || false, // Handle undefined suppressInQueueCallRecording
-                },
-                'Callback': {
-                    'Callback Auto-Answer': queue.mediaSettings?.callback?.enableAutoAnswer || false, // Handle undefined enableAutoAnswer
-                }
+                'Queue Name': queue.name,
+                'Division': queue.division?.name || 'N/A', // Handle undefined division
+                'After Call Work': queue.acwSettings?.wrapupPrompt || 'N/A', // Handle undefined wrapupPrompt
+                'Enable Manual Assignment': queue.enableManualAssignment || false, // Handle undefined enableManualAssignment
+                'Routing Method': queue.skillEvaluationMethod || 'N/A', // Handle undefined skillEvaluationMethod
+                'Service Level': `${(queue.mediaSettings?.call?.serviceLevel?.percentage || 0) * 100}%`, // Handle undefined serviceLevel
+                'Service Level Target (Seconds)': (queue.mediaSettings?.call?.serviceLevel?.durationMs || 0) / 1000, // Handle undefined durationMs
+                'Calling Party Name': queue.callingPartyName || 'N/A', // Handle undefined callingPartyName
+                'Calling Party Number': queue.callingPartyNumber || 'N/A', // Handle undefined callingPartyNumber
+                'Alerting Timeout (Seconds)': queue.mediaSettings?.call?.alertingTimeoutSeconds || 0, // Handle undefined alertingTimeoutSeconds
+                'In-queue Flow': queue.queueFlow?.name || 'N/A', // Handle undefined queueFlow
+                'Default Script': scriptName,
+                'Whisper Audio': queue.autoAnswerOnly ? "Only play whisper audio if agent is configured for auto-answer" : "Play whisper audio for all agents",
+                'Whisper Prompt': queue.whisperPrompt?.name || 'N/A', // Handle undefined whisperPrompt
+                'Voice Transcription': queue.enableTranscription || false, // Handle undefined enableTranscription
+                'Continue Voice Recording during Queue Wait': queue.suppressInQueueCallRecording || false, // Handle undefined suppressInQueueCallRecording
+                'Callback Auto-Answer': queue.mediaSettings?.callback?.enableAutoAnswer || false, // Handle undefined enableAutoAnswer
             };
         });
 
