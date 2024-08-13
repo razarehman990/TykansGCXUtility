@@ -297,81 +297,91 @@ function logError(message) {
         }
 
         async function fetchQueues(token) {
-            let queues = [];
-            let uri = `${getApiBaseUrl(region)}/api/v2/routing/queues?pageSize=500`;
+    let queues = [];
+    let uri = `${getApiBaseUrl(region)}/api/v2/routing/queues?pageSize=500`;
 
-            do {
-                const response = await fetch(uri, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
+    do {
+        const response = await fetch(uri, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        });
 
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch Queues: ${response.statusText}`);
-                }
-
-                const data = await response.json();
-
-                const queueDataPromises = data.entities.map(async (queue) => {
-                    const scriptName = queue.defaultScripts?.CALL?.id ? await fetchScriptName(queue.defaultScripts.CALL.id) : 'N/A';
-                    return {
-                        'GENERAL': {
-                            'Queue Name': queue.name,
-                            'Division': queue.division.name,
-                            'After Call Work': queue.acwSettings.wrapupPrompt,
-                            'Enable Manual Assignment': queue.enableManualAssignment,
-                        },
-                        'Routing': {
-                            'Routing Method': queue.skillEvaluationMethod,
-                        },
-                        'Voice': {
-                            'Service Level': `${queue.mediaSettings.call.serviceLevel.percentage * 100}%`,
-                            'Service Level Target (Seconds)': queue.mediaSettings.call.serviceLevel.durationMs / 1000,
-                            'Calling Party Name': queue.callingPartyName,
-                            'Calling Party Number': queue.callingPartyNumber,
-                            'Alerting Timeout (Seconds)': queue.mediaSettings.call.alertingTimeoutSeconds,
-                            'In-queue Flow': queue.queueFlow.name,
-                            'Default Script': scriptName,
-                            'Whisper Audio': queue.autoAnswerOnly ? "Only play whisper audio if agent is configured for auto-answer" : "Play whisper audio for all agents",
-                            'Whisper Prompt': queue.whisperPrompt?.name || 'N/A',
-                            'Voice Transcription': queue.enableTranscription,
-                            'Continue Voice Recording during Queue Wait': queue.suppressInQueueCallRecording,
-                        },
-                        'Callback': {
-                            'Callback Auto-Answer': queue.mediaSettings.callback.enableAutoAnswer,
-                        }
-                    };
-                });
-
-                const queueData = await Promise.all(queueDataPromises);
-                queues = queues.concat(queueData);
-
-                uri = data.nextUri ? `${getApiBaseUrl(region)}${data.nextUri}` : null;
-            } while (uri);
-
-            return queues;
+        if (!response.ok) {
+            throw new Error(`Failed to fetch Queues: ${response.statusText}`);
         }
 
-        async function fetchScriptName(scriptId) {
-            const uri = `${getApiBaseUrl(region)}/api/v2/scripts/${scriptId}`;
-            const response = await fetch(uri, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+        const data = await response.json();
 
-            if (!response.ok) {
-                throw new Error(`Failed to fetch Script Name: ${response.statusText}`);
+        const queueDataPromises = data.entities.map(async (queue) => {
+            let scriptName = 'N/A';
+
+            // Only fetch script name if script ID exists
+            if (queue.defaultScripts?.CALL?.id) {
+                try {
+                    scriptName = await fetchScriptName(queue.defaultScripts.CALL.id);
+                } catch (error) {
+                    logError(`Failed to fetch script name for script ID ${queue.defaultScripts.CALL.id}: ${error.message}`);
+                }
             }
 
-            const data = await response.json();
-            return data.name;
+            return {
+                'GENERAL': {
+                    'Queue Name': queue.name,
+                    'Division': queue.division?.name || 'N/A', // Handle undefined division
+                    'After Call Work': queue.acwSettings?.wrapupPrompt || 'N/A', // Handle undefined wrapupPrompt
+                    'Enable Manual Assignment': queue.enableManualAssignment || false, // Handle undefined enableManualAssignment
+                },
+                'Routing': {
+                    'Routing Method': queue.skillEvaluationMethod || 'N/A', // Handle undefined skillEvaluationMethod
+                },
+                'Voice': {
+                    'Service Level': `${(queue.mediaSettings?.call?.serviceLevel?.percentage || 0) * 100}%`, // Handle undefined serviceLevel
+                    'Service Level Target (Seconds)': (queue.mediaSettings?.call?.serviceLevel?.durationMs || 0) / 1000, // Handle undefined durationMs
+                    'Calling Party Name': queue.callingPartyName || 'N/A', // Handle undefined callingPartyName
+                    'Calling Party Number': queue.callingPartyNumber || 'N/A', // Handle undefined callingPartyNumber
+                    'Alerting Timeout (Seconds)': queue.mediaSettings?.call?.alertingTimeoutSeconds || 0, // Handle undefined alertingTimeoutSeconds
+                    'In-queue Flow': queue.queueFlow?.name || 'N/A', // Handle undefined queueFlow
+                    'Default Script': scriptName,
+                    'Whisper Audio': queue.autoAnswerOnly ? "Only play whisper audio if agent is configured for auto-answer" : "Play whisper audio for all agents",
+                    'Whisper Prompt': queue.whisperPrompt?.name || 'N/A', // Handle undefined whisperPrompt
+                    'Voice Transcription': queue.enableTranscription || false, // Handle undefined enableTranscription
+                    'Continue Voice Recording during Queue Wait': queue.suppressInQueueCallRecording || false, // Handle undefined suppressInQueueCallRecording
+                },
+                'Callback': {
+                    'Callback Auto-Answer': queue.mediaSettings?.callback?.enableAutoAnswer || false, // Handle undefined enableAutoAnswer
+                }
+            };
+        });
+
+        const queueData = await Promise.all(queueDataPromises);
+        queues = queues.concat(queueData);
+
+        uri = data.nextUri ? `${getApiBaseUrl(region)}${data.nextUri}` : null;
+    } while (uri);
+
+    return queues;
+}
+
+async function fetchScriptName(scriptId) {
+    const uri = `${getApiBaseUrl(region)}/api/v2/scripts/${scriptId}`;
+    const response = await fetch(uri, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
         }
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch Script Name: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.name || 'N/A'; // Handle undefined name in the script
+}
 
         function s2ab(s) {
             const buf = new ArrayBuffer(s.length);
