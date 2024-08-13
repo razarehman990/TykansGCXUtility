@@ -204,6 +204,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script>
         let token;
+        let region;
 
         document.getElementById('generateBtn').addEventListener('click', generateDocument);
 
@@ -220,6 +221,9 @@
                 const architectFlows = await fetchArchitectFlows(token);
                 logInfo('Architect Flows fetched successfully.');
 
+                const queues = await fetchQueues(token);
+                logInfo('Queues fetched successfully.');
+
                 // Sort Architect Flows by Type
                 architectFlows.sort((a, b) => a.Type.localeCompare(b.Type));
 
@@ -228,6 +232,10 @@
 
                 const wsArchitectFlows = XLSX.utils.json_to_sheet(architectFlows);
                 XLSX.utils.book_append_sheet(wb, wsArchitectFlows, 'Architect Flows');
+
+                // Add Queues sheet
+                const wsQueues = XLSX.utils.json_to_sheet(queues);
+                XLSX.utils.book_append_sheet(wb, wsQueues, 'Queues');
 
                 // Add other sheets here
 
@@ -245,9 +253,13 @@
             }
         }
 
+        function getApiBaseUrl(region) {
+            return `https://api.${region}.pure.cloud`;
+        }
+
         async function fetchArchitectFlows(token) {
             let flows = [];
-            let uri = 'https://api.cac1.pure.cloud/api/v2/flows?pageSize=500&sortOrder=asc&deleted=false&includeSchemas=false';
+            let uri = `${getApiBaseUrl(region)}/api/v2/flows?pageSize=500&sortOrder=asc&deleted=false&includeSchemas=false`;
 
             do {
                 const response = await fetch(uri, {
@@ -270,38 +282,18 @@
                     'Description': flow.description
                 })));
 
-                uri = data.nextUri ? `https://api.cac1.pure.cloud${data.nextUri}` : null;
+                uri = data.nextUri ? `${getApiBaseUrl(region)}${data.nextUri}` : null;
             } while (uri);
 
             return flows;
         }
 
-        function logInfo(message) {
-            const outputTextArea = document.getElementById('output');
-            outputTextArea.value += `✅ ${message}\n`;
-        }
+        async function fetchQueues(token) {
+            let queues = [];
+            let uri = `${getApiBaseUrl(region)}/api/v2/routing/queues?pageSize=500`;
 
-        function logError(message) {
-            const outputTextArea = document.getElementById('output');
-            outputTextArea.value += `❌ ${message}\n`;
-        }
-
-        function s2ab(s) {
-            const buf = new ArrayBuffer(s.length);
-            const view = new Uint8Array(buf);
-            for (let i = 0; i < s.length; i++) view[i] = s.charCodeAt(i) & 0xFF;
-            return buf;
-        }
-
-        function goBack() {
-            window.history.back();
-        }
-
-        async function logout() {
-            const token = new URLSearchParams(window.location.search).get('token');
-            try {
-                // Step 1: Get user ID
-                const userResponse = await fetch('https://api.cac1.pure.cloud/api/v2/users/me', {
+            do {
+                const response = await fetch(uri, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -309,39 +301,68 @@
                     }
                 });
 
-                if (!userResponse.ok) {
-                    throw new Error(`Failed to fetch user info: ${userResponse.statusText}`);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch Queues: ${response.statusText}`);
                 }
 
-                const userData = await userResponse.json();
-                const userId = userData.id;
-
-                // Step 2: Delete token
-                const deleteResponse = await fetch(`https://api.cac1.pure.cloud/api/v2/tokens/${userId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
+                const data = await response.json();
+                queues = queues.concat(data.entities.map(queue => ({
+                    'GENERAL': {
+                        'Queue Name': queue.name,
+                        'Division': queue.division.name,
+                        'After Call Work': queue.acwSettings.wrapupPrompt,
+                        'Enable Manual Assignment': queue.enableManualAssignment,
+                    },
+                    'Routing': {
+                        'Routing Method': queue.skillEvaluationMethod,
+                    },
+                    'Voice': {
+                        'Service Level': `${queue.mediaSettings.call.serviceLevel.percentage * 100}%`,
+                        'Service Level Target (Seconds)': queue.mediaSettings.call.serviceLevel.durationMs / 1000,
+                        'Calling Party Name': queue.callingPartyName,
+                        'Calling Party Number': queue.callingPartyNumber,
+                        'Alerting Timeout (Seconds)': queue.mediaSettings.call.alertingTimeoutSeconds,
+                        'In-queue Flow': queue.queueFlow.name,
+                        'Default Script': await fetchScriptName(queue.defaultScripts.CALL.id),
+                        'Whisper Audio': queue.autoAnswerOnly ? "Only play whisper audio if agent is configured for auto-answer" : "Play whisper audio for all agents",
+                        'Whisper Prompt': queue.whisperPrompt.name,
+                        'Voice Transcription': queue.enableTranscription,
+                        'Continue Voice Recording during Queue Wait': queue.suppressInQueueCallRecording,
+                    },
+                    'Callback': {
+                        'Callback Auto-Answer': queue.mediaSettings.callback.enableAutoAnswer,
                     }
-                });
+                })));
 
-                if (!deleteResponse.ok) {
-                    throw new Error(`Failed to delete token: ${deleteResponse.statusText}`);
-                }
+                uri = data.nextUri ? `${getApiBaseUrl(region)}${data.nextUri}` : null;
+            } while (uri);
 
-                // Step 3: Clear the token from the URL and redirect to index.html
-                const url = new URL(window.location.href);
-                url.searchParams.delete('token');
-                window.location.href = url.toString();
-                window.location.href = 'index.html';
-            } catch (error) {
-                console.error('Logout failed:', error);
-                window.location.href = 'index.html'; // Redirect to index.html on error
-            }
+            return queues;
         }
+
+        async function fetchScriptName(scriptId) {
+            const uri = `${getApiBaseUrl(region)}/api/v2/scripts/${scriptId}`;
+            const response = await fetch(uri, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch Script Name: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            return data.name;
+        }
+
+        // Existing helper functions: logInfo, logError, s2ab, goBack, logout
 
         document.addEventListener('DOMContentLoaded', () => {
             token = new URLSearchParams(window.location.search).get('token');
+            region = new URLSearchParams(window.location.search).get('region');
         });
     </script>
 </body>
