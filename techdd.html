@@ -218,48 +218,54 @@ function logError(message) {
     outputTextArea.value += `❌ ${message}\n`;
 }
 
-        async function generateDocument() {
-            const generateBtn = document.getElementById('generateBtn');
-            const spinner = document.getElementById('spinner');
-            const outputTextArea = document.getElementById('output');
-            outputTextArea.value = ''; // Clear output
-            spinner.style.display = 'inline-block'; // Show spinner
+// Include this new function in your generateDocument function to create the "OAuth Clients" tab in the Excel file
+async function generateDocument() {
+    const generateBtn = document.getElementById('generateBtn');
+    const spinner = document.getElementById('spinner');
+    const outputTextArea = document.getElementById('output');
+    outputTextArea.value = ''; // Clear output
+    spinner.style.display = 'inline-block'; // Show spinner
 
-            try {
-                logInfo('Starting document generation...');
+    try {
+        logInfo('Starting document generation...');
 
-                const architectFlows = await fetchArchitectFlows(token);
-                logInfo('Architect Flows fetched successfully.');
+        const architectFlows = await fetchArchitectFlows(token);
+        logInfo('Architect Flows fetched successfully.');
 
-                const queues = await fetchQueues(token);
-                logInfo('Queues fetched successfully.');
+        const queues = await fetchQueues(token);
+        logInfo('Queues fetched successfully.');
 
-                // Sort Architect Flows by Type
-                architectFlows.sort((a, b) => a.Type.localeCompare(b.Type));
+        const oauthClients = await fetchOAuthClients(token);
+        logInfo('OAuth Clients fetched successfully.');
 
-                // Create the Excel file
-                const wb = XLSX.utils.book_new();
+        // Sort Architect Flows by Type
+        architectFlows.sort((a, b) => a.Type.localeCompare(b.Type));
 
-                const wsArchitectFlows = XLSX.utils.json_to_sheet(architectFlows);
-                XLSX.utils.book_append_sheet(wb, wsArchitectFlows, 'Architect Flows');
+        // Create the Excel file
+        const wb = XLSX.utils.book_new();
 
-                // Add Queues sheet
-                const wsQueues = XLSX.utils.json_to_sheet(queues);
-                XLSX.utils.book_append_sheet(wb, wsQueues, 'Queues');
+        const wsArchitectFlows = XLSX.utils.json_to_sheet(architectFlows);
+        XLSX.utils.book_append_sheet(wb, wsArchitectFlows, 'Architect Flows');
 
-                const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
-                const blob = new Blob([s2ab(wbout)], { type: 'application/octet-stream' });
+        const wsQueues = XLSX.utils.json_to_sheet(queues);
+        XLSX.utils.book_append_sheet(wb, wsQueues, 'Queues');
 
-                saveAs(blob, 'GeneratedDocument.xlsx');
-                logInfo('Document generation completed successfully.');
-            } catch (error) {
-                const errorMessage = `Error: ${error.message}`;
-                console.error(errorMessage);
-                logError(errorMessage);
-            } finally {
-                spinner.style.display = 'none'; // Hide spinner
-            }
-        }
+        const wsOAuthClients = XLSX.utils.json_to_sheet(oauthClients);
+        XLSX.utils.book_append_sheet(wb, wsOAuthClients, 'OAuth Clients');
+
+        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
+        const blob = new Blob([s2ab(wbout)], { type: 'application/octet-stream' });
+
+        saveAs(blob, 'GeneratedDocument.xlsx');
+        logInfo('Document generation completed successfully.');
+    } catch (error) {
+        const errorMessage = `Error: ${error.message}`;
+        console.error(errorMessage);
+        logError(errorMessage);
+    } finally {
+        spinner.style.display = 'none'; // Hide spinner
+    }
+}
 
         function getApiBaseUrl(region) {
             return `https://api.${region}`;
@@ -373,6 +379,124 @@ async function fetchScriptName(scriptId) {
 
     const data = await response.json();
     return data.name || 'N/A'; // Handle undefined name in the script
+}
+    async function fetchOAuthClients(token) {
+    let oauthClients = [];
+    let uri = `${getApiBaseUrl(region)}/api/v2/oauth/clients?pageSize=500`;
+
+    do {
+        const response = await fetch(uri, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch OAuth Clients: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        const oauthClientDataPromises = data.entities.map(async (client) => {
+            let roles = 'N/A';
+
+            // Handle role fetching only if Grant Type is CLIENT-CREDENTIALS
+            if (client.authorizedGrantType === "CLIENT-CREDENTIALS" && client.roleIds.length > 0) {
+                roles = await fetchRolesAndDivisions(client.roleIds, client.roleDivisions);
+            }
+
+            // Determine the authorized grant type label
+            let grantTypeLabel;
+            switch (client.authorizedGrantType) {
+                case "CLIENT-CREDENTIALS":
+                    grantTypeLabel = "Client Credentials";
+                    break;
+                case "TOKEN":
+                    grantTypeLabel = "Token Implicit Grant (Browser)";
+                    break;
+                case "CODE":
+                    grantTypeLabel = "Code Authorization";
+                    break;
+                case "SAML2-BEARER":
+                    grantTypeLabel = "SAML2 Bearer";
+                    break;
+                default:
+                    grantTypeLabel = client.authorizedGrantType;
+                    break;
+            }
+
+            return {
+                'Client Name': client.name,
+                'Description': client.description || 'N/A', // Handle missing description
+                'Token Duration (seconds)': client.accessTokenValiditySeconds || 0, // Handle missing token duration
+                'Grant Types': grantTypeLabel,
+                'Authorized Redirect URIs': client.registeredRedirectUri.join('\n') || 'N/A', // Handle missing redirect URIs
+                'Scope': client.scope ? client.scope.join('\n') : 'N/A', // Handle missing scopes
+                'Roles': roles // Handle roles only for CLIENT-CREDENTIALS
+            };
+        });
+
+        const oauthClientData = await Promise.all(oauthClientDataPromises);
+        oauthClients = oauthClients.concat(oauthClientData);
+
+        uri = data.nextUri ? `${getApiBaseUrl(region)}${data.nextUri}` : null;
+    } while (uri);
+
+    return oauthClients;
+}
+
+async function fetchRolesAndDivisions(roleIds, roleDivisions) {
+    const rolesWithDivisions = await Promise.all(roleIds.map(async (roleId) => {
+        try {
+            const roleUri = `${getApiBaseUrl(region)}/api/v2/authorization/roles/${roleId}`;
+            const roleResponse = await fetch(roleUri, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!roleResponse.ok) {
+                throw new Error(`Failed to fetch Role Name for Role ID ${roleId}: ${roleResponse.statusText}`);
+            }
+
+            const roleData = await roleResponse.json();
+            const roleName = roleData.name;
+
+            const divisions = roleDivisions.filter(rd => rd.roleId === roleId).map(async (rd) => {
+                if (rd.divisionId === "*") {
+                    return "All";
+                } else {
+                    const divisionUri = `${getApiBaseUrl(region)}/api/v2/authorization/divisions/${rd.divisionId}`;
+                    const divisionResponse = await fetch(divisionUri, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (!divisionResponse.ok) {
+                        throw new Error(`Failed to fetch Division Name for Division ID ${rd.divisionId}: ${divisionResponse.statusText}`);
+                    }
+
+                    const divisionData = await divisionResponse.json();
+                    return divisionData.name;
+                }
+            });
+
+            const divisionNames = await Promise.all(divisions);
+            return `${roleName} (${divisionNames.join(', ')})`;
+        } catch (error) {
+            logError(`Error fetching roles and divisions: ${error.message}`);
+            return `N/A (Role ID: ${roleId})`;
+        }
+    }));
+
+    return rolesWithDivisions.join('\n');
 }
 
         function s2ab(s) {
