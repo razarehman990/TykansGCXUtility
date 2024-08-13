@@ -1,1 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate Technical Design Document</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #fff;
+            color: #0F3057;
+            text-align: center;
+        }
 
+        .container {
+            margin-top: 150px;
+        }
+
+        .button {
+            margin: 20px;
+            padding: 15px 30px;
+            background-color: #0F3057;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        .button:hover {
+            background-color: #fff;
+            color: #0F3057;
+            border: 2px solid #0F3057;
+        }
+
+        #output-container {
+            position: relative;
+            width: 80%;
+            margin: 20px auto;
+            text-align: left;
+        }
+
+        #output {
+            width: 100%;
+            min-height: 300px;
+            display: block;
+            overflow-x: auto;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+        }
+
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(15, 48, 87, 0.3);
+            border-radius: 50%;
+            border-top-color: #0F3057;
+            animation: spin 1s ease-in-out infinite;
+            position: relative;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .button-container div {
+            margin: 0 10px;
+            position: relative;
+        }
+
+        .back-button, .logout-button {
+            position: absolute;
+            top: 10px;
+            width: 40px;
+            height: 40px;
+            background-color: #0F3057;
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .back-button {
+            left: 10px;
+        }
+
+        .back-button:hover {
+            background-color: #fff;
+            color: #0F3057;
+            border: 2px solid #0F3057;
+        }
+
+        .back-button::after {
+            content: "Go Back";
+            display: none;
+            position: absolute;
+            top: 50px;
+            left: -10px;
+            background-color: #0F3057;
+            color: #fff;
+            padding: 2px 5px;
+            border-radius: 5px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .back-button:hover::after {
+            display: block;
+        }
+
+        .logout-button {
+            right: 10px;
+        }
+
+        .logout-button:hover {
+            background-color: red;
+            color: #fff;
+        }
+
+        .logout-button::after {
+            content: "Logout";
+            display: none;
+            position: absolute;
+            top: 50px;
+            right: -10px;
+            background-color: red;
+            color: #fff;
+            padding: 2px 5px;
+            border-radius: 5px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .logout-button:hover::after {
+            display: block;
+        }
+
+        #header {
+            position: relative;
+            padding: 20px;
+        }
+
+        #logo {
+            max-width: 200px;
+        }
+
+        .log-info {
+            color: green;
+        }
+
+        .log-error {
+            color: red;
+        }
+
+        .log-icon {
+            vertical-align: middle;
+        }
+
+        .log-message {
+            display: inline-block;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <img id="logo" src="https://www.tykans.com/hs-fs/hubfs/Tykans_June2023/Images/Tykans%20-header-logo.png" alt="Tykans Logo">
+        <h1>Generate Technical Design Document</h1>
+    </div>
+    <button class="back-button" onclick="goBack()">&#8592;</button>
+    <button class="logout-button" onclick="logout()">&#x2715;</button>
+    <div class="container">
+        <div id="output-container">
+            <textarea id="output" readonly></textarea>
+        </div>
+        <div class="button-container">
+            <div>
+                <button class="button" id="generateBtn">Generate Document</button>
+                <div class="spinner" id="spinner"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script>
+        let token;
+        let region;
+
+        document.getElementById('generateBtn').addEventListener('click', generateDocument);
+
+        function logInfo(message) {
+    const outputTextArea = document.getElementById('output');
+    outputTextArea.value += `✅ ${message}\n`;
+}
+
+function logError(message) {
+    const outputTextArea = document.getElementById('output');
+    outputTextArea.value += `❌ ${message}\n`;
+}
+
+        async function generateDocument() {
+            const generateBtn = document.getElementById('generateBtn');
+            const spinner = document.getElementById('spinner');
+            const outputTextArea = document.getElementById('output');
+            outputTextArea.value = ''; // Clear output
+            spinner.style.display = 'inline-block'; // Show spinner
+
+            try {
+                logInfo('Starting document generation...');
+
+                const architectFlows = await fetchArchitectFlows(token);
+                logInfo('Architect Flows fetched successfully.');
+
+                const queues = await fetchQueues(token);
+                logInfo('Queues fetched successfully.');
+
+                // Sort Architect Flows by Type
+                architectFlows.sort((a, b) => a.Type.localeCompare(b.Type));
+
+                // Create the Excel file
+                const wb = XLSX.utils.book_new();
+
+                const wsArchitectFlows = XLSX.utils.json_to_sheet(architectFlows);
+                XLSX.utils.book_append_sheet(wb, wsArchitectFlows, 'Architect Flows');
+
+                // Add Queues sheet
+                const wsQueues = XLSX.utils.json_to_sheet(queues);
+                XLSX.utils.book_append_sheet(wb, wsQueues, 'Queues');
+
+                const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
+                const blob = new Blob([s2ab(wbout)], { type: 'application/octet-stream' });
+
+                saveAs(blob, 'GeneratedDocument.xlsx');
+                logInfo('Document generation completed successfully.');
+            } catch (error) {
+                const errorMessage = `Error: ${error.message}`;
+                console.error(errorMessage);
+                logError(errorMessage);
+            } finally {
+                spinner.style.display = 'none'; // Hide spinner
+            }
+        }
+
+        function getApiBaseUrl(region) {
+            return `https://api.${region}`;
+        }
+
+        async function fetchArchitectFlows(token) {
+            let flows = [];
+            let uri = `${getApiBaseUrl(region)}/api/v2/flows?pageSize=500&sortOrder=asc&deleted=false&includeSchemas=false`;
+
+            do {
+                const response = await fetch(uri, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch Architect Flows: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                flows = flows.concat(data.entities.map(flow => ({
+                    'Call Flow Name': flow.name,
+                    'Type': flow.type,
+                    'Division': flow.division.name,
+                    'Description': flow.description
+                })));
+
+                uri = data.nextUri ? `${getApiBaseUrl(region)}${data.nextUri}` : null;
+            } while (uri);
+
+            return flows;
+        }
+
+        async function fetchQueues(token) {
+            let queues = [];
+            let uri = `${getApiBaseUrl(region)}/api/v2/routing/queues?pageSize=500`;
+
+            do {
+                const response = await fetch(uri, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch Queues: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                const queueDataPromises = data.entities.map(async (queue) => {
+                    const scriptName = queue.defaultScripts?.CALL?.id ? await fetchScriptName(queue.defaultScripts.CALL.id) : 'N/A';
+                    return {
+                        'GENERAL': {
+                            'Queue Name': queue.name,
+                            'Division': queue.division.name,
+                            'After Call Work': queue.acwSettings.wrapupPrompt,
+                            'Enable Manual Assignment': queue.enableManualAssignment,
+                        },
+                        'Routing': {
+                            'Routing Method': queue.skillEvaluationMethod,
+                        },
+                        'Voice': {
+                            'Service Level': `${queue.mediaSettings.call.serviceLevel.percentage * 100}%`,
+                            'Service Level Target (Seconds)': queue.mediaSettings.call.serviceLevel.durationMs / 1000,
+                            'Calling Party Name': queue.callingPartyName,
+                            'Calling Party Number': queue.callingPartyNumber,
+                            'Alerting Timeout (Seconds)': queue.mediaSettings.call.alertingTimeoutSeconds,
+                            'In-queue Flow': queue.queueFlow.name,
+                            'Default Script': scriptName,
+                            'Whisper Audio': queue.autoAnswerOnly ? "Only play whisper audio if agent is configured for auto-answer" : "Play whisper audio for all agents",
+                            'Whisper Prompt': queue.whisperPrompt?.name || 'N/A',
+                            'Voice Transcription': queue.enableTranscription,
+                            'Continue Voice Recording during Queue Wait': queue.suppressInQueueCallRecording,
+                        },
+                        'Callback': {
+                            'Callback Auto-Answer': queue.mediaSettings.callback.enableAutoAnswer,
+                        }
+                    };
+                });
+
+                const queueData = await Promise.all(queueDataPromises);
+                queues = queues.concat(queueData);
+
+                uri = data.nextUri ? `${getApiBaseUrl(region)}${data.nextUri}` : null;
+            } while (uri);
+
+            return queues;
+        }
+
+        async function fetchScriptName(scriptId) {
+            const uri = `${getApiBaseUrl(region)}/api/v2/scripts/${scriptId}`;
+            const response = await fetch(uri, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch Script Name: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            return data.name;
+        }
+
+        function s2ab(s) {
+            const buf = new ArrayBuffer(s.length);
+            const view = new Uint8Array(buf);
+            for (let i = 0; i < s.length; i++) view[i] = s.charCodeAt(i) & 0xFF;
+            return buf;
+        }
+
+        function goBack() {
+            window.history.back();
+        }
+
+        async function logout() {
+            const token = new URLSearchParams(window.location.search).get('token');
+            try {
+                const userResponse = await fetch(`${getApiBaseUrl(region)}/api/v2/users/me`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!userResponse.ok) {
+                    throw new Error(`Failed to fetch user info: ${userResponse.statusText}`);
+                }
+
+                const userData = await userResponse.json();
+                const userId = userData.id;
+
+                const deleteResponse = await fetch(`${getApiBaseUrl(region)}/api/v2/tokens/${userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!deleteResponse.ok) {
+                    throw new Error(`Failed to delete token: ${deleteResponse.statusText}`);
+                }
+
+                const url = new URL(window.location.href);
+                url.searchParams.delete('token');
+                window.location.href = url.toString();
+                window.location.href = 'index.html';
+            } catch (error) {
+                console.error('Logout failed:', error);
+                window.location.href = 'index.html';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            token = new URLSearchParams(window.location.search).get('token');
+            region = new URLSearchParams(window.location.search).get('region');
+        });
+    </script>
+</body>
+</html>
