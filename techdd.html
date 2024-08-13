@@ -289,56 +289,64 @@
         }
 
         async function fetchQueues(token) {
-            let queues = [];
-            let uri = `${getApiBaseUrl(region)}/api/v2/routing/queues?pageSize=500`;
+    let queues = [];
+    let uri = `${getApiBaseUrl(region)}/api/v2/routing/queues?pageSize=500`;
 
-            do {
-                const response = await fetch(uri, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
+    do {
+        const response = await fetch(uri, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        });
 
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch Queues: ${response.statusText}`);
-                }
-
-                const data = await response.json();
-                queues = queues.concat(data.entities.map(queue => ({
-                    'GENERAL': {
-                        'Queue Name': queue.name,
-                        'Division': queue.division.name,
-                        'After Call Work': queue.acwSettings.wrapupPrompt,
-                        'Enable Manual Assignment': queue.enableManualAssignment,
-                    },
-                    'Routing': {
-                        'Routing Method': queue.skillEvaluationMethod,
-                    },
-                    'Voice': {
-                        'Service Level': `${queue.mediaSettings.call.serviceLevel.percentage * 100}%`,
-                        'Service Level Target (Seconds)': queue.mediaSettings.call.serviceLevel.durationMs / 1000,
-                        'Calling Party Name': queue.callingPartyName,
-                        'Calling Party Number': queue.callingPartyNumber,
-                        'Alerting Timeout (Seconds)': queue.mediaSettings.call.alertingTimeoutSeconds,
-                        'In-queue Flow': queue.queueFlow.name,
-                        'Default Script': await fetchScriptName(queue.defaultScripts.CALL.id),
-                        'Whisper Audio': queue.autoAnswerOnly ? "Only play whisper audio if agent is configured for auto-answer" : "Play whisper audio for all agents",
-                        'Whisper Prompt': queue.whisperPrompt.name,
-                        'Voice Transcription': queue.enableTranscription,
-                        'Continue Voice Recording during Queue Wait': queue.suppressInQueueCallRecording,
-                    },
-                    'Callback': {
-                        'Callback Auto-Answer': queue.mediaSettings.callback.enableAutoAnswer,
-                    }
-                })));
-
-                uri = data.nextUri ? `${getApiBaseUrl(region)}${data.nextUri}` : null;
-            } while (uri);
-
-            return queues;
+        if (!response.ok) {
+            throw new Error(`Failed to fetch Queues: ${response.statusText}`);
         }
+
+        const data = await response.json();
+
+        // Handle asynchronous operations with Promise.all
+        const queueDataPromises = data.entities.map(async (queue) => {
+            const scriptName = queue.defaultScripts?.CALL?.id ? await fetchScriptName(queue.defaultScripts.CALL.id) : 'N/A';
+            return {
+                'GENERAL': {
+                    'Queue Name': queue.name,
+                    'Division': queue.division.name,
+                    'After Call Work': queue.acwSettings.wrapupPrompt,
+                    'Enable Manual Assignment': queue.enableManualAssignment,
+                },
+                'Routing': {
+                    'Routing Method': queue.skillEvaluationMethod,
+                },
+                'Voice': {
+                    'Service Level': `${queue.mediaSettings.call.serviceLevel.percentage * 100}%`,
+                    'Service Level Target (Seconds)': queue.mediaSettings.call.serviceLevel.durationMs / 1000,
+                    'Calling Party Name': queue.callingPartyName,
+                    'Calling Party Number': queue.callingPartyNumber,
+                    'Alerting Timeout (Seconds)': queue.mediaSettings.call.alertingTimeoutSeconds,
+                    'In-queue Flow': queue.queueFlow.name,
+                    'Default Script': scriptName,
+                    'Whisper Audio': queue.autoAnswerOnly ? "Only play whisper audio if agent is configured for auto-answer" : "Play whisper audio for all agents",
+                    'Whisper Prompt': queue.whisperPrompt?.name || 'N/A',
+                    'Voice Transcription': queue.enableTranscription,
+                    'Continue Voice Recording during Queue Wait': queue.suppressInQueueCallRecording,
+                },
+                'Callback': {
+                    'Callback Auto-Answer': queue.mediaSettings.callback.enableAutoAnswer,
+                }
+            };
+        });
+
+        const queueData = await Promise.all(queueDataPromises);
+        queues = queues.concat(queueData);
+
+        uri = data.nextUri ? `${getApiBaseUrl(region)}${data.nextUri}` : null;
+    } while (uri);
+
+    return queues;
+}
 
         async function fetchScriptName(scriptId) {
             const uri = `${getApiBaseUrl(region)}/api/v2/scripts/${scriptId}`;
