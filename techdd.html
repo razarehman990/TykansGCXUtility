@@ -208,6 +208,16 @@
 
         document.getElementById('generateBtn').addEventListener('click', generateDocument);
 
+        function logInfo(message) {
+    const outputTextArea = document.getElementById('output');
+    outputTextArea.value += `✅ ${message}\n`;
+}
+
+function logError(message) {
+    const outputTextArea = document.getElementById('output');
+    outputTextArea.value += `❌ ${message}\n`;
+}
+
         async function generateDocument() {
             const generateBtn = document.getElementById('generateBtn');
             const spinner = document.getElementById('spinner');
@@ -236,8 +246,6 @@
                 // Add Queues sheet
                 const wsQueues = XLSX.utils.json_to_sheet(queues);
                 XLSX.utils.book_append_sheet(wb, wsQueues, 'Queues');
-
-                // Add other sheets here
 
                 const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
                 const blob = new Blob([s2ab(wbout)], { type: 'application/octet-stream' });
@@ -289,64 +297,63 @@
         }
 
         async function fetchQueues(token) {
-    let queues = [];
-    let uri = `${getApiBaseUrl(region)}/api/v2/routing/queues?pageSize=500`;
+            let queues = [];
+            let uri = `${getApiBaseUrl(region)}/api/v2/routing/queues?pageSize=500`;
 
-    do {
-        const response = await fetch(uri, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            }
-        });
+            do {
+                const response = await fetch(uri, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
 
-        if (!response.ok) {
-            throw new Error(`Failed to fetch Queues: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-
-        // Handle asynchronous operations with Promise.all
-        const queueDataPromises = data.entities.map(async (queue) => {
-            const scriptName = queue.defaultScripts?.CALL?.id ? await fetchScriptName(queue.defaultScripts.CALL.id) : 'N/A';
-            return {
-                'GENERAL': {
-                    'Queue Name': queue.name,
-                    'Division': queue.division.name,
-                    'After Call Work': queue.acwSettings.wrapupPrompt,
-                    'Enable Manual Assignment': queue.enableManualAssignment,
-                },
-                'Routing': {
-                    'Routing Method': queue.skillEvaluationMethod,
-                },
-                'Voice': {
-                    'Service Level': `${queue.mediaSettings.call.serviceLevel.percentage * 100}%`,
-                    'Service Level Target (Seconds)': queue.mediaSettings.call.serviceLevel.durationMs / 1000,
-                    'Calling Party Name': queue.callingPartyName,
-                    'Calling Party Number': queue.callingPartyNumber,
-                    'Alerting Timeout (Seconds)': queue.mediaSettings.call.alertingTimeoutSeconds,
-                    'In-queue Flow': queue.queueFlow.name,
-                    'Default Script': scriptName,
-                    'Whisper Audio': queue.autoAnswerOnly ? "Only play whisper audio if agent is configured for auto-answer" : "Play whisper audio for all agents",
-                    'Whisper Prompt': queue.whisperPrompt?.name || 'N/A',
-                    'Voice Transcription': queue.enableTranscription,
-                    'Continue Voice Recording during Queue Wait': queue.suppressInQueueCallRecording,
-                },
-                'Callback': {
-                    'Callback Auto-Answer': queue.mediaSettings.callback.enableAutoAnswer,
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch Queues: ${response.statusText}`);
                 }
-            };
-        });
 
-        const queueData = await Promise.all(queueDataPromises);
-        queues = queues.concat(queueData);
+                const data = await response.json();
 
-        uri = data.nextUri ? `${getApiBaseUrl(region)}${data.nextUri}` : null;
-    } while (uri);
+                const queueDataPromises = data.entities.map(async (queue) => {
+                    const scriptName = queue.defaultScripts?.CALL?.id ? await fetchScriptName(queue.defaultScripts.CALL.id) : 'N/A';
+                    return {
+                        'GENERAL': {
+                            'Queue Name': queue.name,
+                            'Division': queue.division.name,
+                            'After Call Work': queue.acwSettings.wrapupPrompt,
+                            'Enable Manual Assignment': queue.enableManualAssignment,
+                        },
+                        'Routing': {
+                            'Routing Method': queue.skillEvaluationMethod,
+                        },
+                        'Voice': {
+                            'Service Level': `${queue.mediaSettings.call.serviceLevel.percentage * 100}%`,
+                            'Service Level Target (Seconds)': queue.mediaSettings.call.serviceLevel.durationMs / 1000,
+                            'Calling Party Name': queue.callingPartyName,
+                            'Calling Party Number': queue.callingPartyNumber,
+                            'Alerting Timeout (Seconds)': queue.mediaSettings.call.alertingTimeoutSeconds,
+                            'In-queue Flow': queue.queueFlow.name,
+                            'Default Script': scriptName,
+                            'Whisper Audio': queue.autoAnswerOnly ? "Only play whisper audio if agent is configured for auto-answer" : "Play whisper audio for all agents",
+                            'Whisper Prompt': queue.whisperPrompt?.name || 'N/A',
+                            'Voice Transcription': queue.enableTranscription,
+                            'Continue Voice Recording during Queue Wait': queue.suppressInQueueCallRecording,
+                        },
+                        'Callback': {
+                            'Callback Auto-Answer': queue.mediaSettings.callback.enableAutoAnswer,
+                        }
+                    };
+                });
 
-    return queues;
-}
+                const queueData = await Promise.all(queueDataPromises);
+                queues = queues.concat(queueData);
+
+                uri = data.nextUri ? `${getApiBaseUrl(region)}${data.nextUri}` : null;
+            } while (uri);
+
+            return queues;
+        }
 
         async function fetchScriptName(scriptId) {
             const uri = `${getApiBaseUrl(region)}/api/v2/scripts/${scriptId}`;
@@ -366,7 +373,56 @@
             return data.name;
         }
 
-        // Existing helper functions: logInfo, logError, s2ab, goBack, logout
+        function s2ab(s) {
+            const buf = new ArrayBuffer(s.length);
+            const view = new Uint8Array(buf);
+            for (let i = 0; i < s.length; i++) view[i] = s.charCodeAt(i) & 0xFF;
+            return buf;
+        }
+
+        function goBack() {
+            window.history.back();
+        }
+
+        async function logout() {
+            const token = new URLSearchParams(window.location.search).get('token');
+            try {
+                const userResponse = await fetch(`${getApiBaseUrl(region)}/api/v2/users/me`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!userResponse.ok) {
+                    throw new Error(`Failed to fetch user info: ${userResponse.statusText}`);
+                }
+
+                const userData = await userResponse.json();
+                const userId = userData.id;
+
+                const deleteResponse = await fetch(`${getApiBaseUrl(region)}/api/v2/tokens/${userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!deleteResponse.ok) {
+                    throw new Error(`Failed to delete token: ${deleteResponse.statusText}`);
+                }
+
+                const url = new URL(window.location.href);
+                url.searchParams.delete('token');
+                window.location.href = url.toString();
+                window.location.href = 'index.html';
+            } catch (error) {
+                console.error('Logout failed:', error);
+                window.location.href = 'index.html';
+            }
+        }
 
         document.addEventListener('DOMContentLoaded', () => {
             token = new URLSearchParams(window.location.search).get('token');
