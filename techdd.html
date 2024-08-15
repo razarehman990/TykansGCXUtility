@@ -244,8 +244,62 @@ async function generateDocument() {
         // Create the Excel file
         const wb = XLSX.utils.book_new();
 
-        const wsArchitectFlows = XLSX.utils.json_to_sheet(architectFlows);
+        const wsArchitectFlows = XLSX.utils.json_to_sheet(architectFlows, { skipHeader: true });
         XLSX.utils.book_append_sheet(wb, wsArchitectFlows, 'Architect Flows');
+
+        // Add data from row 7 onwards
+        XLSX.utils.sheet_add_json(wsArchitectFlows, architectFlows, { origin: 'A7', skipHeader: false });
+
+        // Fill the top 4 rows with #141b61 color and merge cells from A to D
+        for (let row = 1; row <= 4; row++) {
+            for (let col = 0; col <= 3; col++) {
+                const cell = XLSX.utils.encode_cell({ r: row - 1, c: col });
+                wsArchitectFlows[cell] = wsArchitectFlows[cell] || {};
+                wsArchitectFlows[cell].s = {
+                    fill: { fgColor: { rgb: "141b61" } },
+                    font: { color: { rgb: "FFFFFF" } },
+                    alignment: { horizontal: "center", vertical: "center" }
+                };
+            }
+            if (row === 1) wsArchitectFlows['!merges'] = wsArchitectFlows['!merges'] || [];
+            wsArchitectFlows['!merges'].push({ s: { r: row - 1, c: 0 }, e: { r: row - 1, c: 3 } });
+        }
+
+        // Fill row 5 with #8da6d4 color, merge cells, and write "GENESYS ARCHITECT FLOWS" in white text
+        for (let col = 0; col <= 3; col++) {
+            const cell = XLSX.utils.encode_cell({ r: 4, c: col });
+            wsArchitectFlows[cell] = wsArchitectFlows[cell] || {};
+            wsArchitectFlows[cell].s = {
+                fill: { fgColor: { rgb: "8da6d4" } },
+                font: { color: { rgb: "FFFFFF" }, bold: true },
+                alignment: { horizontal: "center", vertical: "center" }
+            };
+            if (col === 0) wsArchitectFlows['!merges'].push({ s: { r: 4, c: 0 }, e: { r: 4, c: 3 } });
+        }
+        wsArchitectFlows['A5'].v = "GENESYS ARCHITECT FLOWS";
+
+        // Fill row 6 with #8da6d4 color, keeping column names with white text
+        for (let col = 0; col <= 3; col++) {
+            const cell = XLSX.utils.encode_cell({ r: 5, c: col });
+            wsArchitectFlows[cell] = wsArchitectFlows[cell] || {};
+            wsArchitectFlows[cell].s = {
+                fill: { fgColor: { rgb: "8da6d4" } },
+                font: { color: { rgb: "FFFFFF" }, bold: true },
+                alignment: { horizontal: "center", vertical: "center" }
+            };
+        }
+
+        // Add the logo to the top 4 rows
+        // The following code assumes you are using a third-party library or plugin that supports adding images to Excel
+        // Place the logo slightly to the left, at the position (col, row) => (0, 0)
+        // Adjust the positioning based on your requirement
+
+        const logoPath = '/mnt/data/image.png';
+        XLSX.utils.sheet_add_image(wsArchitectFlows, {
+            image: logoPath,
+            position: { type: 'twoCellAnchor', from: { row: 0, col: 0 }, to: { row: 4, col: 3 } },
+            options: { editAs: 'oneCell', altText: 'Tykans Logo' }
+        });
 
         const wsQueues = XLSX.utils.json_to_sheet(queues);
         XLSX.utils.book_append_sheet(wb, wsQueues, 'Queues');
@@ -256,7 +310,7 @@ async function generateDocument() {
         const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
         const blob = new Blob([s2ab(wbout)], { type: 'application/octet-stream' });
 
-        saveAs(blob, 'GeneratedDocument.xlsx');
+        saveAs(blob, 'GCXUtility_Design_Document.xlsx');
         logInfo('Document generation completed successfully.');
     } catch (error) {
         const errorMessage = `Error: ${error.message}`;
