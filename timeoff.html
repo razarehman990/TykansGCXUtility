@@ -465,7 +465,8 @@
         if (response.ok) {
             return response;
         } else if (response.status === 429) {
-            const retryAfter = parseInt(response.headers.get('Retry-After') || '40', 10); // Default to 40 seconds if not provided
+            const errorResponse = await response.json();
+            const retryAfter = parseInt(errorResponse.message.match(/\[([0-9]+)\]/)[1], 10); // Extract retry time from the message
             console.warn(`Rate limit exceeded. Retrying after ${retryAfter} seconds...`);
             await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
         } else {
@@ -669,6 +670,12 @@ async function executeImport(rows) {
                         const warningMessage = `⚠️ Overlapping time-off request for agent ${row.AgentName}: ${errorResponse.message}`;
                         console.warn(warningMessage);
                         outputTextArea.value += `${warningMessage}\n`;
+                    } else if (response.status === 429) {
+                        // Handle rate limit error
+                        const retryAfter = parseInt(errorResponse.message.match(/\[([0-9]+)\]/)[1], 10); // Extract retry time from the message
+                        console.warn(`Rate limit exceeded. Retrying after ${retryAfter} seconds...`);
+                        await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+                        i--; // Retry the same row after waiting
                     } else {
                         const errorMessage = `Error importing time-off request for agent ${row.AgentName}: ${response.statusText}: ${errorResponse.message}`;
                         console.error(errorMessage);
