@@ -583,54 +583,74 @@ async function executeImport(rows) {
 
             console.log('Sending API request with body:', requestBody);
 
-            try {
-                if (row['Use Estimated Payable Mins'] === true) {
-                    let estimateRequestBody = {
-                        activityCodeId: row.ActivityCodeId
-                    };
+            while (true) {
+                try {
+                    if (row['Use Estimated Payable Mins'] === true) {
+                        let estimateRequestBody = {
+                            activityCodeId: row.ActivityCodeId
+                        };
 
-                    if (row.Type === 'F') {
-                        estimateRequestBody.fullDayDates = dates.map((date, index) => ({
-                            date: handleDateFormat(date),
-                            requestedDurationMinutes: parseDuration(row.Duration)[index]
-                        }));
-                    } else if (row.Type === 'P') {
-                        estimateRequestBody.partialDayDates = dates.map((date, index) => ({
-                            date: date.endsWith('Z') ? date : convertToUTC(date, row.Timezone),
-                            requestedDurationMinutes: parseDuration(row.Duration)[index]
-                        }));
-                    }
-
-                    // Fetch countsAsPaidTime from the activity code API
-                    const activityCodeResponse = await fetch(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits/${row.BusinessUnitId}/activitycodes/${row.ActivityCodeId}`, {
-                        method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
+                        if (row.Type === 'F') {
+                            estimateRequestBody.fullDayDates = dates.map((date, index) => ({
+                                date: handleDateFormat(date),
+                                requestedDurationMinutes: parseDuration(row.Duration)[index]
+                            }));
+                        } else if (row.Type === 'P') {
+                            estimateRequestBody.partialDayDates = dates.map((date, index) => ({
+                                date: date.endsWith('Z') ? date : convertToUTC(date, row.Timezone),
+                                requestedDurationMinutes: parseDuration(row.Duration)[index]
+                            }));
                         }
-                    });
 
-                    if (!activityCodeResponse.ok) {
-                        const errorResponse = await activityCodeResponse.json();
-                        const errorMessage = `Error fetching activity code details for agent ${row.AgentName}: ${activityCodeResponse.statusText}: ${errorResponse.message}`;
-                        console.error(errorMessage);
-                        outputTextArea.value += `❌ ${errorMessage}\n`;
-                        continue;
-                    }
+                        // Fetch countsAsPaidTime from the activity code API
+                        const activityCodeResponse = await fetch(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/businessunits/${row.BusinessUnitId}/activitycodes/${row.ActivityCodeId}`, {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
 
-                    const activityCodeData = await activityCodeResponse.json();
-                    estimateRequestBody.paid = activityCodeData.countsAsPaidTime;
+                        if (activityCodeResponse.status === 429) {
+                            const errorResponse = await activityCodeResponse.json();
+                            const retryAfter = parseInt(errorResponse.message.match(/\[([0-9]+)\]/)[1], 10); // Extract retry time from the message
+                            console.warn(`Rate limit exceeded. Retrying after ${retryAfter} seconds...`);
+                            await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+                            continue; // Retry the current request
+                        } else if (!activityCodeResponse.ok) {
+                            const errorResponse = await activityCodeResponse.json();
+                            const errorMessage = `Error fetching activity code details for agent ${row.AgentName}: ${activityCodeResponse.statusText}: ${errorResponse.message}`;
+                            console.error(errorMessage);
+                            outputTextArea.value += `❌ ${errorMessage}\n`;
+                            throw new Error(errorMessage); // Halt the process
+                        }
 
-                    const estimateResponse = await fetch(`https://apps.cac1.pure.cloud/platform/api/v2/workforcemanagement/managementunits/${row.ManagementUnitId}/users/${row.AgentId}/timeoffrequests/estimate`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify(estimateRequestBody)
-                    });
+                        const activityCodeData = await activityCodeResponse.json();
+                        estimateRequestBody.paid = activityCodeData.countsAsPaidTime;
 
-                    if (estimateResponse.ok) {
+                        const estimateResponse = await fetch(`https://apps.cac1.pure.cloud/platform/api/v2/workforcemanagement/managementunits/${row.ManagementUnitId}/users/${row.AgentId}/timeoffrequests/estimate`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify(estimateRequestBody)
+                        });
+
+                        if (estimateResponse.status === 429) {
+                            const errorResponse = await estimateResponse.json();
+                            const retryAfter = parseInt(errorResponse.message.match(/\[([0-9]+)\]/)[1], 10); // Extract retry time from the message
+                            console.warn(`Rate limit exceeded. Retrying after ${retryAfter} seconds...`);
+                            await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+                            continue; // Retry the current request
+                        } else if (!estimateResponse.ok) {
+                            const errorResponse = await estimateResponse.json();
+                            const errorMessage = `Error estimating payable minutes for agent ${row.AgentName}: ${estimateResponse.statusText}: ${errorResponse.message}`;
+                            console.error(errorMessage);
+                            outputTextArea.value += `❌ ${errorMessage}\n`;
+                            throw new Error(errorMessage); // Halt the process
+                        }
+
                         const estimateData = await estimateResponse.json();
                         if (row.Type === 'P') {
                             requestBody.payableMinutes = estimateData.partialDayDates.map(date => date.payableMinutes);
@@ -638,55 +658,52 @@ async function executeImport(rows) {
                             requestBody.payableMinutes = estimateData.fullDayDates.map(date => date.payableMinutes);
                         }
                     } else {
-                        const errorResponse = await estimateResponse.json();
-                        const errorMessage = `Error estimating payable minutes for agent ${row.AgentName}: ${estimateResponse.statusText}: ${errorResponse.message}`;
-                        console.error(errorMessage);
-                        outputTextArea.value += `❌ ${errorMessage}\n`;
-                        continue;
+                        // Directly set payableMinutes from the "Payable Minutes" column if "Use Estimated Payable Mins" is false
+                        requestBody.payableMinutes = parseDuration(row['Payable Minutes']);
                     }
-		} else {
-                    // Directly set payableMinutes from the "Payable Minutes" column if "Use Estimated Payable Mins" is false
-                    requestBody.payableMinutes = parseDuration(row['Payable Minutes']);
-                }
 
-                const response = await fetch(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/managementunits/${row.ManagementUnitId}/timeoffrequests`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(requestBody)
-                });
+                    const response = await fetch(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/managementunits/${row.ManagementUnitId}/timeoffrequests`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(requestBody)
+                    });
 
-                if (response.ok) {
-                    const successMessage = `✅ Successfully imported time-off request for agent ${row.AgentName}.`;
-                    console.log(successMessage);
-                    outputTextArea.value += `${successMessage}\n`;
-                } else {
-                    const errorResponse = await response.json();
-                    
-                    // Check if the error is the specific overlapping time-off error
-                    if (errorResponse.code === 'wfm.validation.failure' && errorResponse.message.includes('overlaps with existing time off requests')) {
-                        const warningMessage = `⚠️ Overlapping time-off request for agent ${row.AgentName}: ${errorResponse.message}`;
-                        console.warn(warningMessage);
-                        outputTextArea.value += `${warningMessage}\n`;
-                    } else if (response.status === 429) {
-                        // Handle rate limit error
+                    if (response.status === 429) {
+                        const errorResponse = await response.json();
                         const retryAfter = parseInt(errorResponse.message.match(/\[([0-9]+)\]/)[1], 10); // Extract retry time from the message
                         console.warn(`Rate limit exceeded. Retrying after ${retryAfter} seconds...`);
                         await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
-                        i--; // Retry the same row after waiting
+                        continue; // Retry the current request
+                    } else if (response.ok) {
+                        const successMessage = `✅ Successfully imported time-off request for agent ${row.AgentName}.`;
+                        console.log(successMessage);
+                        outputTextArea.value += `${successMessage}\n`;
+                        break; // Exit the while loop and proceed to the next row
                     } else {
-                        const errorMessage = `Error importing time-off request for agent ${row.AgentName}: ${response.statusText}: ${errorResponse.message}`;
-                        console.error(errorMessage);
-                        outputTextArea.value += `❌ ${errorMessage}\n`;
-                        throw new Error(errorMessage); // Halt the process for any other errors
+                        const errorResponse = await response.json();
+
+                        // Check if the error is the specific overlapping time-off error
+                        if (errorResponse.code === 'wfm.validation.failure' && errorResponse.message.includes('overlaps with existing time off requests')) {
+                            const warningMessage = `⚠️ Overlapping time-off request for agent ${row.AgentName}: ${errorResponse.message}`;
+                            console.warn(warningMessage);
+                            outputTextArea.value += `${warningMessage}\n`;
+                            break; // Continue to the next row
+                        } else {
+                            const errorMessage = `Error importing time-off request for agent ${row.AgentName}: ${response.statusText}: ${errorResponse.message}`;
+                            console.error(errorMessage);
+                            outputTextArea.value += `❌ ${errorMessage}\n`;
+                            throw new Error(errorMessage); // Halt the process for any other errors
+                        }
                     }
+                } catch (error) {
+                    const errorMessage = `Error: ${error.message}`;
+                    console.error(errorMessage);
+                    outputTextArea.value += `❌ ${errorMessage}\n`;
+                    throw error; // Halt the process on any unexpected error
                 }
-            } catch (error) {
-                const errorMessage = `Error: ${error.message}`;
-                console.error(errorMessage);
-                outputTextArea.value += `❌ ${errorMessage}\n`;
             }
         }
     }
