@@ -497,9 +497,9 @@
                         if (row['Use Estimated Payable Mins'] !== true && row['Use Estimated Payable Mins'] !== false) {
                             validationErrors.push(`Invalid value in "Use Estimated Payable Mins" column for Agent ${row.AgentName}. Accepted values are TRUE or FALSE.`);
                         }
-                        if (row['Use Estimated Payable Mins'] === true && row['Payable Minutes'] !== '') {
-                            validationErrors.push(`"Payable Minutes" should be empty when "Use Estimated Payable Mins" is TRUE for Agent ${row.AgentName}.`);
-                        }
+			if (row['Use Estimated Payable Mins'] === true && (row['Payable Minutes'] !== '' && row['Payable Minutes'] !== null && row['Payable Minutes'] !== undefined)) {
+			    validationErrors.push(`"Payable Minutes" should be empty when "Use Estimated Payable Mins" is TRUE for Agent ${row.AgentName}.`);
+			}
                         if (row['Use Estimated Payable Mins'] === false && row['Payable Minutes'] === '') {
                             validationErrors.push(`"Payable Minutes" should not be empty when "Use Estimated Payable Mins" is FALSE for Agent ${row.AgentName}.`);
                         }
@@ -634,6 +634,9 @@ async function executeImport(rows) {
                         outputTextArea.value += `❌ ${errorMessage}\n`;
                         continue;
                     }
+		} else {
+                    // Directly set payableMinutes from the "Payable Minutes" column if "Use Estimated Payable Mins" is false
+                    requestBody.payableMinutes = parseDuration(row['Payable Minutes']);
                 }
 
                 const response = await fetch(`https://api.cac1.pure.cloud/api/v2/workforcemanagement/managementunits/${row.ManagementUnitId}/timeoffrequests`, {
