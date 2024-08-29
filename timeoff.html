@@ -469,11 +469,18 @@
             console.warn(`Rate limit exceeded. Retrying after ${retryAfter} seconds...`);
             await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
         } else {
-            // Halt the process on other errors
+            // Halt the process on other errors, except for the specific overlapping time-off error
             const errorResponse = await response.json();
-            const errorMessage = `Request failed with status ${response.status}: ${response.statusText}: ${errorResponse.message}`;
-            console.error(errorMessage);
-            throw new Error(errorMessage); // Throw an error to halt the import process
+
+            // Check if the error is the specific overlapping time-off error
+            if (errorResponse.code === 'wfm.validation.failure' && errorResponse.message.includes('overlaps with existing time off requests')) {
+                console.warn(`Overlapping time-off request: ${errorResponse.message}`);
+                return response; // Continue the process
+            } else {
+                const errorMessage = `Request failed with status ${response.status}: ${response.statusText}: ${errorResponse.message}`;
+                console.error(errorMessage);
+                throw new Error(errorMessage); // Throw an error to halt the import process
+            }
         }
     }
     throw new Error('Max retries reached. Aborting process.'); // Abort if all retries are exhausted
@@ -656,9 +663,18 @@ async function executeImport(rows) {
                     outputTextArea.value += `${successMessage}\n`;
                 } else {
                     const errorResponse = await response.json();
-                    const errorMessage = `Error importing time-off request for agent ${row.AgentName}: ${response.statusText}: ${errorResponse.message}`;
-                    console.error(errorMessage);
-                    outputTextArea.value += `❌ ${errorMessage}\n`;
+                    
+                    // Check if the error is the specific overlapping time-off error
+                    if (errorResponse.code === 'wfm.validation.failure' && errorResponse.message.includes('overlaps with existing time off requests')) {
+                        const warningMessage = `⚠️ Overlapping time-off request for agent ${row.AgentName}: ${errorResponse.message}`;
+                        console.warn(warningMessage);
+                        outputTextArea.value += `${warningMessage}\n`;
+                    } else {
+                        const errorMessage = `Error importing time-off request for agent ${row.AgentName}: ${response.statusText}: ${errorResponse.message}`;
+                        console.error(errorMessage);
+                        outputTextArea.value += `❌ ${errorMessage}\n`;
+                        throw new Error(errorMessage); // Halt the process for any other errors
+                    }
                 }
             } catch (error) {
                 const errorMessage = `Error: ${error.message}`;
