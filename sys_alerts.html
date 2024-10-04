@@ -15,15 +15,15 @@
         }
 
         #header {
-            margin-top: 20px; /* Margin for spacing */
+            margin-top: 20px;
         }
 
         #logo {
-            height: 80px; /* Set logo height */
+            height: 80px;
         }
 
         .container {
-            margin-top: 50px; /* Space for container */
+            margin-top: 50px;
         }
 
         .button {
@@ -88,7 +88,7 @@
 </head>
 <body>
     <div id="header">
-        <img id="logo" src="https://www.tykans.com/hs-fs/hubfs/Tykans%20-header-logo.png" alt="Tykans Logo">
+        <img id="logo" src="https://www.tykans.com/hs-fs/hubfs/Tykans_June2023/Images/Tykans%20-header-logo.png" alt="Tykans Logo">
         <h1>System Alerts</h1>
     </div>
     <div class="container">
@@ -105,20 +105,34 @@
         })();
 
         function getAccessToken() {
-            const token = new URLSearchParams(window.location.search).get('token');
-            return token;
+            const params = new URLSearchParams(window.location.search);
+            return params.get('token');
+        }
+
+        function getRegion() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('region');
         }
 
         async function subscribeToEdgeUpdates() {
             const token = getAccessToken();
+            const region = getRegion();
+
             if (!token) {
                 alert('Token not found in the URL!');
                 return;
             }
 
+            if (!region) {
+                alert('Region not found in the URL!');
+                return;
+            }
+
+            const apiEndpoint = `https://api.${region}/api/v2/notifications/channels`;
+
             try {
                 // Create a notification channel
-                const response = await fetch('https://api.mypurecloud.com/api/v2/notifications/channels', {
+                const response = await fetch(apiEndpoint, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -136,7 +150,7 @@
 
                 ws.onopen = () => {
                     console.log('WebSocket connection opened');
-                    subscribeToEdgeTopic(channelData.id, token);
+                    subscribeToEdgeTopic(channelData.id, token, region);
                 };
 
                 ws.onmessage = (event) => {
@@ -152,10 +166,10 @@
             }
         }
 
-        async function subscribeToEdgeTopic(channelId, token) {
+        async function subscribeToEdgeTopic(channelId, token, region) {
             const edgeTopic = 'v2.telephony.providers.edges';
+            const subscribeUrl = `https://api.${region}/api/v2/notifications/channels/${channelId}/subscriptions`;
 
-            const subscribeUrl = `https://api.mypurecloud.com/api/v2/notifications/channels/${channelId}/subscriptions`;
             const response = await fetch(subscribeUrl, {
                 method: 'PUT',
                 headers: {
@@ -174,13 +188,13 @@
 
         function sendEmailNotification(edgeStatus) {
             const emailParams = {
-                from_name: 'Tykans GCX System Alerts',
+                from_name: 'System Alerts',
                 to_name: 'Raza Ur Rehman',
-                message: `Genesys Edge status changed: ${JSON.stringify(edgeStatus, null, 2)}`,
+                message: `Edge status changed: ${JSON.stringify(edgeStatus, null, 2)}`,
                 to_email: 'raza.rehman@tykans.com'
             };
 
-            emailjs.send('service_otrz9v8', 'bcq4x1u', emailParams)
+            emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', emailParams)
                 .then((response) => {
                     console.log('Email sent successfully:', response.status);
                 }, (error) => {
@@ -194,9 +208,11 @@
 
         async function logout() {
             const token = getAccessToken();
+            const region = getRegion();
+
             try {
                 // Step 1: Get user ID
-                const userResponse = await fetch('https://api.mypurecloud.com/api/v2/users/me', {
+                const userResponse = await fetch(`https://api.${region}/api/v2/users/me`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -212,7 +228,7 @@
                 const userId = userData.id;
 
                 // Step 2: Delete token
-                const deleteResponse = await fetch(`https://api.mypurecloud.com/api/v2/tokens/${userId}`, {
+                const deleteResponse = await fetch(`https://api.${region}/api/v2/tokens/${userId}`, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json',
