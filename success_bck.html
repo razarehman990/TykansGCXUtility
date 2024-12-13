@@ -149,26 +149,24 @@
         <input type="text" class="search-bar" id="searchInput" placeholder="Search...">
         <!-- Button list -->
         <ul class="button-list">
-            <li><button onclick="window.location.href='oauth.html'">OAuth</button></li>
-            <li><button onclick="window.location.href='division.html'">Division</button></li>
-            <li><button onclick="window.location.href='flow.html'">Flow Outcome/Milestones</button></li>
-            <li><button onclick="window.location.href='wrapupup.html'">Wrap-up Codes</button></li>
-            <li><button onclick="window.location.href='schedules.html'">Schedule Groups/Schedules</button></li>
-            <li><button onclick="window.location.href='callrouting.html'">Call Routing</button></li>
-            <li><button>Architect Flows</button></li>
-            <li><button>Data Actions</button></li>
-            <li><button>Data Tables</button></li>
-            <li><button>Flow Milestone</button></li>
-            <li><button>Flow Outcome</button></li>
-            <li><button>Integrations</button></li>
-            <li><button>Prompts</button></li>
-            <li><button>Queues</button></li>
-            <li><button>Roles</button></li>
-            <li><button>Scripts</button></li>
-            <li><button id="rolesPermissionsBtn">Roles/Permissions</button></li>
-            <li><button id="workplanBtn">Workplan</button></li>
-            <li><button id="timeOffBtn">Time-Off</button></li>
-            <li><button id="documentationBtn">Documentation</button></li>
+			<li><button onclick="navigateTo('oauth.html')">OAuth</button></li>
+            <li><button onclick="navigateTo('divisions.html')">Divisions</button></li>
+            <li><button onclick="navigateTo('flow.html')">Flow Outcome/Milestones</button></li>
+            <li><button onclick="navigateTo('wrapup.html')">Wrap-up Codes</button></li>
+            <li><button onclick="navigateTo('schedules.html')">Schedule Groups/Schedules</button></li>
+            <li><button onclick="navigateTo('callrouting.html')">Call Routing</button></li>
+	    <li><button onclick="navigateTo('architect.html')">Architect Flows</button></li>
+	    <li><button onclick="navigateTo('dataactions.html')">Data Actions</button></li>
+	    <li><button onclick="navigateTo('datatables.html')">Data Tables</button></li>
+	    <li><button onclick="navigateTo('integrations.html')">Integrations</button></li>
+	    <li><button onclick="navigateTo('prompts.html')">Prompts</button></li>
+	    <li><button onclick="navigateTo('queues.html')">Queues</button></li>
+	    <li><button onclick="navigateTo('scripts.html')">Scripts</button></li>
+            <li><button onclick="navigateTo('roles.html')">Roles/Permissions</button></li>
+            <li><button onclick="navigateTo('workplan.html')">Workplan</button></li>
+            <li><button onclick="navigateTo('timeoff.html')">Time-Off</button></li>
+            <li><button onclick="navigateTo('techdd.html')">Documentation</button></li>
+	    <li><button onclick="navigateTo('sys_alerts.html')">System Alerts</button></li>
         </ul>
     </div>
 
@@ -187,41 +185,21 @@
             });
         });
 
-        // Redirect to prompts.html with token when Prompts button is clicked
-        document.querySelector('.button-list li:nth-child(7) button').addEventListener('click', function() {
-            const token = new URLSearchParams(window.location.search).get('token');
-            window.location.href = `prompts.html?token=${token}`;
-        });
-
-        // Redirect to roles.html with token when Roles/Permissions button is clicked
-        document.getElementById('rolesPermissionsBtn').addEventListener('click', function() {
-            const token = new URLSearchParams(window.location.search).get('token');
-            window.location.href = `roles.html?token=${token}`;
-        });
-
-        // Redirect to workplan.html with token when Workplan button is clicked
-        document.getElementById('workplanBtn').addEventListener('click', function() {
-            const token = new URLSearchParams(window.location.search).get('token');
-            window.location.href = `workplan.html?token=${token}`;
-        });
-
-        // Redirect to timeoff.html with token when Time-Off button is clicked
-        document.getElementById('timeOffBtn').addEventListener('click', function() {
-            const token = new URLSearchParams(window.location.search).get('token');
-            window.location.href = `timeoff.html?token=${token}`;
-        });
-
-        // Redirect to techdd.html with token when Documentation button is clicked
-        document.getElementById('documentationBtn').addEventListener('click', function() {
-            const token = new URLSearchParams(window.location.search).get('token');
-            window.location.href = `techdd.html?token=${token}`;
-        });
+        // Function to navigate with the region parameter
+        function navigateTo(page) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            const region = urlParams.get('region');
+            window.location.href = `${page}?token=${token}&region=${region}`;
+        }
 
         async function logout() {
-            const token = new URLSearchParams(window.location.search).get('token');
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            const region = urlParams.get('region');
             try {
                 // Step 1: Get user ID
-                const userResponse = await fetch('https://api.cac1.pure.cloud/api/v2/users/me', {
+                const userResponse = await fetch(`https://api.${region}/api/v2/users/me`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -237,7 +215,7 @@
                 const userId = userData.id;
 
                 // Step 2: Delete token
-                const deleteResponse = await fetch(`https://api.cac1.pure.cloud/api/v2/tokens/${userId}`, {
+                const deleteResponse = await fetch(`https://api.${region}/api/v2/tokens/${userId}`, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json',
