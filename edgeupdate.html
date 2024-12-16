@@ -1,1 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edge Update</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #fff;
+            color: #0F3057;
+            text-align: center;
+        }
 
+        .top-bar {
+            width: 100%;
+            height: 100px;
+            background-color: #f3f3f3;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo {
+            height: 80px;
+        }
+
+        .back-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            background-color: #0F3057;
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .back-button:hover {
+            background-color: #fff;
+            color: #0F3057;
+            border: 2px solid #0F3057;
+        }
+
+        .logout-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background-color: #0F3057;
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logout-button:hover {
+            background-color: red;
+            color: #fff;
+        }
+
+        .container {
+            margin-top: 150px;
+        }
+
+        .button {
+            margin: 20px;
+            padding: 15px 30px;
+            background-color: #0F3057;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        .button:hover {
+            background-color: #fff;
+            color: #0F3057;
+            border: 2px solid #0F3057;
+        }
+
+        #output-container {
+            position: relative;
+            width: 80%;
+            margin: 20px auto;
+            text-align: left;
+        }
+
+        #output {
+            width: 100%;
+            min-height: 300px;
+            display: block;
+            overflow-x: auto;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
+
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(15, 48, 87, 0.3);
+            border-radius: 50%;
+            border-top-color: #0F3057;
+            animation: spin 1s ease-in-out infinite;
+            position: relative;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <img class="logo" src="https://www.tykans.com/hs-fs/hubfs/Tykans_June2023/Images/Tykans%20-header-logo.png" alt="Tykans Logo">
+        <button class="back-button" onclick="history.back()">&#x2190;</button>
+        <button class="logout-button" onclick="logout()">&#x2715;</button>
+    </div>
+
+    <div class="container">
+        <h1>Edge Update</h1>
+        <div id="output-container">
+            <textarea id="output" readonly placeholder="Logs will appear here..."></textarea>
+        </div>
+        <div class="button-container">
+            <button class="button" id="initiateEdgeUpdate">Initiate Edge Update</button>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('initiateEdgeUpdate').addEventListener('click', initiateEdgeUpdate);
+
+        async function initiateEdgeUpdate() {
+            const output = document.getElementById('output');
+            const token = new URLSearchParams(window.location.search).get('token');
+            const region = new URLSearchParams(window.location.search).get('region');
+
+            output.value = 'Fetching active conversations...\n';
+
+            try {
+                const response = await fetch(`https://api.${region}/api/v2/conversations/calls`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch conversations: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                const calls = data.entities;
+                output.value += `Fetched ${calls.length} active conversations.\n`;
+
+                for (const call of calls) {
+                    const customerParticipant = call.participants.find(p => p.purpose === 'customer');
+
+                    if (customerParticipant) {
+                        output.value += `Processing conversation ID: ${call.id}, Participant ID: ${customerParticipant.id}\n`;
+                        await transferCall(call.id, customerParticipant.id);
+                    } else {
+                        output.value += `Skipping conversation ID: ${call.id} (No customer participant found).\n`;
+                    }
+                }
+            } catch (error) {
+                output.value += `Error: ${error.message}\n`;
+            }
+        }
+
+        async function transferCall(conversationId, participantId) {
+            const output = document.getElementById('output');
+            const token = new URLSearchParams(window.location.search).get('token');
+            const region = new URLSearchParams(window.location.search).get('region');
+
+            const transferPayload = {
+                transferType: 'Attended',
+                address: '+14037023238'
+            };
+
+            try {
+                const response = await fetch(`https://api.${region}/api/v2/conversations/calls/${conversationId}/participants/${participantId}/replace`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(transferPayload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Transfer failed for conversation ${conversationId}: ${response.statusText}`);
+                }
+
+                output.value += `Conversation ${conversationId} successfully transferred.\n`;
+            } catch (error) {
+                output.value += `Error transferring conversation ${conversationId}: ${error.message}\n`;
+            }
+        }
+
+        function logout() {
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>
