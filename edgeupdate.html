@@ -114,6 +114,25 @@
             padding: 10px;
             background-color: #f9f9f9;
         }
+
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(15, 48, 87, 0.3);
+            border-radius: 50%;
+            border-top-color: #0F3057;
+            animation: spin 1s ease-in-out infinite;
+            position: relative;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
     </style>
 </head>
 <body>
@@ -134,68 +153,20 @@
     </div>
 
     <script>
-        document.getElementById('initiateEdgeUpdate').addEventListener('click', async () => {
-            const output = document.getElementById('output');
-            output.value += "Initiate Edge Update button clicked.\n";
-
-            try {
-                const requiredScopes = ['conversations:readonly', 'conversations'];
-                output.value += "Verifying required scopes...\n";
-
-                const hasScopes = await verifyScopes(requiredScopes);
-
-                if (!hasScopes) {
-                    output.value += "Error: Missing required scopes. Please contact your administrator.\n";
-                    alert('Missing required scopes. Please contact your administrator.');
-                    return;
-                }
-
-                output.value += "Scopes verified. Proceeding to initiate edge update...\n";
-                await initiateEdgeUpdate();
-            } catch (error) {
-                output.value += `Unexpected error: ${error.message}\n`;
-                console.error(error);
-            }
-        });
-
-        async function verifyScopes(requiredScopes) {
-            const token = new URLSearchParams(window.location.search).get('token');
-            const region = new URLSearchParams(window.location.search).get('region');
-
-            try {
-                const response = await fetch(`https://api.${region}/api/v2/tokens/me`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to verify token scopes.');
-                }
-
-                const data = await response.json();
-                const grantedScopes = data.scope.split(' ');
-                console.log("Granted Scopes:", grantedScopes);
-
-                return requiredScopes.every(scope => grantedScopes.includes(scope));
-            } catch (error) {
-                console.error('Error verifying token scopes:', error);
-                return false;
-            }
-        }
+        document.getElementById('initiateEdgeUpdate').addEventListener('click', initiateEdgeUpdate);
 
         async function initiateEdgeUpdate() {
             const output = document.getElementById('output');
             const token = new URLSearchParams(window.location.search).get('token');
             const region = new URLSearchParams(window.location.search).get('region');
 
-            output.value += 'Fetching active conversations...\n';
+            output.value = 'Fetching active conversations...\n';
 
             try {
                 const response = await fetch(`https://api.${region}/api/v2/conversations/calls`, {
                     method: 'GET',
                     headers: {
+                        'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     }
                 });
@@ -237,8 +208,8 @@
                 const response = await fetch(`https://api.${region}/api/v2/conversations/calls/${conversationId}/participants/${participantId}/replace`, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify(transferPayload)
                 });
@@ -251,6 +222,10 @@
             } catch (error) {
                 output.value += `Error transferring conversation ${conversationId}: ${error.message}\n`;
             }
+        }
+
+        function logout() {
+            window.location.href = 'index.html';
         }
     </script>
 </body>
