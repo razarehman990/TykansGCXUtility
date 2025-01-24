@@ -1,1 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Conversations</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #fff;
+            color: #0F3057;
+            text-align: center;
+        }
 
+        .container {
+            margin-top: 150px;
+        }
+
+        .button {
+            margin: 20px;
+            padding: 15px 30px;
+            background-color: #0F3057;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        .button:hover {
+            background-color: #fff;
+            color: #0F3057;
+            border: 2px solid #0F3057;
+        }
+
+        .log-box {
+            width: 80%;
+            min-height: 100px;
+            display: block;
+            overflow-x: auto;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 20px auto;
+            text-align: left;
+        }
+
+        .back-button, .logout-button {
+            position: absolute;
+            top: 10px;
+            width: 40px;
+            height: 40px;
+            background-color: #0F3057;
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .back-button {
+            left: 10px;
+        }
+
+        .back-button:hover {
+            background-color: #fff;
+            color: #0F3057;
+            border: 2px solid #0F3057;
+        }
+
+        .logout-button {
+            right: 10px;
+        }
+
+        .logout-button:hover {
+            background-color: red;
+            color: #fff;
+        }
+
+        #header img {
+            width: 200px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <img id="logo" src="https://www.tykans.com/hs-fs/hubfs/Tykans_June2023/Images/Tykans%20-header-logo.png" alt="Tykans Logo">
+        <h1 id="title">Live Conversations Management</h1>
+    </div>
+
+    <div class="container">
+        <textarea class="log-box" id="logOutput" readonly></textarea>
+        <div class="button-container">
+            <button class="button" id="liveConversationsBtn">Get Live Conversations</button>
+            <button class="button" id="pushToTrainBtn">Push to Train Environment</button>
+        </div>
+    </div>
+
+    <button class="back-button" onclick="goBack()">&#8592;</button>
+    <button class="logout-button" onclick="logout()">&#x2715;</button>
+
+    <script>
+        function goBack() {
+            window.history.back();
+        }
+
+        function logout() {
+            window.location.href = 'index.html';
+        }
+
+        document.getElementById('liveConversationsBtn').addEventListener('click', function() {
+            document.getElementById('logOutput').value += 'Fetching live conversations...\n';
+            // Add logic to fetch live conversations here
+        });
+
+        document.getElementById('pushToTrainBtn').addEventListener('click', function() {
+            document.getElementById('logOutput').value += 'Pushing data to Train Environment...\n';
+            // Add logic for pushing data to the train environment here
+        });
+    </script>
+</body>
+</html>
