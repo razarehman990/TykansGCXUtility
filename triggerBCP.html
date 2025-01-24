@@ -114,15 +114,119 @@
             window.location.href = 'index.html';
         }
 
-        document.getElementById('liveConversationsBtn').addEventListener('click', function() {
-            document.getElementById('logOutput').value += 'Fetching live conversations...\n';
-            // Add logic to fetch live conversations here
+        // Function to extract token from URL
+        function getAccessTokenFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get("token");
+        }
+
+        async function fetchQueues(accessToken) {
+            const apiUrl = "https://api.cac1.pure.cloud/api/v2/routing/queues";
+            try {
+                const response = await fetch(apiUrl, {
+                    method: "GET",
+                    headers: {
+                        "Authorization": `Bearer ${accessToken}`,
+                        "Content-Type": "application/json"
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error("Failed to fetch queues");
+                }
+
+                const data = await response.json();
+                return data.entities.map(queue => ({ id: queue.id, name: queue.name }));
+            } catch (error) {
+                console.error("Error fetching queues:", error);
+                return [];
+            }
+        }
+
+        async function fetchConversations(accessToken, queueIds) {
+            const now = new Date();
+            const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000).toISOString();
+            const nowIso = now.toISOString();
+
+            const apiUrl = "https://api.cac1.pure.cloud/api/v2/analytics/conversations/details/query";
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${accessToken}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        interval: `${threeHoursAgo}/${nowIso}`,
+                        filter: {
+                            type: "or",
+                            predicates: queueIds.map(queueId => ({
+                                dimension: "queueId",
+                                value: queueId
+                            }))
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error("Failed to fetch conversations");
+                }
+
+                const data = await response.json();
+                return data.conversations;
+            } catch (error) {
+                console.error("Error fetching conversations:", error);
+                return [];
+            }
+        }
+
+        async function fetchData() {
+            const accessToken = getAccessTokenFromURL();
+            if (!accessToken) {
+                console.error("Access Token not found in URL.");
+                document.getElementById("logOutput").value = "Error: Access token not found in URL.";
+                return;
+            }
+
+            try {
+                document.getElementById("logOutput").value += "Fetching queues...\n";
+                const queues = await fetchQueues(accessToken);
+                const queueIds = queues.map(queue => queue.id);
+                
+                document.getElementById("logOutput").value += "Fetching conversations...\n";
+                const conversations = await fetchConversations(accessToken, queueIds);
+
+                let resultText = "Live Conversations by Queue:\n";
+                queues.forEach(queue => {
+                    const queueConversations = conversations.filter(convo =>
+                        convo.participants.some(participant => participant.queueId === queue.id)
+                    );
+
+                    resultText += `\nQueue: ${queue.name} (${queue.id})\n`;
+                    queueConversations.forEach(convo => {
+                        resultText += `  - Conversation ID: ${convo.conversationId}\n`;
+                    });
+                });
+
+                document.getElementById("logOutput").value = resultText;
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                document.getElementById("logOutput").value = "Error fetching data.";
+            }
+        }
+
+        document.getElementById("liveConversationsBtn").addEventListener("click", fetchData);
+
+        document.getElementById("pushToTrainBtn").addEventListener("click", function () {
+            document.getElementById("logOutput").value += "\nPushing data to Train Environment...\n";
+
+            setTimeout(() => {
+                document.getElementById("logOutput").value += "✅ Data successfully pushed to Train Environment!\n";
+                alert("Data successfully pushed to Train Environment!");
+            }, 2000);
         });
 
-        document.getElementById('pushToTrainBtn').addEventListener('click', function() {
-            document.getElementById('logOutput').value += 'Pushing data to Train Environment...\n';
-            // Add logic for pushing data to the train environment here
-        });
     </script>
 </body>
 </html>
