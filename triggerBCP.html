@@ -13,11 +13,9 @@
             color: #0F3057;
             text-align: center;
         }
-
         .container {
-            margin-top: 150px;
+            margin-top: 50px;
         }
-
         .button {
             margin: 20px;
             padding: 15px 30px;
@@ -28,16 +26,14 @@
             cursor: pointer;
             font-size: 18px;
         }
-
         .button:hover {
             background-color: #fff;
             color: #0F3057;
             border: 2px solid #0F3057;
         }
-
         .log-box {
             width: 80%;
-            min-height: 150px;
+            min-height: 250px;
             display: block;
             overflow-x: auto;
             border: 1px solid #ccc;
@@ -47,108 +43,57 @@
             text-align: left;
             white-space: pre-wrap;
         }
-
-        .back-button, .logout-button {
-            position: absolute;
-            top: 10px;
-            width: 40px;
-            height: 40px;
-            background-color: #0F3057;
-            color: #fff;
-            border: none;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .back-button {
-            left: 10px;
-        }
-
-        .back-button:hover {
-            background-color: #fff;
-            color: #0F3057;
-            border: 2px solid #0F3057;
-        }
-
-        .logout-button {
-            right: 10px;
-        }
-
-        .logout-button:hover {
-            background-color: red;
-            color: #fff;
-        }
-
-        #header img {
-            width: 200px;
-            margin-top: 20px;
-        }
     </style>
 </head>
 <body>
-    <div id="header">
-        <img id="logo" src="https://www.tykans.com/hs-fs/hubfs/Tykans_June2023/Images/Tykans%20-header-logo.png" alt="Tykans Logo">
-        <h1 id="title">Live Conversations Management</h1>
-    </div>
-
+    <h1>Live Conversations Management</h1>
     <div class="container">
         <textarea class="log-box" id="logOutput" readonly></textarea>
-        <div class="button-container">
+        <div>
             <button class="button" id="liveConversationsBtn">Get Live Conversations</button>
-            <button class="button" id="pushToTrainBtn">Push to Train Environment</button>
+            <button class="button" id="pushToTrainBtn" disabled>Push to Train Environment</button>
         </div>
     </div>
 
-    <button class="back-button" onclick="goBack()">&#8592;</button>
-    <button class="logout-button" onclick="logout()">&#x2715;</button>
-
     <script>
-        function goBack() {
-            window.history.back();
-        }
-
-        function logout() {
-            window.location.href = 'index.html';
-        }
-
         function getAccessTokenFromURL() {
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get("token");
         }
 
-        async function fetchQueues(accessToken) {
-            const apiUrl = "https://api.cac1.pure.cloud/api/v2/routing/queues";
-            try {
-                const response = await fetch(apiUrl, {
-                    method: "GET",
-                    headers: {
-                        "Authorization": `Bearer ${accessToken}`,
-                        "Content-Type": "application/json"
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error("Failed to fetch queues");
-                }
-
-                const data = await response.json();
-                return data.entities.map(queue => ({ id: queue.id, name: queue.name }));
-            } catch (error) {
-                console.error("Error fetching queues:", error);
-                return [];
+        async function getLiveConversations() {
+            const accessToken = getAccessTokenFromURL();
+            if (!accessToken) {
+                alert("Access token is missing.");
+                return;
             }
-        }
 
-        async function fetchConversations(accessToken, queueIds) {
             const now = new Date();
             const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000).toISOString();
             const nowIso = now.toISOString();
-
             const apiUrl = "https://api.cac1.pure.cloud/api/v2/analytics/conversations/details/query";
+            
+            const requestBody = {
+                conversationFilters: [
+                    {
+                        type: "and",
+                        clauses: [
+                            {
+                                type: "and",
+                                predicates: [
+                                    {
+                                        type: "dimension",
+                                        dimension: "conversationEnd",
+                                        operator: "notExists"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                interval: `${threeHoursAgo}/${nowIso}`,
+                paging: { pageSize: 100 }
+            };
 
             try {
                 const response = await fetch(apiUrl, {
@@ -157,76 +102,83 @@
                         "Authorization": `Bearer ${accessToken}`,
                         "Content-Type": "application/json"
                     },
-                    body: JSON.stringify({
-                        interval: `${threeHoursAgo}/${nowIso}`,
-                        filter: {
-                            type: "or",
-                            predicates: queueIds.map(queueId => ({
-                                dimension: "queueId",
-                                value: queueId
-                            }))
-                        }
-                    })
+                    body: JSON.stringify(requestBody)
                 });
-
+                
                 if (!response.ok) {
-                    throw new Error("Failed to fetch conversations");
+                    throw new Error("Failed to fetch conversations.");
                 }
 
                 const data = await response.json();
-                return data.conversations;
+                displayConversations(data.conversations);
             } catch (error) {
-                console.error("Error fetching conversations:", error);
-                return [];
+                document.getElementById("logOutput").value = "Error: " + error.message;
             }
         }
 
-        async function fetchData() {
+        function displayConversations(conversations) {
+            let logOutput = "";
+            window.liveConversations = [];
+
+            conversations.forEach(convo => {
+                const participants = convo.participants;
+                const externalParticipant = participants.find(p => p.purpose === "external");
+                const acdParticipants = participants.filter(p => p.purpose === "acd");
+                const lastAcdParticipant = acdParticipants.length ? acdParticipants[acdParticipants.length - 1] : null;
+                
+                if (!lastAcdParticipant) return;
+                
+                const lastParticipantId = lastAcdParticipant.participantId;
+                const ani = externalParticipant ? externalParticipant.sessions[0].ani : "N/A";
+                const conversationId = convo.conversationId;
+                const conversationStart = convo.conversationStart;
+                const participantName = lastAcdParticipant.participantName;
+                
+                window.liveConversations.push({ conversationId, lastParticipantId, ani });
+                logOutput += `ANI: ${ani}, Conversation ID: ${conversationId}, Start: ${conversationStart}, Agent: ${participantName}\n`;
+            });
+
+            document.getElementById("logOutput").value = logOutput || "No live conversations found.";
+            document.getElementById("pushToTrainBtn").disabled = window.liveConversations.length === 0;
+        }
+
+        async function pushToTrainEnvironment() {
+            if (!window.liveConversations || window.liveConversations.length === 0) return;
+            
             const accessToken = getAccessTokenFromURL();
             if (!accessToken) {
-                console.error("Access Token not found in URL.");
-                document.getElementById("logOutput").value = "Error: Access token not found in URL.";
+                alert("Access token is missing.");
                 return;
             }
-
-            try {
-                document.getElementById("logOutput").value += "Fetching queues...\n";
-                const queues = await fetchQueues(accessToken);
-                const queueIds = queues.map(queue => queue.id);
+            
+            const logBox = document.getElementById("logOutput");
+            const apiBaseUrl = "https://api.cac1.pure.cloud/api/v2/conversations/calls/";
+            const transferNumber = "+16044825083";
+            
+            for (const convo of window.liveConversations) {
+                const apiUrl = `${apiBaseUrl}${convo.conversationId}/participants/${convo.lastParticipantId}/replace`;
+                const requestBody = { transferType: "Attended", address: transferNumber };
                 
-                document.getElementById("logOutput").value += "Fetching conversations...\n";
-                const conversations = await fetchConversations(accessToken, queueIds);
-
-                let resultText = "Live Conversations by Queue:\n";
-                queues.forEach(queue => {
-                    const queueConversations = conversations.filter(convo =>
-                        convo.participants.some(participant => participant.queueId === queue.id)
-                    );
-
-                    resultText += `\nQueue: ${queue.name}\n`;
-                    queueConversations.forEach(convo => {
-                        resultText += `  - Conversation ID: ${convo.conversationId}\n`;
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: "POST",
+                        headers: {
+                            "Authorization": `Bearer ${accessToken}`,
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify(requestBody)
                     });
-                });
-
-                document.getElementById("logOutput").value = resultText || "No live conversations found.";
-            } catch (error) {
-                console.error("Error fetching data:", error);
-                document.getElementById("logOutput").value = "Error fetching data.";
+                    
+                    if (!response.ok) throw new Error("Transfer failed.");
+                    logBox.value += `\n${convo.ani} successfully transferred to Training Environment.`;
+                } catch (error) {
+                    logBox.value += `\nFailed to transfer ${convo.ani}: ${error.message}`;
+                }
             }
         }
 
-        document.getElementById("liveConversationsBtn").addEventListener("click", fetchData);
-
-        document.getElementById("pushToTrainBtn").addEventListener("click", function () {
-            document.getElementById("logOutput").value += "\nPushing data to Train Environment...\n";
-
-            setTimeout(() => {
-                document.getElementById("logOutput").value += "✅ Data successfully pushed to Train Environment!\n";
-                alert("Data successfully pushed to Train Environment!");
-            }, 2000);
-        });
-
+        document.getElementById("liveConversationsBtn").addEventListener("click", getLiveConversations);
+        document.getElementById("pushToTrainBtn").addEventListener("click", pushToTrainEnvironment);
     </script>
 </body>
 </html>
