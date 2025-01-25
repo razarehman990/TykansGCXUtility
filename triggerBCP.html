@@ -79,15 +79,10 @@
         .back-button {
             left: 10px;
         }
-        .back-button:hover {
-            background-color: #fff;
-            color: #0F3057;
-            border: 2px solid #0F3057;
-        }
         .logout-button {
             right: 10px;
         }
-        .logout-button:hover {
+        .back-button:hover, .logout-button:hover {
             background-color: red;
             color: #fff;
         }
@@ -146,39 +141,67 @@
                     headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
                     body: JSON.stringify(requestBody)
                 });
-                
+
                 if (!response.ok) throw new Error("Failed to fetch conversations.");
-                
+
                 const data = await response.json();
                 let logOutput = document.getElementById("logOutput");
-                logOutput.value += "\nFetching Live Conversations...";
+
                 if (data.totalHits === 0) {
                     logOutput.value += "\n**No Active Calls On Queue !**";
                     document.getElementById("tableContainer").innerHTML = "";
                     return;
                 }
+
                 displayConversations(data.conversations);
             } catch (error) {
                 document.getElementById("logOutput").value += "\nError: " + error.message;
             }
         }
 
+        function displayConversations(conversations) {
+            let tableHtml = "<table><tr><th>Caller Number</th><th>Start Time</th><th>Queue</th></tr>";
+            window.liveConversations = [];
+
+            conversations.forEach(convo => {
+                const participants = convo.participants;
+                const externalParticipant = participants.find(p => p.purpose === "external");
+                const lastAcdParticipant = participants.filter(p => p.purpose === "acd").pop();
+                const lastSegment = participants[participants.length - 1];
+
+                if (!lastAcdParticipant || (lastSegment && lastSegment.purpose === "agent")) return;
+
+                const ani = externalParticipant ? externalParticipant.sessions[0].ani.replace("tel:", "") : "N/A";
+                window.liveConversations.push({ conversationId: convo.conversationId, lastParticipantId: lastAcdParticipant.participantId, ani });
+
+                tableHtml += `<tr><td>${ani}</td><td>${convo.conversationStart}</td><td>${lastAcdParticipant.participantName}</td></tr>`;
+            });
+
+            document.getElementById("tableContainer").innerHTML = tableHtml + "</table>";
+            document.getElementById("pushToTrainBtn").disabled = window.liveConversations.length === 0;
+        }
+
         async function pushToTrainEnvironment() {
             const accessToken = getAccessTokenFromURL();
             if (!accessToken) return;
-            
+
             for (const convo of window.liveConversations) {
                 const apiUrl = `https://api.cac1.pure.cloud/api/v2/conversations/calls/${convo.conversationId}/participants/${convo.lastParticipantId}/replace`;
                 try {
                     const response = await fetch(apiUrl, { method: "POST", headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" }, body: JSON.stringify({ transferType: "Attended", address: "+16044825083" }) });
                     const result = await response.json();
+
                     if (!response.ok) throw new Error(result.message || "Transfer failed.");
+
                     document.getElementById("logOutput").value += `\n✅ ${convo.ani} (${convo.conversationId}) is successfully transferred to Training Environment.`;
                 } catch (error) {
                     document.getElementById("logOutput").value += `\n❌ ${convo.ani} (${convo.conversationId}) transfer failed: ${error.message}`;
                 }
             }
         }
+
+        document.getElementById("liveConversationsBtn").addEventListener("click", getLiveConversations);
+        document.getElementById("pushToTrainBtn").addEventListener("click", pushToTrainEnvironment);
     </script>
 </body>
 </html>
