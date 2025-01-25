@@ -163,7 +163,8 @@
 
                 const data = await response.json();
                 if (data.totalHits === 0) {
-                    document.getElementById("logOutput").value += "\n**No Active Calls On Queue !**";
+//                  document.getElementById("logOutput").value += "\n**No Active Calls On Queue !**";
+                    appendLog("**No Active Calls On Queue !**");
                     document.getElementById("tableContainer").innerHTML = "";
                     return;
                 }
@@ -206,9 +207,13 @@
                         const errorData = await response.json();
                         throw new Error(errorData.message || "Transfer failed.");
                     }
-                    document.getElementById("logOutput").value += `\n✅ ${convo.ani} (${convo.conversationId}) is successfully transferred to Training Environment.`;
+//                  document.getElementById("logOutput").value += `\n✅ ${convo.ani} (${convo.conversationId}) is successfully transferred to Training Environment.`;
+                    appendLog(`✅ ${convo.ani} (${convo.conversationId}) is successfully transferred to Training Environment.`);
+
                 } catch (error) {
-                    document.getElementById("logOutput").value += `\n❌ ${convo.ani} (${convo.conversationId}) transfer failed: ${error.message}`;
+//                  document.getElementById("logOutput").value += `\n❌ ${convo.ani} (${convo.conversationId}) transfer failed: ${error.message}`;
+                    appendLog(`❌ ${convo.ani} (${convo.conversationId}) transfer failed: ${error.message}`);
+
                 }
             }
         }
