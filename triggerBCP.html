@@ -134,13 +134,6 @@
             return urlParams.get("token");
         }
 
-        function appendLog(message) {
-    let logOutput = document.getElementById("logOutput");
-    if (!logOutput.value.includes(message)) {
-        logOutput.value += "\n" + message;
-    }
-}
-        
         async function getLiveConversations() {
             const accessToken = getAccessTokenFromURL();
             if (!accessToken) {
@@ -155,14 +148,14 @@
             
             const requestBody = {
                 conversationFilters: [{ type: "and", clauses: [{ type: "and", predicates: [{ type: "dimension", dimension: "conversationEnd", operator: "notExists" }] }] }],
-                interval: `${threeHoursAgo}/${nowIso}`,
+                interval: ${threeHoursAgo}/${nowIso},
                 paging: { pageSize: 100 }
             };
 
             try {
                 const response = await fetch(apiUrl, {
                     method: "POST",
-                    headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
+                    headers: { "Authorization": Bearer ${accessToken}, "Content-Type": "application/json" },
                     body: JSON.stringify(requestBody)
                 });
 
@@ -170,8 +163,7 @@
 
                 const data = await response.json();
                 if (data.totalHits === 0) {
-//                  document.getElementById("logOutput").value += "\n**No Active Calls On Queue !**";
-                    appendLog("**No Active Calls On Queue !**");
+                    document.getElementById("logOutput").value += "\n**No Active Calls On Queue !**";
                     document.getElementById("tableContainer").innerHTML = "";
                     return;
                 }
@@ -195,7 +187,7 @@
                 
                 const ani = externalParticipant ? externalParticipant.sessions[0].ani.replace("tel:", "") : "N/A";
                 window.liveConversations.push({ conversationId: convo.conversationId, lastParticipantId: lastAcdParticipant.participantId, ani });
-                tableHtml += `<tr><td>${ani}</td><td>${convo.conversationStart}</td><td>${lastAcdParticipant.participantName}</td></tr>`;
+                tableHtml += <tr><td>${ani}</td><td>${convo.conversationStart}</td><td>${lastAcdParticipant.participantName}</td></tr>;
             });
             
             document.getElementById("tableContainer").innerHTML = tableHtml + "</table>";
@@ -207,20 +199,16 @@
             if (!accessToken) return;
             
             for (const convo of window.liveConversations) {
-                const apiUrl = `https://api.cac1.pure.cloud/api/v2/conversations/calls/${convo.conversationId}/participants/${convo.lastParticipantId}/replace`;
+                const apiUrl = https://api.cac1.pure.cloud/api/v2/conversations/calls/${convo.conversationId}/participants/${convo.lastParticipantId}/replace;
                 try {
-                    const response = await fetch(apiUrl, { method: "POST", headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" }, body: JSON.stringify({ transferType: "Attended", address: "+16044825083" }) });
+                    const response = await fetch(apiUrl, { method: "POST", headers: { "Authorization": Bearer ${accessToken}, "Content-Type": "application/json" }, body: JSON.stringify({ transferType: "Attended", address: "+16044825083" }) });
                     if (!response.ok) {
                         const errorData = await response.json();
                         throw new Error(errorData.message || "Transfer failed.");
                     }
-//                  document.getElementById("logOutput").value += `\n✅ ${convo.ani} (${convo.conversationId}) is successfully transferred to Training Environment.`;
-                    appendLog(`✅ ${convo.ani} (${convo.conversationId}) is successfully transferred to Training Environment.`);
-
+                    document.getElementById("logOutput").value += \n✅ ${convo.ani} (${convo.conversationId}) is successfully transferred to Training Environment.;
                 } catch (error) {
-//                  document.getElementById("logOutput").value += `\n❌ ${convo.ani} (${convo.conversationId}) transfer failed: ${error.message}`;
-                    appendLog(`❌ ${convo.ani} (${convo.conversationId}) transfer failed: ${error.message}`);
-
+                    document.getElementById("logOutput").value += \n❌ ${convo.ani} (${convo.conversationId}) transfer failed: ${error.message};
                 }
             }
         }
