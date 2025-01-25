@@ -69,6 +69,14 @@
             color: red;
             font-weight: bold;
         }
+        .green-check {
+            color: green;
+            font-weight: bold;
+        }
+        .red-cross {
+            color: red;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -128,13 +136,16 @@
                 if (!response.ok) throw new Error("Failed to fetch conversations.");
                 
                 const data = await response.json();
+                let logOutput = document.getElementById("logOutput");
+                logOutput.value += "\nFetching Live Conversations...";
                 if (data.totalHits === 0) {
-                    document.getElementById("logOutput").value = "No Active Calls !!";
+                    logOutput.value += "\nNo Active Calls !!";
+                    document.getElementById("tableContainer").innerHTML = "";
                     return;
                 }
                 displayConversations(data.conversations);
             } catch (error) {
-                document.getElementById("logOutput").value = "Error: " + error.message;
+                document.getElementById("logOutput").value += "\nError: " + error.message;
             }
         }
 
@@ -165,15 +176,12 @@
                 try {
                     const response = await fetch(apiUrl, { method: "POST", headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" }, body: JSON.stringify({ transferType: "Attended", address: "+16044825083" }) });
                     if (!response.ok) throw new Error("Transfer failed.");
-                    document.getElementById("logOutput").value += `\n✔ ${convo.ani} (${convo.conversationId}) is successfully transferred to Training Environment.`;
+                    document.getElementById("logOutput").value += `\n✅ ${convo.ani} (${convo.conversationId}) is successfully transferred to Training Environment.`;
                 } catch (error) {
                     document.getElementById("logOutput").value += `\n❌ ${convo.ani} (${convo.conversationId}) transfer failed.`;
                 }
             }
         }
-
-        document.getElementById("liveConversationsBtn").addEventListener("click", getLiveConversations);
-        document.getElementById("pushToTrainBtn").addEventListener("click", pushToTrainEnvironment);
     </script>
 </body>
 </html>
