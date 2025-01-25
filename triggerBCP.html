@@ -77,6 +77,36 @@
             color: red;
             font-weight: bold;
         }
+        .back-button, .logout-button {
+            position: absolute;
+            top: 10px;
+            width: 40px;
+            height: 40px;
+            background-color: #0F3057;
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .back-button {
+            left: 10px;
+        }
+        .back-button:hover {
+            background-color: #fff;
+            color: #0F3057;
+            border: 2px solid #0F3057;
+        }
+        .logout-button {
+            right: 10px;
+        }
+        .logout-button:hover {
+            background-color: red;
+            color: #fff;
+        }
     </style>
 </head>
 <body>
@@ -138,6 +168,7 @@
                 const data = await response.json();
                 let logOutput = document.getElementById("logOutput");
                 logOutput.value += "\nFetching Live Conversations...";
+                
                 if (data.totalHits === 0) {
                     logOutput.value += "\nNo Active Calls !!";
                     document.getElementById("tableContainer").innerHTML = "";
@@ -182,6 +213,9 @@
                 }
             }
         }
+
+        document.getElementById("liveConversationsBtn").addEventListener("click", getLiveConversations);
+        document.getElementById("pushToTrainBtn").addEventListener("click", pushToTrainEnvironment);
     </script>
 </body>
 </html>
