@@ -134,6 +134,13 @@
             return urlParams.get("token");
         }
 
+        function appendLog(message) {
+    let logOutput = document.getElementById("logOutput");
+    if (!logOutput.value.includes(message)) {
+        logOutput.value += "\n" + message;
+    }
+}
+        
         async function getLiveConversations() {
             const accessToken = getAccessTokenFromURL();
             if (!accessToken) {
