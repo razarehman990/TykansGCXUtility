@@ -93,7 +93,8 @@
         async function getActiveInteractions() {
             const email = document.getElementById("email").value;
             const datetime = document.getElementById("datetime").value;
-            const region = window.location.hostname.split(".")[1];
+            const hostParts = window.location.hostname.split(".");
+            const region = hostParts.length > 2 ? hostParts[hostParts.length - 2] : hostParts[0];
             const apiUrl = `http://api.${region}/api/v2/analytics/conversations/details/query`;
             
             const requestBody = {
