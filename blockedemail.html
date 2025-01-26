@@ -71,7 +71,7 @@
 </head>
 <body>
     <div id="header">
-        <img id="logo" src="https://www.origen.ca/images/origen-final-1.svg" alt="Tykans Logo">
+        <img id="logo" src="https://www.tykans.com/hs-fs/hubfs/Tykans_June2023/Images/Tykans%20-header-logo.png" alt="Tykans Logo">
         <h1>Live Conversations Management</h1>
     </div>
     <div class="container">
@@ -93,6 +93,9 @@
         async function getActiveInteractions() {
             const email = document.getElementById("email").value;
             const datetime = document.getElementById("datetime").value;
+            const region = window.location.hostname.split(".")[1];
+            const apiUrl = `http://api.${region}/api/v2/analytics/conversations/details/query`;
+            
             const requestBody = {
                 conversationFilters: [{ type: "and", clauses: [{ type: "and", predicates: [{ type: "dimension", dimension: "conversationEnd", operator: "notExists" }] }] }],
                 interval: datetime,
@@ -103,7 +106,7 @@
                 }]
             };
             try {
-                const response = await fetch("/api/v2/analytics/conversations/details/query", {
+                const response = await fetch(apiUrl, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(requestBody)
@@ -126,8 +129,11 @@
         async function disconnectConversation() {
             const conversationId = prompt("Enter conversation ID to disconnect:");
             if (!conversationId) return;
+            const region = window.location.hostname.split(".")[1];
+            const apiUrl = `http://api.${region}/api/v2/conversations/${conversationId}/disconnect`;
+            
             try {
-                await fetch(`/api/v2/conversations/${conversationId}/disconnect`, { method: "POST" });
+                await fetch(apiUrl, { method: "POST" });
                 document.getElementById("logOutput").value += `\nConversation ${conversationId} disconnected.`;
             } catch (error) {
                 document.getElementById("logOutput").value += "\nError: " + error.message;
