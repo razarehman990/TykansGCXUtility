@@ -213,10 +213,19 @@
             }
         }
 
-        document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", function () {
+    const liveConversationsBtn = document.getElementById("liveConversationsBtn");
+    const pushToTrainBtn = document.getElementById("pushToTrainBtn");
+
+    // Remove any previously attached event listeners to prevent multiple triggers
+    liveConversationsBtn.replaceWith(liveConversationsBtn.cloneNode(true));
+    pushToTrainBtn.replaceWith(pushToTrainBtn.cloneNode(true));
+
+    // Attach event listeners only once
     document.getElementById("liveConversationsBtn").addEventListener("click", getLiveConversations);
     document.getElementById("pushToTrainBtn").addEventListener("click", pushToTrainEnvironment);
 });
+
 
         //<button class="button" id="liveConversationsBtn">Get Live Conversations</button>
         //document.getElementById("liveConversationsBtn").addEventListener("click", getLiveConversations);
