@@ -215,28 +215,29 @@
             return date.toLocaleString("en-US", { timeZone: "America/Vancouver", hour12: false });
         }
 
-        function displayConversations(conversations) {
-            let tableHtml = "<table><tr><th>Caller Number</th><th>Start Time (Vancouver Time)</th><th>Queue</th></tr>";
-            window.liveConversations = [];
+    function displayConversations(conversations) {
+        let tableHtml = "<table><tr><th>Caller Number</th><th>Conversation Id</th><th>Start Time (Vancouver Time)</th><th>Queue</th></tr>";
+        window.liveConversations = [];
+        
+        conversations.forEach(convo => {
+            const participants = convo.participants;
+            const externalParticipant = participants.find(p => p.purpose === "external");
+            const lastAcdParticipant = participants.filter(p => p.purpose === "acd").pop();
+            const lastSegment = participants[participants.length - 1];
             
-            conversations.forEach(convo => {
-                const participants = convo.participants;
-                const externalParticipant = participants.find(p => p.purpose === "external");
-                const lastAcdParticipant = participants.filter(p => p.purpose === "acd").pop();
-                const lastSegment = participants[participants.length - 1];
-                
-                if (!lastAcdParticipant || (lastSegment && lastSegment.purpose === "agent")) return;
-                
-                const ani = externalParticipant ? externalParticipant.sessions[0].ani.replace("tel:", "") : "N/A";
-                const vancouverTime = convertToVancouverTime(convo.conversationStart);
+            if (!lastAcdParticipant || (lastSegment && lastSegment.purpose === "agent")) return;
+            
+            const ani = externalParticipant ? externalParticipant.sessions[0].ani.replace("tel:", "") : "N/A";
+            const conversationId = convo.conversationId; // New column data
+            const vancouverTime = convertToVancouverTime(convo.conversationStart);
 
-                window.liveConversations.push({ conversationId: convo.conversationId, lastParticipantId: lastAcdParticipant.participantId, ani });
-                tableHtml += `<tr><td>${ani}</td><td>${vancouverTime}</td><td>${lastAcdParticipant.participantName}</td></tr>`;
-            });
-            
-            document.getElementById("tableContainer").innerHTML = tableHtml + "</table>";
-            document.getElementById("pushToTrainBtn").disabled = window.liveConversations.length === 0;
-        }
+            window.liveConversations.push({ conversationId: convo.conversationId, lastParticipantId: lastAcdParticipant.participantId, ani });
+            tableHtml += `<tr><td>${ani}</td><td>${conversationId}</td><td>${vancouverTime}</td><td>${lastAcdParticipant.participantName}</td></tr>`;
+        });
+        
+        document.getElementById("tableContainer").innerHTML = tableHtml + "</table>";
+        document.getElementById("pushToTrainBtn").disabled = window.liveConversations.length === 0;
+    }
     </script>
 </body>
 </html>
