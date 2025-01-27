@@ -215,32 +215,42 @@
         return date.toLocaleString("en-US", { timeZone: "America/Vancouver", hour12: false });
         }
 
-    function displayConversations(conversations) {
-        let tableHtml = "<table><tr><th>Caller Number</th><th>Conversation Id</th><th>Start Time (Vancouver Time)</th><th>Queue</th></tr>";
-        window.liveConversations = [];
-        
-        conversations.forEach(convo => {
-            const participants = convo.participants;
-            const externalParticipant = participants.find(p => p.purpose === "external");
-            const lastAcdParticipant = participants.filter(p => p.purpose === "acd").pop();
-            const lastSegment = participants[participants.length - 1];
+function displayConversations(conversations) {
+    let tableHtml = "<table><tr><th>Caller Number</th><th>Start Time (Vancouver Time)</th><th>Queue</th></tr>";
+    window.liveConversations = [];
 
-            // Fixing logic: Ignore only if lastSegment is "agent" AND "segmentEnd" is missing
-            if (lastSegment && lastSegment.purpose === "agent" && !lastSegment.segmentEnd) {
-                return;
-            }
-            
-            const ani = externalParticipant ? externalParticipant.sessions[0].ani.replace("tel:", "") : "N/A";
-            const conversationId = convo.conversationId; // New column data
-            const vancouverTime = convertToVancouverTime(convo.conversationStart);
+    conversations.forEach(convo => {
+        const participants = convo.participants;
+        const externalParticipant = participants.find(p => p.purpose === "external");
+        const lastAcdParticipant = participants.filter(p => p.purpose === "acd").pop();
 
-            window.liveConversations.push({ conversationId: convo.conversationId, lastParticipantId: lastAcdParticipant?.participantId, ani });
-            tableHtml += `<tr><td>${ani}</td><td>${conversationId}</td><td>${vancouverTime}</td><td>${lastAcdParticipant?.participantName || "N/A"}</td></tr>`;
+        // If no ACD participant found, skip this conversation
+        if (!lastAcdParticipant) return;
+
+        // Get the last segment of this ACD participant
+        const lastAcdSession = lastAcdParticipant.sessions[lastAcdParticipant.sessions.length - 1];
+        const lastAcdSegment = lastAcdSession?.segments[lastAcdSession.segments.length - 1];
+
+        // Ignore the call if the last ACD segment has segmentType "interact" AND segmentEnd exists
+        if (lastAcdSegment && lastAcdSegment.segmentType === "interact" && lastAcdSegment.segmentEnd) {
+            return;
+        }
+
+        const ani = externalParticipant ? externalParticipant.sessions[0].ani.replace("tel:", "") : "N/A";
+        const vancouverTime = convertToVancouverTime(convo.conversationStart);
+
+        window.liveConversations.push({ 
+            conversationId: convo.conversationId, 
+            lastParticipantId: lastAcdParticipant.participantId, 
+            ani 
         });
-        
-        document.getElementById("tableContainer").innerHTML = tableHtml + "</table>";
-        document.getElementById("pushToTrainBtn").disabled = window.liveConversations.length === 0;
-    }
+
+        tableHtml += `<tr><td>${ani}</td><td>${vancouverTime}</td><td>${lastAcdParticipant.participantName}</td></tr>`;
+    });
+
+    document.getElementById("tableContainer").innerHTML = tableHtml + "</table>";
+    document.getElementById("pushToTrainBtn").disabled = window.liveConversations.length === 0;
+}
     </script>
 </body>
 </html>
