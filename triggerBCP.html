@@ -225,15 +225,17 @@
             const lastAcdParticipant = participants.filter(p => p.purpose === "acd").pop();
             const lastSegment = participants[participants.length - 1];
 
-            // Ignore if lastSegment is "agent" AND segmentEnd is NOT there
-            if (lastSegment && lastSegment.purpose === "agent" && !lastSegment.segmentEnd) return;
+            // Fixing logic: Ignore only if lastSegment is "agent" AND "segmentEnd" is missing
+            if (lastSegment && lastSegment.purpose === "agent" && !lastSegment.segmentEnd) {
+                return;
+            }
             
             const ani = externalParticipant ? externalParticipant.sessions[0].ani.replace("tel:", "") : "N/A";
             const conversationId = convo.conversationId; // New column data
             const vancouverTime = convertToVancouverTime(convo.conversationStart);
 
-            window.liveConversations.push({ conversationId: convo.conversationId, lastParticipantId: lastAcdParticipant.participantId, ani });
-            tableHtml += `<tr><td>${ani}</td><td>${conversationId}</td><td>${vancouverTime}</td><td>${lastAcdParticipant.participantName}</td></tr>`;
+            window.liveConversations.push({ conversationId: convo.conversationId, lastParticipantId: lastAcdParticipant?.participantId, ani });
+            tableHtml += `<tr><td>${ani}</td><td>${conversationId}</td><td>${vancouverTime}</td><td>${lastAcdParticipant?.participantName || "N/A"}</td></tr>`;
         });
         
         document.getElementById("tableContainer").innerHTML = tableHtml + "</table>";
