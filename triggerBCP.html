@@ -213,9 +213,14 @@
             }
         }
 
-        <button class="button" id="liveConversationsBtn">Get Live Conversations</button>
+        document.addEventListener("DOMContentLoaded", function () {
+    document.getElementById("liveConversationsBtn").addEventListener("click", getLiveConversations);
+    document.getElementById("pushToTrainBtn").addEventListener("click", pushToTrainEnvironment);
+});
+
+        //<button class="button" id="liveConversationsBtn">Get Live Conversations</button>
         //document.getElementById("liveConversationsBtn").addEventListener("click", getLiveConversations);
-        <button class="button" id="pushToTrainBtn" disabled>Push to Train Environment</button>
+        //<button class="button" id="pushToTrainBtn" disabled>Push to Train Environment</button>
         //document.getElementById("pushToTrainBtn").addEventListener("click", pushToTrainEnvironment);
     </script>
 </body>
