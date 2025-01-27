@@ -113,8 +113,8 @@
         <div id="tableContainer" class="table-container"></div>
         <textarea class="log-box" id="logOutput" readonly></textarea>
         <div>
-            <button class="button" id="liveConversationsBtn" onclick="getLiveConversations()">Get Live Conversations</button>
-            <button class="button" id="pushToTrainBtn" onclick="pushToTrainEnvironment()" disabled>Push to Train Environment</button>
+            <button class="button" id="liveConversationsBtn">Get Live Conversations</button>
+            <button class="button" id="pushToTrainBtn" disabled>Push to Train Environment</button>
         </div>
     </div>
     <button class="back-button" onclick="goBack()">&#8592;</button>
@@ -135,6 +135,9 @@
         }
 
         async function getLiveConversations() {
+            const logOutput = document.getElementById("logOutput");
+            logOutput.value += "\nFetching Live Conversations...";
+
             const accessToken = getAccessTokenFromURL();
             if (!accessToken) {
                 alert("Access token is missing.");
@@ -163,13 +166,14 @@
 
                 const data = await response.json();
                 if (data.totalHits === 0) {
-                    document.getElementById("logOutput").value += "\n**No Active Calls On Queue !**";
+                    logOutput.value += "\n**No Active Calls On Queue!**";
                     document.getElementById("tableContainer").innerHTML = "";
                     return;
                 }
+
                 displayConversations(data.conversations);
             } catch (error) {
-                document.getElementById("logOutput").value += "\nError: " + error.message;
+                logOutput.value += `\nError: ${error.message}`;
             }
         }
 
@@ -195,42 +199,29 @@
         }
 
         async function pushToTrainEnvironment() {
+            const logOutput = document.getElementById("logOutput");
+            logOutput.value += "\nPushing to Train Environment...";
+
             const accessToken = getAccessTokenFromURL();
             if (!accessToken) return;
             
             for (const convo of window.liveConversations) {
                 const apiUrl = `https://api.cac1.pure.cloud/api/v2/conversations/calls/${convo.conversationId}/participants/${convo.lastParticipantId}/replace`;
                 try {
-                    const response = await fetch(apiUrl, { method: "POST", headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" }, body: JSON.stringify({ transferType: "Attended", address: "+16044825083" }) });
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(errorData.message || "Transfer failed.");
-                    }
-                    document.getElementById("logOutput").value += `\n✅ ${convo.ani} (${convo.conversationId}) is successfully transferred to Training Environment.`;
+                    const response = await fetch(apiUrl, { 
+                        method: "POST", 
+                        headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" }, 
+                        body: JSON.stringify({ transferType: "Attended", address: "+16044825083" }) 
+                    });
+
+                    if (!response.ok) throw new Error("Transfer failed.");
+
+                    logOutput.value += `\n✅ ${convo.ani} (${convo.conversationId}) is successfully transferred to Training Environment.`;
                 } catch (error) {
-                    document.getElementById("logOutput").value += `\n❌ ${convo.ani} (${convo.conversationId}) transfer failed: ${error.message}`;
+                    logOutput.value += `\n❌ ${convo.ani} (${convo.conversationId}) transfer failed: ${error.message}`;
                 }
             }
         }
-
-document.addEventListener("DOMContentLoaded", function () {
-    const liveConversationsBtn = document.getElementById("liveConversationsBtn");
-    const pushToTrainBtn = document.getElementById("pushToTrainBtn");
-
-    // Remove any previously attached event listeners to prevent multiple triggers
-    liveConversationsBtn.replaceWith(liveConversationsBtn.cloneNode(true));
-    pushToTrainBtn.replaceWith(pushToTrainBtn.cloneNode(true));
-
-    // Attach event listeners only once
-    document.getElementById("liveConversationsBtn").addEventListener("click", getLiveConversations);
-    document.getElementById("pushToTrainBtn").addEventListener("click", pushToTrainEnvironment);
-});
-
-
-        //<button class="button" id="liveConversationsBtn">Get Live Conversations</button>
-        //document.getElementById("liveConversationsBtn").addEventListener("click", getLiveConversations);
-        //<button class="button" id="pushToTrainBtn" disabled>Push to Train Environment</button>
-        //document.getElementById("pushToTrainBtn").addEventListener("click", pushToTrainEnvironment);
     </script>
 </body>
 </html>
