@@ -210,9 +210,9 @@
             }
         }
 
-        function convertToVancouverTime(utcTime) {
-            const date = new Date(utcTime);
-            return date.toLocaleString("en-US", { timeZone: "America/Vancouver", hour12: false });
+    function convertToVancouverTime(utcTime) {
+        const date = new Date(utcTime);
+        return date.toLocaleString("en-US", { timeZone: "America/Vancouver", hour12: false });
         }
 
     function displayConversations(conversations) {
@@ -224,8 +224,9 @@
             const externalParticipant = participants.find(p => p.purpose === "external");
             const lastAcdParticipant = participants.filter(p => p.purpose === "acd").pop();
             const lastSegment = participants[participants.length - 1];
-            
-            if (!lastAcdParticipant || (lastSegment && lastSegment.purpose === "agent")) return;
+
+            // Ignore if lastSegment is "agent" AND segmentEnd is NOT there
+            if (lastSegment && lastSegment.purpose === "agent" && !lastSegment.segmentEnd) return;
             
             const ani = externalParticipant ? externalParticipant.sessions[0].ani.replace("tel:", "") : "N/A";
             const conversationId = convo.conversationId; // New column data
