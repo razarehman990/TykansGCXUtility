@@ -105,34 +105,61 @@
     <button class="logout-button" id="logoutBtn">&#x2715;</button>
 
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            console.log("DOM fully loaded.");
+    document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded.");
 
-            document.getElementById("goBackBtn").addEventListener("click", function () {
-                window.history.back();
-            });
-
-            document.getElementById("logoutBtn").addEventListener("click", function () {
-                window.location.href = 'index.html';
-            });
-
-            const liveConversationsBtn = document.getElementById("liveConversationsBtn");
-            const pushToTrainBtn = document.getElementById("pushToTrainBtn");
-
-            if (liveConversationsBtn) {
-                liveConversationsBtn.addEventListener("click", function () {
-                    console.log("Live Conversations button clicked.");
-                    getLiveConversations();
-                });
-            }
-
-            if (pushToTrainBtn) {
-                pushToTrainBtn.addEventListener("click", function () {
-                    console.log("Push to Train button clicked.");
-                    pushToTrainEnvironment();
-                });
-            }
+        document.getElementById("goBackBtn").addEventListener("click", function () {
+            window.history.back();
         });
+
+        document.getElementById("logoutBtn").addEventListener("click", function () {
+            window.location.href = 'index.html';
+        });
+
+        const liveConversationsBtn = document.getElementById("liveConversationsBtn");
+        const pushToTrainBtn = document.getElementById("pushToTrainBtn");
+
+        if (liveConversationsBtn) {
+            liveConversationsBtn.addEventListener("click", function () {
+                console.log("Live Conversations button clicked.");
+                getLiveConversations();
+            });
+        }
+
+        if (pushToTrainBtn) {
+            pushToTrainBtn.addEventListener("click", function () {
+                console.log("Push to Train button clicked.");
+                pushToTrainEnvironment(); // This function must be defined before this is called
+            });
+        }
+    });
+
+            async function pushToTrainEnvironment() {
+        console.log("Pushing to Train Environment...");
+        const logOutput = document.getElementById("logOutput");
+        logOutput.value += "\nPushing to Train Environment...";
+
+        const accessToken = getAccessTokenFromURL();
+        if (!accessToken) return;
+
+        for (const convo of window.liveConversations) {
+            const apiUrl = `https://api.cac1.pure.cloud/api/v2/conversations/calls/${convo.conversationId}/participants/${convo.lastParticipantId}/replace`;
+            try {
+                const response = await fetch(apiUrl, { 
+                    method: "POST", 
+                    headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" }, 
+                    body: JSON.stringify({ transferType: "Attended", address: "+16044825083" }) 
+                });
+
+                if (!response.ok) throw new Error("Transfer failed.");
+
+                logOutput.value += `\n✅ ${convo.ani} (${convo.conversationId}) is successfully transferred to Training Environment.`;
+            } catch (error) {
+                logOutput.value += `\n❌ ${convo.ani} (${convo.conversationId}) transfer failed: ${error.message}`;
+            }
+        }
+    }
+    
 
         function getAccessTokenFromURL() {
             const urlParams = new URLSearchParams(window.location.search);
