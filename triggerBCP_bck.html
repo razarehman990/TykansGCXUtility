@@ -210,9 +210,9 @@
             }
         }
 
-        function convertToVancouverTime(utcTime) {
-            const date = new Date(utcTime);
-            return date.toLocaleString("en-US", { timeZone: "America/Vancouver", hour12: false });
+    function convertToVancouverTime(utcTime) {
+        const date = new Date(utcTime);
+        return date.toLocaleString("en-US", { timeZone: "America/Vancouver", hour12: false });
         }
 
 function displayConversations(conversations) {
@@ -224,10 +224,15 @@ function displayConversations(conversations) {
         const externalParticipant = participants.find(p => p.purpose === "external");
         const lastAcdParticipant = participants.filter(p => p.purpose === "acd").pop();
 
-        // Ignore calls where the last ACD participant has a segmentEnd
-        if (!lastAcdParticipant || lastAcdParticipant.sessions.some(session => 
-            session.segments.some(segment => segment.segmentEnd)
-        )) {
+        // If no ACD participant found, skip this conversation
+        if (!lastAcdParticipant) return;
+
+        // Get the last segment of this ACD participant
+        const lastAcdSession = lastAcdParticipant.sessions[lastAcdParticipant.sessions.length - 1];
+        const lastAcdSegment = lastAcdSession?.segments[lastAcdSession.segments.length - 1];
+
+        // Ignore the call if the last ACD segment has segmentType "interact" AND segmentEnd exists
+        if (lastAcdSegment && lastAcdSegment.segmentType === "interact" && lastAcdSegment.segmentEnd) {
             return;
         }
 
