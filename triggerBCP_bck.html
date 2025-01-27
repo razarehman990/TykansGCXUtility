@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Conversations</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #fff;
+            color: #0F3057;
+            text-align: center;
+        }
+        .container {
+            margin-top: 50px;
+        }
+        .button {
+            margin: 20px;
+            padding: 15px 30px;
+            background-color: #0F3057;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+        .button:hover {
+            background-color: #fff;
+            color: #0F3057;
+            border: 2px solid #0F3057;
+        }
+        .log-box {
+            width: 80%;
+            min-height: 250px;
+            display: block;
+            overflow-x: auto;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 20px auto;
+            text-align: left;
+            white-space: pre-wrap;
+        }
+        .table-container {
+            width: 80%;
+            margin: 20px auto;
+            border-collapse: collapse;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #0F3057;
+            color: white;
+        }
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .green-check {
+            color: green;
+            font-weight: bold;
+        }
+        .red-cross {
+            color: red;
+            font-weight: bold;
+        }
+        .back-button, .logout-button {
+            position: absolute;
+            top: 10px;
+            width: 40px;
+            height: 40px;
+            background-color: #0F3057;
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .back-button {
+            left: 10px;
+        }
+        .logout-button {
+            right: 10px;
+        }
+        .back-button:hover, .logout-button:hover {
+            background-color: red;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <img id="logo" src="https://www.tykans.com/hs-fs/hubfs/Tykans_June2023/Images/Tykans%20-header-logo.png" alt="Tykans Logo">
+        <h1 id="title">Live Conversations Management</h1>
+    </div>
+    <div class="container">
+        <div id="tableContainer" class="table-container"></div>
+        <textarea class="log-box" id="logOutput" readonly></textarea>
+        <div>
+            <button class="button" id="liveConversationsBtn" onclick="getLiveConversations()">Get Live Conversations</button>
+            <button class="button" id="pushToTrainBtn" onclick="pushToTrainEnvironment()" disabled>Push to Train Environment</button>
+        </div>
+    </div>
+    <button class="back-button" onclick="goBack()">&#8592;</button>
+    <button class="logout-button" onclick="logout()">&#x2715;</button>
+
+    <script>
+        function goBack() {
+            window.history.back();
+        }
+
+        function logout() {
+            window.location.href = 'index.html';
+        }
+
+        function getAccessTokenFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get("token");
+        }
+
+        async function getLiveConversations() {
+            const accessToken = getAccessTokenFromURL();
+            if (!accessToken) {
+                alert("Access token is missing.");
+                return;
+            }
+
+            const now = new Date();
+            const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000).toISOString();
+            const nowIso = now.toISOString();
+            const apiUrl = "https://api.cac1.pure.cloud/api/v2/analytics/conversations/details/query";
+            
+            const requestBody = {
+                conversationFilters: [{ type: "and", clauses: [{ type: "and", predicates: [{ type: "dimension", dimension: "conversationEnd", operator: "notExists" }] }] }],
+                interval: `${threeHoursAgo}/${nowIso}`,
+                paging: { pageSize: 100 }
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: "POST",
+                    headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) throw new Error("Failed to fetch conversations.");
+
+                const data = await response.json();
+                if (data.totalHits === 0) {
+                    document.getElementById("logOutput").value += "\n**No Active Calls On Queue !**";
+                    document.getElementById("tableContainer").innerHTML = "";
+                    return;
+                }
+                displayConversations(data.conversations);
+            } catch (error) {
+                document.getElementById("logOutput").value += "\nError: " + error.message;
+            }
+        }
+
+        function displayConversations(conversations) {
+            let tableHtml = "<table><tr><th>Caller Number</th><th>Start Time</th><th>Queue</th></tr>";
+            window.liveConversations = [];
+            
+            conversations.forEach(convo => {
+                const participants = convo.participants;
+                const externalParticipant = participants.find(p => p.purpose === "external");
+                const lastAcdParticipant = participants.filter(p => p.purpose === "acd").pop();
+                const lastSegment = participants[participants.length - 1];
+                
+                if (!lastAcdParticipant || (lastSegment && lastSegment.purpose === "agent")) return;
+                
+                const ani = externalParticipant ? externalParticipant.sessions[0].ani.replace("tel:", "") : "N/A";
+                window.liveConversations.push({ conversationId: convo.conversationId, lastParticipantId: lastAcdParticipant.participantId, ani });
+                tableHtml += `<tr><td>${ani}</td><td>${convo.conversationStart}</td><td>${lastAcdParticipant.participantName}</td></tr>`;
+            });
+            
+            document.getElementById("tableContainer").innerHTML = tableHtml + "</table>";
+            document.getElementById("pushToTrainBtn").disabled = window.liveConversations.length === 0;
+        }
+
+        async function pushToTrainEnvironment() {
+            const accessToken = getAccessTokenFromURL();
+            if (!accessToken) return;
+            
+            for (const convo of window.liveConversations) {
+                const apiUrl = `https://api.cac1.pure.cloud/api/v2/conversations/calls/${convo.conversationId}/participants/${convo.lastParticipantId}/replace`;
+                try {
+                    const response = await fetch(apiUrl, { method: "POST", headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" }, body: JSON.stringify({ transferType: "Attended", address: "+16044825083" }) });
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.message || "Transfer failed.");
+                    }
+                    document.getElementById("logOutput").value += `\n✅ ${convo.ani} (${convo.conversationId}) is successfully transferred to Training Environment.`;
+                } catch (error) {
+                    document.getElementById("logOutput").value += `\n❌ ${convo.ani} (${convo.conversationId}) transfer failed: ${error.message}`;
+                }
+            }
+        }
+
+        document.getElementById("liveConversationsBtn").addEventListener("click", getLiveConversations);
+        document.getElementById("pushToTrainBtn").addEventListener("click", pushToTrainEnvironment);
+    </script>
+</body>
+</html>
