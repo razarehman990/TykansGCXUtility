@@ -61,22 +61,6 @@
             background-color: #0F3057;
             color: white;
         }
-        .success {
-            color: green;
-            font-weight: bold;
-        }
-        .error {
-            color: red;
-            font-weight: bold;
-        }
-        .green-check {
-            color: green;
-            font-weight: bold;
-        }
-        .red-cross {
-            color: red;
-            font-weight: bold;
-        }
         .back-button, .logout-button {
             position: absolute;
             top: 10px;
@@ -113,21 +97,69 @@
         <div id="tableContainer" class="table-container"></div>
         <textarea class="log-box" id="logOutput" readonly></textarea>
         <div>
-            <button class="button" id="liveConversationsBtn" onclick="getLiveConversations()">Get Live Conversations</button>
-            <button class="button" id="pushToTrainBtn" onclick="pushToTrainEnvironment()" disabled>Push to Train Environment</button>
+            <button class="button" id="liveConversationsBtn">Get Live Conversations</button>
+            <button class="button" id="pushToTrainBtn" disabled>Push to Train Environment</button>
         </div>
     </div>
-    <button class="back-button" onclick="goBack()">&#8592;</button>
-    <button class="logout-button" onclick="logout()">&#x2715;</button>
+    <button class="back-button" id="goBackBtn">&#8592;</button>
+    <button class="logout-button" id="logoutBtn">&#x2715;</button>
 
     <script>
-        function goBack() {
+    document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded.");
+
+        document.getElementById("goBackBtn").addEventListener("click", function () {
             window.history.back();
+        });
+
+        document.getElementById("logoutBtn").addEventListener("click", function () {
+            window.location.href = 'index.html';
+        });
+
+        const liveConversationsBtn = document.getElementById("liveConversationsBtn");
+        const pushToTrainBtn = document.getElementById("pushToTrainBtn");
+
+        if (liveConversationsBtn) {
+            liveConversationsBtn.addEventListener("click", function () {
+                console.log("Live Conversations button clicked.");
+                getLiveConversations();
+            });
         }
 
-        function logout() {
-            window.location.href = 'index.html';
+        if (pushToTrainBtn) {
+            pushToTrainBtn.addEventListener("click", function () {
+                console.log("Push to Train button clicked.");
+                pushToTrainEnvironment(); // This function must be defined before this is called
+            });
         }
+    });
+
+            async function pushToTrainEnvironment() {
+        console.log("Pushing to Train Environment...");
+        const logOutput = document.getElementById("logOutput");
+        logOutput.value += "\nPushing to Train Environment...";
+
+        const accessToken = getAccessTokenFromURL();
+        if (!accessToken) return;
+
+        for (const convo of window.liveConversations) {
+            const apiUrl = `https://api.cac1.pure.cloud/api/v2/conversations/calls/${convo.conversationId}/participants/${convo.lastParticipantId}/replace`;
+            try {
+                const response = await fetch(apiUrl, { 
+                    method: "POST", 
+                    headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" }, 
+                    body: JSON.stringify({ transferType: "Attended", address: "+16044825083" }) 
+                });
+
+                if (!response.ok) throw new Error("Transfer failed.");
+
+                logOutput.value += `\n✅ ${convo.ani} (${convo.conversationId}) is successfully transferred to Training Environment.`;
+            } catch (error) {
+                logOutput.value += `\n❌ ${convo.ani} (${convo.conversationId}) transfer failed: ${error.message}`;
+            }
+        }
+    }
+    
 
         function getAccessTokenFromURL() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -135,24 +167,28 @@
         }
 
         async function getLiveConversations() {
+            console.log("Fetching Live Conversations...");
+            const logOutput = document.getElementById("logOutput");
+            logOutput.value += "\nFetching Live Conversations...";
+
             const accessToken = getAccessTokenFromURL();
             if (!accessToken) {
                 alert("Access token is missing.");
                 return;
             }
 
-            const now = new Date();
-            const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000).toISOString();
-            const nowIso = now.toISOString();
-            const apiUrl = "https://api.cac1.pure.cloud/api/v2/analytics/conversations/details/query";
-            
-            const requestBody = {
-                conversationFilters: [{ type: "and", clauses: [{ type: "and", predicates: [{ type: "dimension", dimension: "conversationEnd", operator: "notExists" }] }] }],
-                interval: `${threeHoursAgo}/${nowIso}`,
-                paging: { pageSize: 100 }
-            };
-
             try {
+                const now = new Date();
+                const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000).toISOString();
+                const nowIso = now.toISOString();
+                const apiUrl = "https://api.cac1.pure.cloud/api/v2/analytics/conversations/details/query";
+                
+                const requestBody = {
+                    conversationFilters: [{ type: "and", clauses: [{ type: "and", predicates: [{ type: "dimension", dimension: "conversationEnd", operator: "notExists" }] }] }], 
+                    interval: `${threeHoursAgo}/${nowIso}`,
+                    paging: { pageSize: 100 }
+                };
+
                 const response = await fetch(apiUrl, {
                     method: "POST",
                     headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
@@ -163,18 +199,24 @@
 
                 const data = await response.json();
                 if (data.totalHits === 0) {
-                    document.getElementById("logOutput").value += "\n**No Active Calls On Queue !**";
+                    logOutput.value += "\n**No Active Calls On Queue!**";
                     document.getElementById("tableContainer").innerHTML = "";
                     return;
                 }
+
                 displayConversations(data.conversations);
             } catch (error) {
-                document.getElementById("logOutput").value += "\nError: " + error.message;
+                logOutput.value += `\nError: ${error.message}`;
             }
         }
 
+        function convertToVancouverTime(utcTime) {
+            const date = new Date(utcTime);
+            return date.toLocaleString("en-US", { timeZone: "America/Vancouver", hour12: false });
+        }
+
         function displayConversations(conversations) {
-            let tableHtml = "<table><tr><th>Caller Number</th><th>Start Time</th><th>Queue</th></tr>";
+            let tableHtml = "<table><tr><th>Caller Number</th><th>Start Time (Vancouver Time)</th><th>Queue</th></tr>";
             window.liveConversations = [];
             
             conversations.forEach(convo => {
@@ -186,35 +228,15 @@
                 if (!lastAcdParticipant || (lastSegment && lastSegment.purpose === "agent")) return;
                 
                 const ani = externalParticipant ? externalParticipant.sessions[0].ani.replace("tel:", "") : "N/A";
+                const vancouverTime = convertToVancouverTime(convo.conversationStart);
+
                 window.liveConversations.push({ conversationId: convo.conversationId, lastParticipantId: lastAcdParticipant.participantId, ani });
-                tableHtml += `<tr><td>${ani}</td><td>${convo.conversationStart}</td><td>${lastAcdParticipant.participantName}</td></tr>`;
+                tableHtml += `<tr><td>${ani}</td><td>${vancouverTime}</td><td>${lastAcdParticipant.participantName}</td></tr>`;
             });
             
             document.getElementById("tableContainer").innerHTML = tableHtml + "</table>";
             document.getElementById("pushToTrainBtn").disabled = window.liveConversations.length === 0;
         }
-
-        async function pushToTrainEnvironment() {
-            const accessToken = getAccessTokenFromURL();
-            if (!accessToken) return;
-            
-            for (const convo of window.liveConversations) {
-                const apiUrl = `https://api.cac1.pure.cloud/api/v2/conversations/calls/${convo.conversationId}/participants/${convo.lastParticipantId}/replace`;
-                try {
-                    const response = await fetch(apiUrl, { method: "POST", headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" }, body: JSON.stringify({ transferType: "Attended", address: "+16044825083" }) });
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(errorData.message || "Transfer failed.");
-                    }
-                    document.getElementById("logOutput").value += `\n✅ ${convo.ani} (${convo.conversationId}) is successfully transferred to Training Environment.`;
-                } catch (error) {
-                    document.getElementById("logOutput").value += `\n❌ ${convo.ani} (${convo.conversationId}) transfer failed: ${error.message}`;
-                }
-            }
-        }
-
-        document.getElementById("liveConversationsBtn").addEventListener("click", getLiveConversations);
-        document.getElementById("pushToTrainBtn").addEventListener("click", pushToTrainEnvironment);
     </script>
 </body>
 </html>
