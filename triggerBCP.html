@@ -134,32 +134,35 @@
         }
     });
 
-            async function pushToTrainEnvironment() {
-        console.log("Pushing to Train Environment...");
-        const logOutput = document.getElementById("logOutput");
-        logOutput.value += "\nPushing to Train Environment...";
+async function pushToTrainEnvironment() {
+    console.log("Pushing to Train Environment...");
+    const logOutput = document.getElementById("logOutput");
+    logOutput.value += "\nPushing to Train Environment...";
 
-        const accessToken = getAccessTokenFromURL();
-        if (!accessToken) return;
+    const accessToken = getAccessTokenFromURL();
+    if (!accessToken) return;
 
-        for (const convo of window.liveConversations) {
-            const apiUrl = `https://api.cac1.pure.cloud/api/v2/conversations/calls/${convo.conversationId}/participants/${convo.lastParticipantId}/replace`;
-            try {
-                const response = await fetch(apiUrl, { 
-                    method: "POST", 
-                    headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" }, 
-                    body: JSON.stringify({ transferType: "Attended", address: "+16044825083" }) 
-                });
+    for (const convo of window.liveConversations) {
+        const apiUrl = `https://api.cac1.pure.cloud/api/v2/conversations/calls/${convo.conversationId}/participants/${convo.lastParticipantId}/replace`;
 
-                if (!response.ok) throw new Error("Transfer failed.");
+        try {
+            const response = await fetch(apiUrl, { 
+                method: "POST", 
+                headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" }, 
+                body: JSON.stringify({ transferType: "Attended", address: "+16044825083" }) 
+            });
 
-                logOutput.value += `\n✅ ${convo.ani} (${convo.conversationId}) is successfully transferred to Training Environment.`;
-            } catch (error) {
-                logOutput.value += `\n❌ ${convo.ani} (${convo.conversationId}) transfer failed: ${error.message}`;
+            if (!response.ok) {
+                const errorResponse = await response.json(); // Parse error JSON response
+                throw new Error(errorResponse.message || "Transfer failed."); // Extract the message or fallback
             }
+
+            logOutput.value += `\n✅ ${convo.ani} (${convo.conversationId}) is successfully transferred to Training Environment.`;
+        } catch (error) {
+            logOutput.value += `\n❌ ${convo.ani} (${convo.conversationId}) transfer failed: ${error.message}`;
         }
     }
-    
+}    
 
         function getAccessTokenFromURL() {
             const urlParams = new URLSearchParams(window.location.search);
