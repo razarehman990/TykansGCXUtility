@@ -178,10 +178,11 @@
                 return;
             }
 
-            let csvContent = 'Name,Type,Language,Description,TtsString,MediaUri,FileName\n';
+            let csvContent = 'Name,ID,Type,Language,Description,TtsString,MediaUri,FileName\n';
 
             for (const entity of data) {
                 const name = entity.name || '';
+				const id = entity.id || ''; 
                 const type = 'user'; // Fixed value
                 const language = entity.resources[0] ? entity.resources[0].language || '' : '';
                 const description = entity.description || '';
@@ -189,7 +190,7 @@
                 const mediaUri = entity.resources[0] ? entity.resources[0].mediaUri || '' : '';
                 const fileName = mediaUri ? `${name}.wav` : ''; // Empty FileName if MediaUri is empty
 
-                csvContent += `"${name}","${type}","${language}","${description}",${ttsString},"${mediaUri}","${fileName}"\n`;
+                csvContent += `"${name}","${id}","${type}","${language}","${description}",${ttsString},"${mediaUri}","${fileName}"\n`;
             }
 
             return csvContent;
